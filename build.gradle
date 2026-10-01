@@ -1,0 +1,18 @@
+plugins {
+    id 'dev.architectury.loom-no-remap' version '1.17.493'
+}
+group = 'dev.magnitude'
+version = '0.1.0+26.3'
+base { archivesName = 'magnitude' }
+repositories { maven { url = 'https://maven.fabricmc.net/' }; mavenCentral() }
+dependencies {
+    minecraft 'net.minecraft:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.19.5'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.160.7+26.3'
+    implementation files('libs/pehkui-rebuilt-fabric-3.8.7+26.3.jar')
+}
+java { sourceCompatibility = JavaVersion.VERSION_25; targetCompatibility = JavaVersion.VERSION_25; withSourcesJar() }
+tasks.withType(JavaCompile).configureEach { options.release = 25; options.encoding = 'UTF-8' }
+sourceSets.main.java.srcDir 'src/client/java'
+processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
+jar { from('libs') { into 'META-INF/jars' }; from('LICENSE'); from('COPYRIGHT'); preserveFileTimestamps = false; reproducibleFileOrder = true }

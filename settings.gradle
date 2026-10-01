@@ -1,0 +1,2 @@
+pluginManagement { resolutionStrategy { eachPlugin { if (requested.id.id == "dev.architectury.loom-no-remap") useModule("dev.architectury:architectury-loom:1.17.493") } }; repositories { maven { url = 'https://maven.architectury.dev/' }; maven { url = 'https://maven.fabricmc.net/' }; maven { url = 'https://maven.minecraftforge.net/' }; gradlePluginPortal() } }
+rootProject.name = 'magnitude'

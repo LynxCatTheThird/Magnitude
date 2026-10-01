@@ -1,0 +1,7 @@
+Research/
+.local/
+.gradle/
+build/
+run/
+dist/
+*.log
