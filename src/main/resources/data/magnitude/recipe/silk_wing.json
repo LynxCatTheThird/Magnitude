@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:paper",
+    "minecraft:paper",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "magnitude:silk_wing",
+    "count": 1
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:wheat",
+    "minecraft:sugar",
+    "minecraft:amethyst_shard"
+  ],
+  "result": {
+    "id": "magnitude:azure_biscuit",
+    "count": 2
+  }
+}

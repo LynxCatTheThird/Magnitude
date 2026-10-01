@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:copper_block",
+    "minecraft:redstone",
+    "minecraft:slime_ball"
+  ],
+  "result": {
+    "id": "magnitude:kinetic_pad",
+    "count": 1
+  }
+}

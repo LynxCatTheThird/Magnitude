@@ -4,4 +4,6 @@ Research/
 build/
 run/
 dist/
+src/test/
+src/verification/
 *.log

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:glass_bottle",
+    "minecraft:copper_ingot",
+    "minecraft:amethyst_shard"
+  ],
+  "result": {
+    "id": "magnitude:essence_reservoir",
+    "count": 1
+  }
+}

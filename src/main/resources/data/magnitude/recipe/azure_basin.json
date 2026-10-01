@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:cauldron",
+    "magnitude:azure_bucket"
+  ],
+  "result": {
+    "id": "magnitude:azure_basin",
+    "count": 1
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:lead",
+    "minecraft:leather",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "magnitude:rescue_harness",
+    "count": 1
+  }
+}

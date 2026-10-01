@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:white_wool",
+    "minecraft:leather",
+    "minecraft:string"
+  ],
+  "result": {
+    "id": "magnitude:travel_blanket",
+    "count": 1
+  }
+}

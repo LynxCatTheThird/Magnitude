@@ -3,6 +3,7 @@
   "description": "Size-based adventures and interactions", "authors": ["GPT 6.1 Sol"],
   "license": "GPL-3.0-only", "environment": "*",
   "entrypoints": {"main": ["dev.magnitude.Magnitude"], "client": ["dev.magnitude.client.MagnitudeClient"]},
+  "mixins": ["magnitude.mixins.json", "magnitude.client.mixins.json"],
   "depends": {"minecraft": "26.3", "java": ">=25", "fabricloader": ">=0.19.5", "fabric-api": ">=0.160.7", "pehkui": "3.8.7+26.3"},
   "jars": [{"file": "META-INF/jars/pehkui-rebuilt-fabric-3.8.7+26.3.jar"}]
 }

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:leather_helmet",
+    "minecraft:vine"
+  ],
+  "result": {
+    "id": "magnitude:woven_hood",
+    "count": 1
+  }
+}

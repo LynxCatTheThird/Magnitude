@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.magnitude.client.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["ObservationMixin", "PrecisionMixin", "NameMixin"],
+  "injectors": {"defaultRequire": 1}
+}

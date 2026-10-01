@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:leather_chestplate",
+    "minecraft:vine"
+  ],
+  "result": {
+    "id": "magnitude:woven_vest",
+    "count": 1
+  }
+}

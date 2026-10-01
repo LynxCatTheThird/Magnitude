@@ -16,3 +16,34 @@ tasks.withType(JavaCompile).configureEach { options.release = 25; options.encodi
 sourceSets.main.java.srcDir 'src/client/java'
 processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
 jar { from('libs') { into 'META-INF/jars' }; from('LICENSE'); from('COPYRIGHT'); preserveFileTimestamps = false; reproducibleFileOrder = true }
+
+// Verification is a separate mod and is never packaged in the production jar.
+sourceSets {
+    verification {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+loom {
+    mods {
+        magnitude { sourceSet sourceSets.main }
+        'magnitude-verification' { sourceSet sourceSets.verification }
+    }
+    runs {
+        verificationServer {
+            server()
+            source sourceSets.verification
+            name 'Magnitude verification server'
+            runDir '.local/verification'
+        }
+    }
+}
+tasks.register('ruleTest', JavaExec) {
+    dependsOn testClasses
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'dev.magnitude.RuleTests'
+}
+test {
+    failOnNoDiscoveredTests = false
+}
+check.dependsOn ruleTest

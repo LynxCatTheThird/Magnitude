@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "magnitude:tuning_wand",
+    "minecraft:spyglass",
+    "minecraft:quartz"
+  ],
+  "result": {
+    "id": "magnitude:refraction_wand",
+    "count": 1
+  }
+}

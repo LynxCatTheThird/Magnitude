@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "magnitude:block/kinetic_pad"
+    }
+  }
+}

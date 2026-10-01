@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "magnitude:amber_source",
+    "magnitude:amber_flow",
+    "magnitude:azure_source",
+    "magnitude:azure_flow"
+  ]
+}

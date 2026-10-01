@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:wheat",
+    "minecraft:honey_bottle",
+    "minecraft:glowstone_dust"
+  ],
+  "result": {
+    "id": "magnitude:amber_biscuit",
+    "count": 2
+  }
+}
