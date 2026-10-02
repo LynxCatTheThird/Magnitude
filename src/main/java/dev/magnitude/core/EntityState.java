@@ -47,6 +47,8 @@ public final class EntityState {
     public int physicsCells;
     public int physicsPairs;
     public long lastFluidTick = Long.MIN_VALUE;
+    /** Last support location/size that received a static-load check. */
+    public double pressureX = Double.NaN, pressureZ = Double.NaN, pressureSize = -1;
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
     public void load(ValueInput input, Entity entity) {
@@ -80,6 +82,7 @@ public final class EntityState {
         jumpSequence = 0;
         physicsTick = Long.MIN_VALUE;
         physicsRevision = 0;
+        pressureX = pressureZ = Double.NaN; pressureSize = -1;
     }
     public void save(ValueOutput output, Entity entity) {
         ValueOutput data = output.child("magnitude");

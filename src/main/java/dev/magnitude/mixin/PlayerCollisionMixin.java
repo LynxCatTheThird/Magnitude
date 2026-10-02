@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class PlayerCollisionMixin {
     @Inject(method="move",at=@At("HEAD"),cancellable=true)
     private void magnitude$preflight(MoverType type,Vec3 movement,CallbackInfo info) {
-        if((Object)this instanceof Player player && !player.noPhysics && BodyCollision.active(player) && !BodyCollision.permitted(player,movement)) {
+        if((Object)this instanceof Player player && !player.noPhysics && BodyCollision.active(player) && movement.y <= 0 && !BodyCollision.permitted(player,movement)) {
             player.setDeltaMovement(Vec3.ZERO);info.cancel();
         }
     }

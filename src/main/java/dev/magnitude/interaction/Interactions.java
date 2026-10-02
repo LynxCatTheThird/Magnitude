@@ -116,7 +116,17 @@ public final class Interactions {
                 }
             }
         }
-        if (Magnitude.settings.standingPressure && player.tickCount % 20 == 0) Impact.feet(player,0,true);
+        // Static pressure is a load check, not a timer that should endlessly mine the floor.
+        // Landing and movement already apply their own impacts; require a recent downward load
+        // before the periodic standing check can remove another support layer.
+        double size = Dimensions.size(player);
+        boolean newLoad = state.pressureSize < size - 0.05
+            || !Double.isFinite(state.pressureX)
+            || Math.hypot(player.getX() - state.pressureX, player.getZ() - state.pressureZ) > 0.5;
+        if (Magnitude.settings.standingPressure && player.tickCount % 20 == 0 && newLoad) {
+            Impact.feet(player,0,true);
+            state.pressureX = player.getX(); state.pressureZ = player.getZ(); state.pressureSize = size;
+        }
     }
     public static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -256,13 +266,24 @@ public final class Interactions {
     public static boolean shock(ServerPlayer player,double radius,boolean landing) {
         if (Dimensions.size(player)<4 || !player.onGround()) return false;
         if (!landing && !cooldown(player,20)) return false;
-        if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(radius,0.75,radius), scaledImpactDamage(player,landing ? Magnitude.settings.landingDamageFactor : Magnitude.settings.walkDamageFactor));
-        Impact.breakAround(player,player.position().add(0,-0.5,0),radius,1.5);
+        double speed = landing ? Math.clamp(Math.max(0, -EntityState.of(player).downward) / 0.42, 0.25, 4) : 1;
+        double impactRadius = Math.clamp(radius * (0.5 + speed * 0.5), 0.5, Magnitude.settings.impactRadius);
+        if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(impactRadius,0.75,impactRadius), scaledImpactDamage(player,(landing ? Magnitude.settings.landingDamageFactor : Magnitude.settings.walkDamageFactor) * speed));
+        Impact.breakAround(player,player.position().add(0,-0.5,0),impactRadius,1.5 * Math.clamp(speed,0.5,2));
         player.level().sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,player.getX(),player.getY()+0.1,player.getZ(),12,radius/2,0.1,radius/2,0.03);
         return true;
     }
     private static float scaledImpactDamage(ServerPlayer player,double base) {
         return (float)Math.clamp(base * ScaleUtils.getAttackScale(player), 0, 100);
+    }
+    /** Pehkui's jump modifier is multiplicative; cap the resulting launch velocity to a
+     * physically useful envelope so an extreme visual scale cannot launch hundreds of blocks. */
+    public static void limitJumpVelocity(ServerPlayer player) {
+        Vec3 velocity = player.getDeltaMovement();
+        if (velocity.y <= 0 || player.getAbilities().flying || player.isNoGravity()) return;
+        double size = Math.clamp(Dimensions.size(player), 1, 64);
+        double maximum = Math.min(1.5, 0.42 * Math.sqrt(size) * 1.5);
+        if (velocity.y > maximum) { player.setDeltaMovement(velocity.x, maximum, velocity.z); player.syncVelocity = true; }
     }
     public static boolean blow(ServerPlayer player) {
         if (Dimensions.size(player)<2 || !cooldown(player,20)) return false;

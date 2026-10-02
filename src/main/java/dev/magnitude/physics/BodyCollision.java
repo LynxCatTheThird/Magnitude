@@ -2,6 +2,7 @@ package dev.magnitude.physics;
 
 import dev.magnitude.core.EntityState;
 import dev.magnitude.interaction.EntityQueries;
+import dev.magnitude.interaction.Impact;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -58,7 +59,7 @@ public final class BodyCollision {
         state.movementDenied=false;
         long now=player.level().getGameTime();
         if(state.physicsTick!=now) { state.physicsTick=now;state.physicsCells=0;state.physicsPairs=0;state.proxyFallback=false; }
-        if(!Double.isFinite(wanted.lengthSqr()))return fallback(player);
+        if(!Double.isFinite(wanted.lengthSqr()))return fallback(player,wanted);
         List<BodyBox> parts=PlayerBody.parts(player,player.position());
         AABB bounds=parts.getFirst().bounds();
         for(BodyBox part:parts)bounds=bounds.minmax(part.bounds());
@@ -68,22 +69,24 @@ public final class BodyCollision {
         double step=Math.min(0.6,player.maxUpStep());
         AABB swept=bounds.expandTowards(wanted).expandTowards(0,step,0).inflate(1e-7);
         long cells=LocalProxy.cells(swept);
-        if(cells>LocalProxy.CELLS_PER_MOVE || state.physicsCells+cells>LocalProxy.CELLS_PER_TICK || !LocalProxy.loaded(player.level(),swept) || !PhysicsWork.cells(cells))return fallback(player);
+        if(cells>LocalProxy.CELLS_PER_MOVE || state.physicsCells+cells>LocalProxy.CELLS_PER_TICK || !LocalProxy.loaded(player.level(),swept) || !PhysicsWork.cells(cells))return fallback(player,wanted);
         state.physicsCells+=(int)cells;
         List<AABB> obstacles=new ArrayList<>();
         for(var shape:player.level().getBlockCollisions(player,swept)) {
-            for(AABB box:shape.toAabbs()) { if(obstacles.size()>=1024)return fallback(player);obstacles.add(box); }
+            for(AABB box:shape.toAabbs()) { if(obstacles.size()>=1024)return fallback(player,wanted);obstacles.add(box); }
         }
         var entities=EntityQueries.query(player.level(),swept,player,256);
-        if(!entities.complete())return fallback(player);
+        if(!entities.complete())return fallback(player,wanted);
         for(var entity:entities.entities())if(player.canCollideWith(entity))obstacles.add(entity.getBoundingBox());
         var border=player.level().getWorldBorder();
         if(border.isInsideCloseToBorder(player,swept))obstacles.addAll(border.getCollisionShape().toAabbs());
         // Charge all SAT pairs including empty/failed contacts, before doing any work.
         long pairs=(long)obstacles.size()*parts.size()*12;
-        if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs))return fallback(player);
+        if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs))return fallback(player,wanted);
         state.physicsPairs+=(int)pairs;
         Vec3 result=clip(parts,obstacles,wanted);
+        if ((result.x != wanted.x || result.z != wanted.z) && player.onGround()
+            && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) Impact.kick(serverPlayer, wanted);
         if(step>0 && (player.onGround() || wanted.y<0 && result.y!=wanted.y)
             && (result.x!=wanted.x || result.z!=wanted.z)) {
             Vec3 up=clip(parts,obstacles,new Vec3(0,step,0));
@@ -95,7 +98,14 @@ public final class BodyCollision {
         }
         return result;
     }
-    private static Vec3 fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.movementDenied=true;return Vec3.ZERO; }
+    private static Vec3 fallback(Player player, Vec3 wanted) {
+        var state=EntityState.of(player);state.proxyFallback=true;
+        // A budget miss must not turn a jump into a permanent pit trap. Preserve upward
+        // escape while withholding uncertain horizontal movement until the proxy recovers.
+        if (wanted.y > 0) { state.movementDenied=false; return new Vec3(0,wanted.y,0); }
+        state.movementDenied=true;return Vec3.ZERO;
+    }
+    private static void fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.movementDenied=true; }
     private static List<BodyBox> shift(List<BodyBox> parts,Vec3 delta) { return parts.stream().map(p->p.move(delta)).toList(); }
     private static Vec3 clip(List<BodyBox> parts,List<AABB> obstacles,Vec3 wanted) {
         double y=axis(parts,obstacles,new Vec3(0,wanted.y,0));

@@ -50,10 +50,12 @@ public final class BodyPhysicsTests {
             ready(actor);actor.move(MoverType.SELF,new Vec3(1,0,0));
             require(actor.getX()>6000.5 && actor.getX()<6000.8,"body sweep stops before solid wall",passed);
             actor.setPos(6000.5,220,6000.5);ready(actor);
+            Magnitude.settings.terrainDamage=true;EntityState.of(actor).terrainEnabled=true;
             for(int y=0;y<6;y++)level.setBlock(ROOT.offset(1,y,0),Blocks.OAK_LOG.defaultBlockState(),2);
             actor.move(MoverType.SELF,new Vec3(1,0,0));
-            require(actor.getY()<220.7 && actor.getX()<6001.1,"walking into a tree trunk does not climb its vertical stack",passed);
+            require(actor.getY()<220.7 && level.getBlockState(ROOT.offset(1,0,0)).isAir(),"walking into a tree trunk breaks it instead of climbing",passed);
             for(int y=0;y<6;y++)level.setBlock(ROOT.offset(1,y,0),Blocks.AIR.defaultBlockState(),2);
+            Magnitude.settings.terrainDamage=false;EntityState.of(actor).terrainEnabled=false;
             actor.setPos(6000.5,220,6000.5);ready(actor);
             level.setBlock(ROOT.offset(1,0,0),Blocks.STONE.defaultBlockState(),2);level.setBlock(ROOT.offset(1,1,0),Blocks.STONE.defaultBlockState(),2);
             require(BodyCollision.newCollision(actor,actor.position(),actor.position().add(1,0,0)),"server position validation rejects new body penetration",passed);

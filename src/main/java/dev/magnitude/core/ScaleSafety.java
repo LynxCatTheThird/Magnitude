@@ -17,7 +17,9 @@ public final class ScaleSafety {
         cap("collision", 8, ScaleTypes.HITBOX_WIDTH, ScaleTypes.HITBOX_HEIGHT);
         cap("motion", 8, ScaleTypes.MOTION, ScaleTypes.STEP_HEIGHT);
         inherit("jump_height", 8, ScaleTypes.JUMP_HEIGHT);
-        inherit("attack", 64, ScaleTypes.ATTACK, ScaleTypes.ATTACK_SPEED, ScaleTypes.KNOCKBACK);
+        inherit("attack", 16, ScaleTypes.ATTACK);
+        inherit("attack_speed", 8, ScaleTypes.ATTACK_SPEED);
+        inherit("knockback", 4, ScaleTypes.KNOCKBACK);
         inherit("combat", 16, ScaleTypes.DEFENSE, ScaleTypes.HEALTH);
         cap("reach", 16, ScaleTypes.REACH, ScaleTypes.BLOCK_REACH, ScaleTypes.ENTITY_REACH);
         cap("secondary", 8, ScaleTypes.DROPS, ScaleTypes.PROJECTILES, ScaleTypes.EXPLOSIONS);
