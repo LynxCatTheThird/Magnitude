@@ -1,7 +1,6 @@
 package dev.magnitude.mixin;
 
 import dev.magnitude.core.EntityState;
-import dev.magnitude.core.Dimensions;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -22,8 +21,9 @@ public abstract class PassengerMixin {
         double side=state.carryPosition==0?0.25:state.carryPosition==1?0:state.offsetSide;
         double up=state.carryPosition==0?1.35:state.carryPosition==1?1:state.offsetUp;
         double angle=carrier.getYRot()*Math.PI/180;
-        double size=Dimensions.size(carrier);
-        Vec3 offset=new Vec3(-Math.sin(angle)*forward+Math.cos(angle)*side,up,Math.cos(angle)*forward+Math.sin(angle)*side).scale(size);
+        double width=Math.min(8,carrier.getBbWidth()/0.6);
+        double height=Math.min(8,carrier.getBbHeight()/1.8);
+        Vec3 offset=new Vec3((-Math.sin(angle)*forward+Math.cos(angle)*side)*width,up*height,(Math.cos(angle)*forward+Math.sin(angle)*side)*width);
         result.setReturnValue(carrier.position().add(offset));
     }
 }

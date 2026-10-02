@@ -17,6 +17,11 @@ public final class Rules {
     public static boolean insideEllipsoid(double x, double y, double z, double horizontal, double vertical) {
         return horizontal > 0 && vertical > 0 && (x*x + z*z)/(horizontal*horizontal) + y*y/(vertical*vertical) <= 1;
     }
+    public static boolean insideFootprint(double x, double z, double yaw, double halfWidth, double halfLength) {
+        double side = x * Math.cos(yaw) + z * Math.sin(yaw);
+        double forward = -x * Math.sin(yaw) + z * Math.cos(yaw);
+        return halfWidth > 0 && halfLength > 0 && side*side/(halfWidth*halfWidth) + forward*forward/(halfLength*halfLength) <= 1;
+    }
     public static final class Budget {
         private int remaining;
         public void reset(int amount) { remaining = Math.max(0, amount); }

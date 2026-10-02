@@ -92,13 +92,17 @@ public final class ToolItem extends Item {
             if (!Double.isFinite(stored) || stored < 0 || stored > Magnitude.settings.maximum) return false;
             if (stored == 0) {
                 double amount = Rules.transfer(current, Magnitude.settings.maximum, 0.5, Magnitude.settings.minimum);
+                double next = Dimensions.representable(target,current-amount);
+                amount = current-next;
                 if (amount <= 0) return false;
-                Dimensions.set(target, current - amount, 20);
+                Dimensions.set(target, next, 20);
                 tag.putDouble("charge", amount);
             } else {
                 double amount = Math.min(stored, Math.max(0, Magnitude.settings.maximum - current));
-                if (amount <= 0) return false;
-                Dimensions.set(target, current + amount, 20);
+                double next = Dimensions.representable(target,current+amount);
+                amount = next-current;
+                if (amount <= 0 || amount > stored) return false;
+                Dimensions.set(target, next, 20);
                 tag.putDouble("charge", stored - amount);
             }
             data(stack, tag);
@@ -110,12 +114,19 @@ public final class ToolItem extends Item {
         if (operation == 3 || operation == 4) {
             if (target == actor || !Dimensions.settled(actor) || !Dimensions.canChange(actor, actor) || !Dimensions.withinLimits(actor) || !Dimensions.withinLimits(target)) return false;
             double own = Dimensions.size(actor);
-            if (operation == 3) { Dimensions.set(actor, current, 20); Dimensions.set(target, own, 20); }
+            if (operation == 3) {
+                if (Dimensions.representable(actor,current)!=current || Dimensions.representable(target,own)!=own) return false;
+                Dimensions.set(actor, current, 20); Dimensions.set(target, own, 20);
+            }
             else {
                 double amount = Rules.transfer(current, Magnitude.settings.maximum - own, parameter, Magnitude.settings.minimum);
-                if (amount <= 0) return false;
-                Dimensions.set(target, current - amount, 20);
-                Dimensions.set(actor, own + amount, 20);
+                double nextOwn = Dimensions.representable(actor,own+amount);
+                amount = nextOwn-own;
+                if (amount <= 0 || amount > Rules.transfer(current,Magnitude.settings.maximum-own,parameter,Magnitude.settings.minimum)) return false;
+                double nextTarget = Dimensions.representable(target,current-amount);
+                if (current-nextTarget != amount) return false;
+                Dimensions.set(target, nextTarget, 20);
+                Dimensions.set(actor, nextOwn, 20);
             }
             return true;
         }

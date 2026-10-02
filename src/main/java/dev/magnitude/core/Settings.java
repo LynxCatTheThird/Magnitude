@@ -15,6 +15,7 @@ public final class Settings {
     public double maximum = 32;
     public boolean allowSelfChange = true;
     public boolean terrainDamage = false;
+    public boolean standingPressure = true;
     public boolean bodyDamage = true;
     public boolean keepSizeAfterDeath = false;
     public int blocksPerTick = 256;
@@ -24,8 +25,8 @@ public final class Settings {
     public Map<String, Double> foodFactors = new LinkedHashMap<>();
 
     public void validate() {
-        minimum = Rules.bounded(minimum, 1.0 / 64, 1);
-        maximum = Rules.bounded(maximum, 1, 32);
+        minimum = Double.isFinite(minimum) ? Rules.bounded(minimum, ScaleSafety.MINIMUM, 1) : 1.0/64;
+        maximum = Double.isFinite(maximum) ? Rules.bounded(maximum, 1, ScaleSafety.MAXIMUM) : 32;
         blocksPerTick = Math.clamp(blocksPerTick, 0, 1024);
         checksPerTick = Math.clamp(checksPerTick, 16, 8192);
         blocksPerImpact = Math.clamp(blocksPerImpact, 0, 256);

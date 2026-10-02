@@ -28,6 +28,11 @@ public final class EntityState {
     public boolean grounded;
     public double downward;
     public double previousSize = 1;
+    public net.minecraft.world.phys.Vec3 previousPosition;
+    public double strideDistance;
+    public boolean leftFoot;
+    public long nextJumpImpact;
+    public boolean jumpImpact;
     public long lastFluidTick = Long.MIN_VALUE;
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
@@ -40,8 +45,8 @@ public final class EntityState {
         offsetForward = safe(data.getDoubleOr("offsetForward", 0.4), -2, 2, 0.4);
         offsetSide = safe(data.getDoubleOr("offsetSide", 0), -2, 2, 0);
         offsetUp = safe(data.getDoubleOr("offsetUp", 1.25), 0, 2, 1.25);
-        randomLow = safe(data.getDoubleOr("randomLow", 0.5), 1.0/64, 32, 0.5);
-        randomHigh = safe(data.getDoubleOr("randomHigh", 2), randomLow, 32, 2);
+        randomLow = safe(data.getDoubleOr("randomLow", 0.5), ScaleSafety.MINIMUM, ScaleSafety.MAXIMUM, 0.5);
+        randomHigh = safe(data.getDoubleOr("randomHigh", 2), randomLow, ScaleSafety.MAXIMUM, Math.max(randomLow, 2));
         randomPeriod = Math.clamp(data.getIntOr("randomPeriod", 0), 0, 72000);
         nextRandom = Math.clamp(data.getIntOr("nextRandom", randomPeriod), 0, randomPeriod);
         nextAction = entity.level().getGameTime() + Math.clamp(data.getIntOr("actionCooldown", 0), 0, 1200);
@@ -51,6 +56,9 @@ public final class EntityState {
         reduceExternal = data.getBooleanOr("reduceExternal", true);
         carrying = false;
         initialized = false;
+        previousPosition = null;
+        strideDistance = 0;
+        jumpImpact = false;
     }
     public void save(ValueOutput output, Entity entity) {
         ValueOutput data = output.child("magnitude");

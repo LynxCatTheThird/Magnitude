@@ -1,11 +1,11 @@
 # Magnitude for Minecraft 26.3 Fabric
 
-这是一个面向 Minecraft Java Edition 26.3 Fabric 的尺寸、携带、冲击和流体玩法模组。它把尺寸变化限制在有限范围内，并由服务端验证玩家请求；默认尺寸范围是 `1/64` 到 `32` 倍。
+这是一个面向 Minecraft Java Edition 26.3 Fabric 的尺寸、携带、冲击和流体玩法模组。由服务端验证玩家请求；默认尺寸范围是 `1/64` 到 `32` 倍，配置可扩展至 `2⁻²⁰` 到 `2³²`，碰撞与运动另有限幅。
 
 ## 安装
 
 1. 安装 Minecraft Java Edition 26.3、Fabric Loader 0.19.5 或更新版本，以及对应的 Fabric API。
-2. 将 `magnitude-0.1.1+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
+2. 将 `magnitude-0.1.2+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
 3. 首次启动后可编辑世界或服务端目录下的 `config/magnitude.json`，修改后使用 `/magnitude admin reload`。
 
 客户端和服务端必须使用同一版本。单人游戏也会同时运行服务端逻辑。
@@ -14,22 +14,22 @@
 
 命令根节点是 `/magnitude`。常用命令如下：
 
-| 命令 | 作用 |
-|---|---|
-| `/magnitude get` | 查看当前尺寸、目标尺寸和碰撞箱高度 |
-| `/magnitude set <倍数> [ticks]` | 设置目标尺寸 |
-| `/magnitude multiply <倍数> [ticks]` | 按当前目标尺寸相乘 |
-| `/magnitude add <倍数> [ticks]` | 在当前目标尺寸上加值 |
-| `/magnitude height <方块高度> [ticks]` | 按标准玩家高度换算尺寸 |
-| `/magnitude reset` | 恢复为 1 倍 |
-| `/magnitude consent resize true/false` | 允许或拒绝其他玩家改变自己的尺寸 |
-| `/magnitude consent carry true/false` | 允许或拒绝被其他玩家携带 |
-| `/magnitude terrain true/false` | 开关自己的落地冲击地形破坏 |
-| `/magnitude pickup` | 拾取准星指向且同意被携带的实体 |
-| `/magnitude release` / `/magnitude throw` | 释放或投掷携带的实体 |
-| `/magnitude ride` | 骑乘准星指向的实体 |
-| `/magnitude blow` / `/magnitude stomp` | 施放推力或落地冲击 |
-| `/magnitude ability` | 使用当前坐骑的能力 |
+| 命令                                      | 作用                               |
+| ----------------------------------------- | ---------------------------------- |
+| `/magnitude get`                          | 查看当前尺寸、目标尺寸和碰撞箱高度 |
+| `/magnitude set <倍数> [ticks]`           | 设置目标尺寸                       |
+| `/magnitude multiply <倍数> [ticks]`      | 按当前目标尺寸相乘                 |
+| `/magnitude add <倍数> [ticks]`           | 在当前目标尺寸上加值               |
+| `/magnitude height <方块高度> [ticks]`    | 按标准玩家高度换算尺寸             |
+| `/magnitude reset`                        | 恢复为 1 倍                        |
+| `/magnitude consent resize true/false`    | 允许或拒绝其他玩家改变自己的尺寸   |
+| `/magnitude consent carry true/false`     | 允许或拒绝被其他玩家携带           |
+| `/magnitude terrain true/false`           | 开关自己的落地冲击地形破坏         |
+| `/magnitude pickup`                       | 拾取准星指向且同意被携带的实体     |
+| `/magnitude release` / `/magnitude throw` | 释放或投掷携带的实体               |
+| `/magnitude ride`                         | 骑乘准星指向的实体                 |
+| `/magnitude blow` / `/magnitude stomp`    | 施放推力或落地冲击                 |
+| `/magnitude ability`                      | 使用当前坐骑的能力                 |
 
 管理员命令位于 `/magnitude admin`，包括对实体选择器批量设置、读取、重置、配置重载、全局地形破坏和食物尺寸系数。管理员命令需要游戏管理员权限。
 
@@ -53,14 +53,14 @@
 
 调谐器右键实体绑定其 UUID；右键使用已绑定、已加载且在同一维度的目标。没有绑定时作用于自身。潜行右键空中轮换模式，`/magnitude tool unbind` 解除绑定。
 
-| 配置命令 | 含义 |
-|---|---|
-| `/magnitude tool value <数值>` | 设置参数，范围 -32..32 |
-| `/magnitude tool mode 0` | 当前尺寸乘以参数，负参数按 0 处理后限幅 |
-| `/magnitude tool mode 1` | 当前尺寸加参数 |
-| `/magnitude tool mode 2` | 目标尺寸设为参数 |
-| `/magnitude tool mode 3` | 与绑定目标交换尺寸，需要双方尺寸已经稳定 |
-| `/magnitude tool mode 4` | 从绑定目标抽取可转移尺寸的指定比例给自己，比例限于 0..1 |
+| 配置命令                           | 含义                                                           |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `/magnitude tool value <数值>`     | 设置参数，范围 -2³²..2³²                                       |
+| `/magnitude tool mode 0`           | 当前尺寸乘以参数，负参数按 0 处理后限幅                        |
+| `/magnitude tool mode 1`           | 当前尺寸加参数                                                 |
+| `/magnitude tool mode 2`           | 目标尺寸设为参数                                               |
+| `/magnitude tool mode 3`           | 与绑定目标交换尺寸，需要双方尺寸已经稳定                       |
+| `/magnitude tool mode 4`           | 从绑定目标抽取可转移尺寸的指定比例给自己，比例限于 0..1        |
 | `/magnitude tool duration <ticks>` | 设置模式 0..2 的渐变时间，范围 0..1200；交换/转移使用 20 ticks |
 
 右键空的储存器会抽取目标超过最小尺寸部分的一半；带有存量时注入目标，超过上限的存量留在工具中。右键空中操作自身，右键实体操作目标。工具需要目标尺寸稳定，并受许可、距离、视线和共享冷却限制。收紧配置后，若现有尺寸暂时超过新范围，存取/交换/转移会拒绝操作，以免限幅丢失存量；先重置或直接设置到新范围内再操作。
@@ -71,11 +71,11 @@
 
 携带者至少是目标的 2 倍，拾取射线最长 16 方块；每人只容纳一名乘客，不允许叠加携带链。被携带的玩家需要 `/magnitude consent carry true`。携带装具右键实体拾取，右键空中释放，潜行右键空中抛出。
 
-`/magnitude carry shoulder`、`hand`、`custom` 选择位置；`/magnitude carry offset <forward> <side> <up>` 设置相对偏移，前/侧范围 -2..2、高度 0..2，偏移随携带者尺寸缩放。释放会尝试寻找无方块碰撞且位于世界边界内的位置；抛出速度最多为 2。死亡、断连、卸载、传送和重置会解除临时携带关系，重启后不自动重新携带。
+`/magnitude carry shoulder`、`hand`、`custom` 选择位置；`/magnitude carry offset <forward> <side> <up>` 设置相对偏移，前/侧范围 -2..2、高度 0..2，偏移随携带者的物理碰撞尺寸缩放，因子最多为 8。释放会尝试寻找无方块碰撞且位于世界边界内的位置；抛出速度最多为 2。死亡、断连、卸载、传送和重置会解除临时携带关系，重启后不自动重新携带。
 
 骑乘需要坐骑至少为自身的 4 倍。骑乘其他玩家时，由大玩家开启 carry 许可；小玩家主动骑乘不需要再开启被携带许可。许可撤回或尺寸比不再满足要求时自动下车。骑骷髅时能力发射箭，骑狼时能力冲跃，其他站在地面的生物提供普通跳跃。
 
-`/magnitude random <low> <high> <period>` 启用定期随机尺寸，low/high 在 1/64..32 内且 high 不小于 low，period 为 20..72000 ticks；`/magnitude random stop` 停止。随机范围、剩余倒计时和普通动作冷却会保存。自身变化被关闭时随机规则暂停；`reset` 和平衡食物仍可恢复尺寸。
+`/magnitude random <low> <high> <period>` 启用定期随机尺寸，low/high 在服务器配置范围内且 high 不小于 low，period 为 20..72000 ticks；`/magnitude random stop` 停止。随机范围、剩余倒计时和普通动作冷却会保存。自身变化被关闭时随机规则暂停；`reset` 和平衡食物仍可恢复尺寸。
 
 ### 红石、装备与休息
 
@@ -95,8 +95,18 @@
 - 动作请求在昂贵查询前节流；每 tick 全局最多执行 128 次空间查询、检查 2048 个实体候选，每条射线最多 256 个候选。配额用完时会跳过后续查询，密集场景中部分动作或红石效果可能延迟。
 - 旧存档缺少持续效果来源记录时，按外部效果处理；若希望在未开启 resize 许可时继续自用，可先用牛奶清除旧效果再重新饮用。混合了外部来源的同类效果链在完全消失前始终保留外部许可限制。
 
+## 极端尺寸、脚印与承重
+
+0.1.2 允许管理员扩大尺寸上下限，默认配置保持原范围。开启地形破坏后，行走按实际位移生成交替的左右脚印；普通空格跳跃有起跳破坏和落地冲击；8 倍以上的接地玩家每 20 ticks 施加静止承重，可用 `standingPressure=false` 关闭。巨型模型采用受限物理代理，地形作用不会按视觉倍率无限扩大。
+
+完整结构倒塌尚未实现。配置示例、模型碰撞与动画同步方案、倒塌实施计划见 [碰撞与物理计划](docs/PHYSICS-PLAN.md)；真实客户端的极端观感仍需世界内验收。
+
 ## 验证
 
-验证环境为 Java 25、Fabric Loader 0.19.5、Fabric API 0.160.7+26.3 和 Minecraft 26.3。本轮规则测试通过 300012 条断言，其中大部分是随机转移数学性质；真实服务端回归通过 105 项，覆盖注册、碰撞箱、尺寸渐变、实体存档、药水许可、携带/骑乘/抛出、真实死亡与跨维度释放、状态复制、流体、红石、冲击保护和请求/查询预算。
+验证环境为 Java 25、Fabric Loader 0.19.5、Fabric API 0.160.7+26.3 和 Minecraft 26.3。本轮规则测试通过 300012 条断言，其中大部分是随机转移数学性质；真实服务端回归通过 151 项，覆盖注册、碰撞箱、尺寸渐变、实体存档、药水许可、携带/骑乘/抛出、真实死亡与跨维度释放、状态复制、流体、红石、冲击保护和请求/查询预算；新增极端尺寸、脚印、普通移动包跳跃、静止承重、浮点精度与巨型破坏请求回归。
 
 构建与复现方法见 [测试说明](docs/TESTING.md)，功能范围、设计变更和未实现项见 [功能覆盖](docs/FEATURES.md)。客户端启动检查与世界中视角/按键、多客户端同步测试是不同的验证范围；目前没有声称后两项已完成。
+
+## 许可证
+
+项目采用 GNU GPLv3，仅第 3 版（`GPL-3.0-only`），完整文本见 [LICENSE](LICENSE)，版权说明见 [COPYRIGHT](COPYRIGHT)。内置第三方依赖保留各自许可证与版权声明。

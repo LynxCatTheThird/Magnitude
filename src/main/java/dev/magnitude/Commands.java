@@ -59,14 +59,14 @@ public final class Commands {
         })))));
         root.then(carry);
         var tool=literal("tool");
-        tool.then(literal("value").then(argument("value",DoubleArgumentType.doubleArg(-32,32)).executes(c -> configureTool(c,"value",DoubleArgumentType.getDouble(c,"value")))));
+        tool.then(literal("value").then(argument("value",DoubleArgumentType.doubleArg(-dev.magnitude.core.ScaleSafety.MAXIMUM,dev.magnitude.core.ScaleSafety.MAXIMUM)).executes(c -> configureTool(c,"value",DoubleArgumentType.getDouble(c,"value")))));
         tool.then(literal("mode").then(argument("mode",IntegerArgumentType.integer(0,4)).executes(c -> configureTool(c,"operation",IntegerArgumentType.getInteger(c,"mode")))));
         tool.then(literal("duration").then(argument("ticks",IntegerArgumentType.integer(0,1200)).executes(c -> configureTool(c,"duration",IntegerArgumentType.getInteger(c,"ticks")))));
         tool.then(literal("unbind").executes(c -> {var p=c.getSource().getPlayerOrException();if(!p.getMainHandItem().is(Content.TUNER))return denied(c);var data=ToolItem.data(p.getMainHandItem());data.remove("binding");ToolItem.data(p.getMainHandItem(),data);return message(c,"tool");}));
         root.then(tool);
-        root.then(literal("random").then(literal("stop").executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).randomPeriod=0;return message(c,"random");})).then(argument("low",DoubleArgumentType.doubleArg(1.0/64,32)).then(argument("high",DoubleArgumentType.doubleArg(1.0/64,32)).then(argument("period",IntegerArgumentType.integer(20,72000)).executes(c -> {
+        root.then(literal("random").then(literal("stop").executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).randomPeriod=0;return message(c,"random");})).then(argument("low",DoubleArgumentType.doubleArg(dev.magnitude.core.ScaleSafety.MINIMUM,dev.magnitude.core.ScaleSafety.MAXIMUM)).then(argument("high",DoubleArgumentType.doubleArg(dev.magnitude.core.ScaleSafety.MINIMUM,dev.magnitude.core.ScaleSafety.MAXIMUM)).then(argument("period",IntegerArgumentType.integer(20,72000)).executes(c -> {
             var p=c.getSource().getPlayerOrException();if(!Magnitude.settings.allowSelfChange&&!Dimensions.operator(p))return denied(c);
-            double low=DoubleArgumentType.getDouble(c,"low"),high=DoubleArgumentType.getDouble(c,"high");if(high<low)return denied(c);
+            double low=DoubleArgumentType.getDouble(c,"low"),high=DoubleArgumentType.getDouble(c,"high");if(high<low||low<Magnitude.settings.minimum||high>Magnitude.settings.maximum)return denied(c);
             var state=EntityState.of(p);state.randomLow=low;state.randomHigh=high;state.randomPeriod=IntegerArgumentType.getInteger(c,"period");state.nextRandom=state.randomPeriod;return message(c,"random");
         })))));
         var admin=literal("admin").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER));

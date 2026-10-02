@@ -23,6 +23,7 @@ public final class Magnitude implements ModInitializer {
     public static Identifier id(String path) { return Identifier.fromNamespaceAndPath(ID, path); }
     public void onInitialize() {
         settings = Settings.load();
+        dev.magnitude.core.ScaleSafety.register();
         Content.register();
         Interactions.register();
         ServerTickEvents.START_SERVER_TICK.register(server -> {dev.magnitude.interaction.Impact.beginTick();dev.magnitude.interaction.EntityQueries.beginTick();});

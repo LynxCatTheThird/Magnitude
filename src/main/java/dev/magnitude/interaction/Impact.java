@@ -23,9 +23,12 @@ public final class Impact {
     private Impact() {}
     public static void beginTick() { CHECKS.reset(Magnitude.settings.checksPerTick); BLOCKS.reset(Magnitude.settings.blocksPerTick); }
     public static int remaining() { return BLOCKS.remaining(); }
+    public static int checksRemaining() { return CHECKS.remaining(); }
+    private static boolean allowed(ServerPlayer actor) {
+        return Magnitude.settings.terrainDamage && EntityState.of(actor).terrainEnabled && actor.isAlive() && actor.getAbilities().mayBuild && !actor.isSpectator();
+    }
     public static int breakAround(ServerPlayer actor, Vec3 center, double radius, double height) {
-        if (!Magnitude.settings.terrainDamage || !EntityState.of(actor).terrainEnabled || !actor.getAbilities().mayBuild || actor.isSpectator()) return 0;
-        var level = actor.level();
+        if (!allowed(actor)) return 0;
         radius = Math.min(radius, Magnitude.settings.impactRadius);
         height = Math.min(height, Magnitude.settings.impactRadius);
         int changed = 0;
@@ -33,19 +36,49 @@ public final class Impact {
         for (BlockPos offset : OFFSETS) {
             if (changed >= Magnitude.settings.blocksPerImpact || BLOCKS.remaining() == 0) break;
             if (!Rules.insideEllipsoid(offset.getX(), offset.getY(), offset.getZ(), radius, height)) continue;
-            if (!CHECKS.take()) break;
             BlockPos pos = origin.offset(offset);
-            if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || !actor.mayInteract(level, pos)) continue;
-            var block = level.getBlockState(pos);
-            if (block.isAir() || !block.getFluidState().isEmpty() || block.hasBlockEntity() || block.is(PROTECTED) || block.getDestroySpeed(level, pos) < 0) continue;
-            if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, actor, pos, block, null)) continue;
-            if (!BLOCKS.take()) break;
-            if (level.destroyBlock(pos, false, actor)) {
-                changed++;
-                PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level, actor, pos, block, null);
+            if (CHECKS.remaining() == 0) break;
+            if (breakBlock(actor, pos, Float.MAX_VALUE)) changed++;
+        }
+        return changed;
+    }
+    /** Two oriented boot contacts; side -1 or +1 selects one alternating step, 0 both. */
+    public static int feet(ServerPlayer actor, int side, boolean pressure) {
+        if (!allowed(actor) || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
+        double scale = Math.min(8, dev.magnitude.core.Dimensions.size(actor));
+        if (scale < (pressure ? 8 : 4)) return 0;
+        double yaw = Math.toRadians(actor.getYRot());
+        double halfWidth = scale * 0.09 + 0.35, halfLength = scale * 0.22 + 0.35;
+        float hardness = pressure ? (float)Math.min(8, dev.magnitude.core.Dimensions.size(actor)/16) : Float.MAX_VALUE;
+        int changed = 0;
+        for (int foot : new int[]{-1, 1}) {
+            if (side != 0 && side != foot) continue;
+            Vec3 center = actor.position().add(Math.cos(yaw)*foot*scale*0.2, -0.01, Math.sin(yaw)*foot*scale*0.2);
+            BlockPos origin = BlockPos.containing(center);
+            for (BlockPos offset : OFFSETS) {
+                if (offset.getY() != 0) continue;
+                if (changed >= Magnitude.settings.blocksPerImpact || BLOCKS.remaining() == 0 || CHECKS.remaining() == 0) return changed;
+                BlockPos pos = origin.offset(offset);
+                double x = pos.getX()+0.5-center.x, z = pos.getZ()+0.5-center.z;
+                if (!Rules.insideFootprint(x,z,yaw,halfWidth,halfLength)) continue;
+                double dx = pos.getX()+0.5-actor.getX(), dz = pos.getZ()+0.5-actor.getZ();
+                if (dx*dx+dz*dz > Magnitude.settings.impactRadius*Magnitude.settings.impactRadius) continue;
+                if (breakBlock(actor, pos, hardness)) changed++;
             }
         }
         return changed;
+    }
+    private static boolean breakBlock(ServerPlayer actor, BlockPos pos, float maximumHardness) {
+        if (!CHECKS.take()) return false;
+        var level = actor.level();
+        if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || !actor.mayInteract(level, pos)) return false;
+        var block = level.getBlockState(pos);
+        float hardness = block.getDestroySpeed(level, pos);
+        if (block.isAir() || !block.getFluidState().isEmpty() || block.hasBlockEntity() || block.is(PROTECTED) || hardness < 0 || hardness > maximumHardness) return false;
+        if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, actor, pos, block, null) || !BLOCKS.take()) return false;
+        if (!level.destroyBlock(pos, false, actor)) return false;
+        PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level, actor, pos, block, null);
+        return true;
     }
     private static List<BlockPos> offsets() {
         List<BlockPos> result = new ArrayList<>();

@@ -2,7 +2,7 @@ plugins {
     id 'dev.architectury.loom-no-remap' version '1.17.493'
 }
 group = 'dev.magnitude'
-version = '0.1.1+26.3'
+version = '0.1.2+26.3'
 base { archivesName = 'magnitude' }
 repositories { maven { url = 'https://maven.fabricmc.net/' }; mavenCentral() }
 dependencies {

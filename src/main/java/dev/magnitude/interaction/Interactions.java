@@ -83,7 +83,36 @@ public final class Interactions {
     }
     public static void detach(Entity entity) {
         if (entity.getVehicle() instanceof ServerPlayer carrier && EntityState.of(carrier).carrying) release(carrier,false);
-        if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding(); }
+        if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding();EntityState.of(player).initialized=false;EntityState.of(player).jumpImpact=false; }
+    }
+    public static void jump(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator() || !player.onGround() || player.getAbilities().flying || player.isPassenger() || player.isNoGravity() || Dimensions.size(player)<4) return;
+        EntityState state = EntityState.of(player);
+        long now = player.level().getGameTime();
+        if (state.nextJumpImpact > now) return;
+        state.nextJumpImpact = now + 5;
+        state.jumpImpact = true;
+        Impact.feet(player, 0, false);
+    }
+    public static void groundContact(ServerPlayer player) {
+        EntityState state = EntityState.of(player);
+        if (!player.onGround() || player.isPassenger() || player.getAbilities().flying || player.isNoGravity()) { state.strideDistance=0;return; }
+        if (state.initialized && state.previousPosition != null) {
+            Vec3 movement = player.position().subtract(state.previousPosition);
+            double distance = movement.horizontalDistance();
+            if (distance > 16 || Math.abs(movement.y)>2) state.strideDistance=0;
+            else if (distance > 0.001) {
+                state.strideDistance += distance;
+                double stride = Math.max(0.4, Math.min(8, Dimensions.size(player))*0.4);
+                if (state.strideDistance >= stride) {
+                    state.strideDistance %= stride;
+                    state.leftFoot = !state.leftFoot;
+                    Impact.feet(player, state.leftFoot ? -1 : 1, false);
+                    if (Magnitude.settings.bodyDamage) damageSmall(player,player.getBoundingBox().inflate(0.1,0.25,0.1),2);
+                }
+            }
+        }
+        if (Magnitude.settings.standingPressure && player.tickCount % 20 == 0) Impact.feet(player,0,true);
     }
     public static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -103,18 +132,19 @@ public final class Interactions {
                     || (state.riderInitiated ? !state.acceptCarry : passenger instanceof Player && !EntityState.of(passenger).acceptCarry)) release(player,false);
             }
             if (state.initialized) {
-                if (size >= 4 && player.onGround() && !state.grounded && state.downward < -0.1) shock(player, Math.min(6, size * 0.3), true);
+                if (player.onGround() && !state.grounded) {
+                    if(size>=4 && !player.getAbilities().flying && !player.isPassenger() && !player.isNoGravity() && (state.jumpImpact || state.downward < -0.1)) shock(player, Math.min(6, size * 0.3), true);
+                    state.jumpImpact=false;
+                }
                 if (size > state.previousSize + 0.05 && size >= 4) Impact.breakAround(player, player.position().add(0, Math.min(3, player.getBbHeight()/2), 0), Math.min(6, player.getBbWidth()/2), Math.min(6, player.getBbHeight()/2));
             }
+            if(size>=4) groundContact(player);else state.strideDistance=0;
+            state.previousPosition = player.position();
             state.initialized = true;
             state.grounded = player.onGround();
             state.downward = player.getDeltaMovement().y;
             state.previousSize = size;
             if (player.tickCount % 10 == 0) {
-                if (size >= 4 && player.onGround() && player.getDeltaMovement().horizontalDistanceSqr() > 0.0001) {
-                    Impact.breakAround(player, player.position().add(0,-0.5,0), Math.min(4, player.getBbWidth()/2), 1);
-                    if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(0.1, 0.25, 0.1), 2);
-                }
                 if (size <= 0.25 && !player.onGround() && player.getDeltaMovement().y < -0.06 && (player.getMainHandItem().is(Content.GLIDER) || player.getOffhandItem().is(Content.GLIDER))) {
                     player.setDeltaMovement(player.getDeltaMovement().multiply(1.02,0,1.02).add(0,-0.06,0));
                     player.syncVelocity = true;
@@ -136,7 +166,7 @@ public final class Interactions {
         double allowed = start.distanceToSqr(block.getLocation());
         double nearest=Math.min(distance*distance,allowed);
         LivingEntity hit=null;
-        for (Entity candidate:EntityQueries.nearby(player.level(),player.getBoundingBox().expandTowards(end.subtract(start)).inflate(1),player,256)) {
+        for (Entity candidate:EntityQueries.nearby(player.level(),new AABB(start,end).inflate(1),player,256)) {
             if (!(candidate instanceof LivingEntity living) || !candidate.isAlive() || candidate.isSpectator()) continue;
             AABB box=candidate.getBoundingBox().inflate(candidate.getPickRadius());
             var intersection=box.clip(start,end);
@@ -151,7 +181,7 @@ public final class Interactions {
         return stack.getItem() instanceof ToolItem tool && tool.interactLivingEntity(stack, player, target, hand) == InteractionResult.SUCCESS;
     }
     private static boolean within(ServerPlayer actor, Entity target, double range) {
-        return actor.level() == target.level() && target.isAlive() && !target.isSpectator() && !actor.isSpectator() && target.getBoundingBox().distanceToSqr(actor.getEyePosition()) <= range * range && actor.hasLineOfSight(target);
+        return actor.level() == target.level() && target.isAlive() && !target.isSpectator() && !actor.isSpectator() && target.getBoundingBox().distanceToSqr(actor.getEyePosition()) <= range * range && Dimensions.lineOfSight(actor,target);
     }
     public static boolean carry(ServerPlayer player, LivingEntity target) {
         double range = Math.min(16, Math.max(4, Dimensions.size(player)*2));
@@ -227,7 +257,7 @@ public final class Interactions {
         for(Entity entity:EntityQueries.nearby(player.level(),new AABB(origin,origin.add(forward.scale(range))).inflate(range*0.4),player,64)) {
             if(++count>64) break;
             Vec3 direction=entity.getBoundingBox().getCenter().subtract(origin);
-            if(direction.lengthSqr()>range*range || direction.normalize().dot(forward)<0.7 || !Rules.ratio(Dimensions.size(player),Dimensions.size(entity),2) || !player.hasLineOfSight(entity)) continue;
+            if(direction.lengthSqr()>range*range || direction.normalize().dot(forward)<0.7 || !Rules.ratio(Dimensions.size(player),Dimensions.size(entity),2) || !Dimensions.lineOfSight(player,entity)) continue;
             if(entity instanceof LivingEntity living && !canDamage(player,living)) continue;
             entity.setDeltaMovement(entity.getDeltaMovement().add(forward.scale(0.7)).add(0,0.15,0)); entity.syncVelocity=true;
         }
