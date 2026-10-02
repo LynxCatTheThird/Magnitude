@@ -17,6 +17,10 @@ public final class Settings {
     public boolean terrainDamage = false;
     public boolean standingPressure = true;
     public boolean bodyDamage = true;
+    public double walkDamageFactor = 2;
+    public double landingDamageFactor = 4;
+    public double pressureHardnessFactor = 16;
+    public double impactScaleFactor = 0.3;
     public boolean keepSizeAfterDeath = false;
     public int blocksPerTick = 256;
     public int checksPerTick = 2048;
@@ -31,6 +35,10 @@ public final class Settings {
         checksPerTick = Math.clamp(checksPerTick, 16, 8192);
         blocksPerImpact = Math.clamp(blocksPerImpact, 0, 256);
         impactRadius = Rules.bounded(impactRadius, 0.5, 8);
+        walkDamageFactor = Rules.bounded(walkDamageFactor, 0, 40);
+        landingDamageFactor = Rules.bounded(landingDamageFactor, 0, 80);
+        pressureHardnessFactor = Rules.bounded(pressureHardnessFactor, 1, 64);
+        impactScaleFactor = Rules.bounded(impactScaleFactor, 0.05, 2);
         if (foodFactors == null) foodFactors = new LinkedHashMap<>();
         foodFactors.entrySet().removeIf(e -> e.getValue() == null || !Double.isFinite(e.getValue()) || e.getValue() <= 0 || e.getValue() > 4);
     }

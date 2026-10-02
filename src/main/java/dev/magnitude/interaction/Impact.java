@@ -49,7 +49,7 @@ public final class Impact {
         if (scale < (pressure ? 8 : 4)) return 0;
         double yaw = Math.toRadians(actor.getYRot());
         double halfWidth = scale * 0.09 + 0.35, halfLength = scale * 0.22 + 0.35;
-        float hardness = pressure ? (float)Math.min(8, dev.magnitude.core.Dimensions.size(actor)/16) : Float.MAX_VALUE;
+        float hardness = pressure ? (float)Math.min(8, dev.magnitude.core.Dimensions.size(actor)/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
         int changed = 0;
         for (int foot : new int[]{-1, 1}) {
             if (side != 0 && side != foot) continue;
@@ -64,6 +64,8 @@ public final class Impact {
                 if (!Rules.insideFootprint(x,z,yaw,halfWidth,halfLength)) continue;
                 double dx = pos.getX()+0.5-actor.getX(), dz = pos.getZ()+0.5-actor.getZ();
                 if (dx*dx+dz*dz > Magnitude.settings.impactRadius*Magnitude.settings.impactRadius) continue;
+                // Keep a small central support column so static load does not instantly make the player fall through its footprint.
+                if (pressure && dx*dx + dz*dz < 0.75 * 0.75) continue;
                 if (breakBlock(actor, pos, hardness)) changed++;
             }
         }
@@ -75,7 +77,7 @@ public final class Impact {
         if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || !actor.mayInteract(level, pos)) return false;
         var block = level.getBlockState(pos);
         float hardness = block.getDestroySpeed(level, pos);
-        if (block.isAir() || !block.getFluidState().isEmpty() || block.hasBlockEntity() || block.is(PROTECTED) || hardness < 0 || hardness > maximumHardness) return false;
+        if (block.isAir() || !block.getFluidState().isEmpty() || block.hasBlockEntity() || block.is(PROTECTED) || hardness < 0 || hardness > maximumHardness + 1.0e-5f) return false;
         if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, actor, pos, block, null) || !BLOCKS.take()) return false;
         if (!level.destroyBlock(pos, false, actor)) return false;
         PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level, actor, pos, block, null);

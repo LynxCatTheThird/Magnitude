@@ -58,6 +58,8 @@ public final class ScaleImpactTests {
             require(Dimensions.size(actor)==ScaleSafety.MINIMUM&&actor.getBbHeight()>0&&actor.getBbHeight()<0.000002,"tiny scale keeps positive real dimensions",passed);
             Dimensions.set(actor,ScaleSafety.MAXIMUM,0);
             require(Dimensions.size(actor)==ScaleSafety.MAXIMUM,"original default maximum 2^32 is accepted",passed);
+            require(ScaleTypes.JUMP_HEIGHT.getScaleData(actor).getScale()<=8&&ScaleTypes.JUMP_HEIGHT.getScaleData(actor).getScale()>1,"base scale immediately affects jump height",passed);
+            require(ScaleTypes.ATTACK.getScaleData(actor).getScale()<=64&&ScaleTypes.ATTACK.getScaleData(actor).getScale()>1,"base scale immediately affects attack power",passed);
             require(actor.getBbWidth()<=4.801&&actor.getBbHeight()<=14.401,"extreme player hitbox bounded independently of BASE",passed);
             require(ScaleTypes.MODEL_HEIGHT.getScaleData(actor).getScale()==ScaleSafety.MAXIMUM&&ScaleTypes.EYE_HEIGHT.getScaleData(actor).getScale()==ScaleSafety.MAXIMUM,"visual scale and eye height retain extreme value",passed);
             require(ScaleTypes.MOTION.getScaleData(actor).getScale()<=8&&ScaleTypes.STEP_HEIGHT.getScaleData(actor).getScale()<=8,"extreme movement and stepping capped",passed);

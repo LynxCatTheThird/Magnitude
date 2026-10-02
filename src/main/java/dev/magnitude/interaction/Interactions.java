@@ -30,6 +30,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
+import virtuoel.pehkui.util.ScaleUtils;
 
 public final class Interactions {
     private Interactions() {}
@@ -69,7 +70,7 @@ public final class Interactions {
         if (action<0 || action>5 || !request(player)) return false;
         return switch(action) {
             case 0 -> blow(player);
-            case 1 -> shock(player,Math.min(6,Dimensions.size(player)*0.3),false);
+            case 1 -> shock(player,Math.min(Magnitude.settings.impactRadius,Dimensions.size(player)*Magnitude.settings.impactScaleFactor),false);
             case 2,3 -> { if(!cooldown(player,10))yield false;release(player,action==3);yield true; }
             case 4 -> ability(player);
             case 5 -> { var target=aim(player,16);yield target!=null&&ride(player,target); }
@@ -111,7 +112,7 @@ public final class Interactions {
                 if (state.strideDistance >= stride) {
                     state.strideDistance %= stride;
                     Impact.feet(player, 0, false);
-                    if (Magnitude.settings.bodyDamage) damageSmall(player,player.getBoundingBox().inflate(0.1,0.25,0.1),2);
+                    if (Magnitude.settings.bodyDamage) damageSmall(player,player.getBoundingBox().inflate(0.1,0.25,0.1),scaledImpactDamage(player,Magnitude.settings.walkDamageFactor));
                 }
             }
         }
@@ -137,7 +138,7 @@ public final class Interactions {
             }
             if (state.initialized) {
                 if (player.onGround() && !state.grounded) {
-                    if(size>=4 && !player.getAbilities().flying && !player.isPassenger() && !player.isNoGravity() && (state.jumpImpact || state.downward < -0.1)) shock(player, Math.min(6, size * 0.3), true);
+                    if(size>=4 && !player.getAbilities().flying && !player.isPassenger() && !player.isNoGravity() && (state.jumpImpact || state.downward < -0.1)) shock(player, Math.min(Magnitude.settings.impactRadius, size * Magnitude.settings.impactScaleFactor), true);
                     state.jumpImpact=false;
                 }
                 if (size > state.previousSize + 0.05 && size >= 4) Impact.breakAround(player, player.position().add(0, Math.min(3, player.getBbHeight()/2), 0), Math.min(6, player.getBbWidth()/2), Math.min(6, player.getBbHeight()/2));
@@ -239,7 +240,7 @@ public final class Interactions {
     }
     public static boolean crush(ServerPlayer player, LivingEntity target) {
         if (!player.isShiftKeyDown() || !player.getMainHandItem().isEmpty() || !Magnitude.settings.bodyDamage || !within(player,target,Math.min(16,Math.max(4,Dimensions.size(player)*2))) || !Rules.ratio(Dimensions.size(player),Dimensions.size(target),4) || !canDamage(player,target) || !cooldown(player,20)) return false;
-        float damage=(float)Math.clamp(Dimensions.size(player)/Math.max(0.25,Dimensions.size(target)),1,20);
+        float damage=(float)Math.clamp(ScaleUtils.getAttackScale(player) * Dimensions.size(player) / Math.max(0.25,Dimensions.size(target)),1,40);
         return target.hurtServer(player.level(),player.damageSources().playerAttack(player),damage);
     }
     public static boolean canDamage(ServerPlayer actor, LivingEntity target) {
@@ -255,10 +256,13 @@ public final class Interactions {
     public static boolean shock(ServerPlayer player,double radius,boolean landing) {
         if (Dimensions.size(player)<4 || !player.onGround()) return false;
         if (!landing && !cooldown(player,20)) return false;
-        if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(radius,0.75,radius), landing?4:2);
+        if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(radius,0.75,radius), scaledImpactDamage(player,landing ? Magnitude.settings.landingDamageFactor : Magnitude.settings.walkDamageFactor));
         Impact.breakAround(player,player.position().add(0,-0.5,0),radius,1.5);
         player.level().sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,player.getX(),player.getY()+0.1,player.getZ(),12,radius/2,0.1,radius/2,0.03);
         return true;
+    }
+    private static float scaledImpactDamage(ServerPlayer player,double base) {
+        return (float)Math.clamp(base * ScaleUtils.getAttackScale(player), 0, 100);
     }
     public static boolean blow(ServerPlayer player) {
         if (Dimensions.size(player)<2 || !cooldown(player,20)) return false;

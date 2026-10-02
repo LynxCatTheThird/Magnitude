@@ -64,6 +64,11 @@ public final class Dimensions {
         data.setPersistence(true);
         data.setScaleTickDelay(Math.clamp(ticks, 0, 1200));
         if (ticks == 0) data.setScale((float)bounded); else data.setTargetScale((float)bounded);
+        // Pehkui's dependent scale caches are not all invalidated by a direct BASE write.
+        // Refresh every gameplay scale immediately so commands do not require a restart/tick.
+        for (var type : virtuoel.pehkui.api.ScaleRegistries.SCALE_TYPES.values()) {
+            if (type != ScaleTypes.BASE) type.getScaleData(entity).onUpdate();
+        }
         return true;
     }
     public static boolean settled(Entity entity) { var data=ScaleTypes.BASE.getScaleData(entity);return data.getBaseScale()==data.getTargetScale(); }

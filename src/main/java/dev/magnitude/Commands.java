@@ -31,6 +31,10 @@ public final class Commands {
         }));
         root.then(literal("reset").executes(c -> {Dimensions.reset(c.getSource().getPlayerOrException());return message(c,"reset");}));
         for(String operation:new String[]{"set","multiply","add","height"}) root.then(literal(operation).then(argument("value",DoubleArgumentType.doubleArg()).executes(c -> resize(c,operation,20)).then(argument("ticks",IntegerArgumentType.integer(0,1200)).executes(c -> resize(c,operation,IntegerArgumentType.getInteger(c,"ticks"))))));
+        var scale=literal("scale");
+        scale.then(literal("get").executes(Commands::get).then(literal("reset").executes(c -> {Dimensions.reset(c.getSource().getPlayerOrException());return message(c,"reset");})));
+        for(String operation:new String[]{"set","multiply","add","height"}) scale.then(literal(operation).then(argument("value",DoubleArgumentType.doubleArg()).executes(c -> resize(c,operation,20)).then(argument("ticks",IntegerArgumentType.integer(0,1200)).executes(c -> resize(c,operation,IntegerArgumentType.getInteger(c,"ticks"))))));
+        root.then(scale);
         var consent=literal("consent");
         for(String permission:new String[]{"resize","carry"}) consent.then(literal(permission).then(argument("enabled",BoolArgumentType.bool()).executes(c -> {
             var state=EntityState.of(c.getSource().getPlayerOrException());boolean enabled=BoolArgumentType.getBool(c,"enabled");
@@ -39,6 +43,15 @@ public final class Commands {
         })));
         root.then(consent);
         root.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).terrainEnabled=BoolArgumentType.getBool(c,"enabled");return message(c,"terrain");})));
+        var physics=literal("physics");
+        physics.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).terrainEnabled=BoolArgumentType.getBool(c,"enabled");return message(c,"terrain");})));
+        physics.then(literal("pressure").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {Magnitude.settings.standingPressure=BoolArgumentType.getBool(c,"enabled");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("damage").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {Magnitude.settings.bodyDamage=BoolArgumentType.getBool(c,"enabled");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("walkDamage").then(argument("factor",DoubleArgumentType.doubleArg(0,40)).executes(c -> {Magnitude.settings.walkDamageFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("landingDamage").then(argument("factor",DoubleArgumentType.doubleArg(0,80)).executes(c -> {Magnitude.settings.landingDamageFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("pressureHardness").then(argument("factor",DoubleArgumentType.doubleArg(1,64)).executes(c -> {Magnitude.settings.pressureHardnessFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("impactScale").then(argument("factor",DoubleArgumentType.doubleArg(0.05,2)).executes(c -> {Magnitude.settings.impactScaleFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
+        root.then(physics);
         root.then(literal("release").executes(c -> action(c,2)));
         root.then(literal("throw").executes(c -> action(c,3)));
         root.then(literal("blow").executes(c -> action(c,0)));
@@ -90,6 +103,9 @@ public final class Commands {
         var player=c.getSource().getPlayerOrException();double value=DoubleArgumentType.getDouble(c,"value");double current=Dimensions.target(player);
         double result=switch(operation){case "multiply"->current*value;case "add"->current+value;case "height"->value/1.8;default->value;};
         return Dimensions.change(player,player,result,ticks)?message(c,"changed"):denied(c);
+    }
+    private static int get(CommandContext<CommandSourceStack> c)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        var p=c.getSource().getPlayerOrException();c.getSource().sendSuccess(() -> Component.translatable("message.magnitude.size",Dimensions.size(p),Dimensions.target(p),p.getBbHeight()),false);return 1;
     }
     private static int configureTool(CommandContext<CommandSourceStack> c,String field,double value)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         var p=c.getSource().getPlayerOrException();var stack=p.getMainHandItem();if(!stack.is(Content.TUNER))return denied(c);
