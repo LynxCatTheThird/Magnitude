@@ -46,6 +46,7 @@ public final class Impact {
     public static int kick(ServerPlayer actor, Vec3 movement) {
         if (!allowed(actor) || !actor.onGround() || movement.horizontalDistanceSqr() < 1.0e-8) return 0;
         double size = Math.clamp(dev.magnitude.core.Dimensions.size(actor), 1, 32);
+        if (size < 4) return 0;
         Vec3 direction = new Vec3(movement.x, 0, movement.z).normalize();
         Vec3 center = actor.position().add(direction.scale(Math.max(0.6, Math.min(2.5, size * 0.3))));
         return breakAround(actor, center.add(0, Math.min(1.2, actor.getBbHeight() * 0.45), 0), Math.min(1.5, 0.45 + size * 0.08), 1.2);
