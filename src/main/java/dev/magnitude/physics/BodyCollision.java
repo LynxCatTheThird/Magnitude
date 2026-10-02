@@ -33,6 +33,7 @@ public final class BodyCollision {
     }
     public static boolean permitted(Player player,Vec3 wanted) {
         if(!Double.isFinite(wanted.lengthSqr())) {fallback(player);return false;}
+        if(wanted.lengthSqr()==0)return true;
         var parts=PlayerBody.parts(player,player.position());AABB region=parts.getFirst().bounds();
         for(var part:parts)region=region.minmax(part.bounds());
         region=region.expandTowards(wanted).expandTowards(0,Math.min(4.8,player.maxUpStep()),0).inflate(1e-7);
@@ -60,6 +61,7 @@ public final class BodyCollision {
         long now=player.level().getGameTime();
         if(state.physicsTick!=now) { state.physicsTick=now;state.physicsCells=0;state.physicsPairs=0;state.proxyFallback=false; }
         if(!Double.isFinite(wanted.lengthSqr()))return fallback(player,wanted);
+        if(wanted.lengthSqr()==0)return Vec3.ZERO;
         List<BodyBox> parts=PlayerBody.parts(player,player.position());
         AABB bounds=parts.getFirst().bounds();
         for(BodyBox part:parts)bounds=bounds.minmax(part.bounds());
@@ -80,6 +82,7 @@ public final class BodyCollision {
         for(var entity:entities.entities())if(player.canCollideWith(entity))obstacles.add(entity.getBoundingBox());
         var border=player.level().getWorldBorder();
         if(border.isInsideCloseToBorder(player,swept))obstacles.addAll(border.getCollisionShape().toAabbs());
+        if(obstacles.isEmpty())return wanted;
         // Charge all SAT pairs including empty/failed contacts, before doing any work.
         long pairs=(long)obstacles.size()*parts.size()*12;
         if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs))return fallback(player,wanted);
@@ -106,7 +109,12 @@ public final class BodyCollision {
         state.movementDenied=true;return Vec3.ZERO;
     }
     private static void fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.movementDenied=true; }
-    private static List<BodyBox> shift(List<BodyBox> parts,Vec3 delta) { return parts.stream().map(p->p.move(delta)).toList(); }
+    private static List<BodyBox> shift(List<BodyBox> parts,Vec3 delta) {
+        if(delta.lengthSqr()==0)return parts;
+        List<BodyBox> result=new ArrayList<>(parts.size());
+        for(BodyBox part:parts)result.add(part.move(delta));
+        return result;
+    }
     private static Vec3 clip(List<BodyBox> parts,List<AABB> obstacles,Vec3 wanted) {
         double y=axis(parts,obstacles,new Vec3(0,wanted.y,0));
         Vec3 result=new Vec3(0,wanted.y*y,0);
@@ -119,7 +127,10 @@ public final class BodyCollision {
     private static double axis(List<BodyBox> parts,List<AABB> obstacles,Vec3 movement) {
         if(movement.lengthSqr()==0)return 1;
         double fraction=1;
-        for(BodyBox part:parts)for(AABB obstacle:obstacles)fraction=Math.min(fraction,part.sweep(obstacle,movement));
+        for(BodyBox part:parts)for(AABB obstacle:obstacles) {
+            fraction=Math.min(fraction,part.sweep(obstacle,movement));
+            if(fraction==0)return 0;
+        }
         return fraction;
     }
 }

@@ -44,6 +44,7 @@ public final class EntityState {
     public net.minecraft.resources.Identifier poseAdapter;
     public long physicsRevision;
     public long physicsTick = Long.MIN_VALUE;
+    public long nextProxyGrowth = Long.MIN_VALUE;
     public int physicsCells;
     public int physicsPairs;
     public long lastFluidTick = Long.MIN_VALUE;
@@ -81,6 +82,7 @@ public final class EntityState {
         posePhase = 0;
         jumpSequence = 0;
         physicsTick = Long.MIN_VALUE;
+        nextProxyGrowth = Long.MIN_VALUE;
         physicsRevision = 0;
         pressureX = pressureZ = Double.NaN; pressureSize = -1;
     }

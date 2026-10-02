@@ -29,6 +29,10 @@ public final class LocalProxy {
     }
     public static void update(ServerPlayer player) {
         var state=EntityState.of(player);
+        double size=dev.magnitude.core.Dimensions.size(player);
+        // Small/ordinary entities already fit inside their current proxy. Movement still
+        // validates chunks every time; growing an unused proxy only wastes world queries.
+        if(size<=state.proxyLimit)return;
         // Search a dimension budget, independent of the (possibly enormous) BASE value.
         double low=0,high=32;
         for(int i=0;i<12;i++) {
@@ -40,6 +44,9 @@ public final class LocalProxy {
         // Shrink immediately for missing regions; grow gradually and only into verified free space.
         next=Math.min(next,state.proxyLimit+0.25);
         if(next>state.proxyLimit) {
+            long now=player.level().getGameTime();
+            if(now<state.nextProxyGrowth)return;
+            state.nextProxyGrowth=now+5;
             AABB expansion=box(player,next);
             if(!PhysicsWork.cells(cells(expansion)) || !free(player,expansion))next=state.proxyLimit;
         }

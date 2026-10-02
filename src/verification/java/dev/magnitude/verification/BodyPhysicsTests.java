@@ -41,6 +41,11 @@ public final class BodyPhysicsTests {
         actor.setPos(6000.5,220,6000.5);Dimensions.set(actor,1,0);ready(actor);
         boolean attached=false;
         try {
+            PhysicsWork.beginTick();LocalProxy.update(actor);
+            require(PhysicsWork.cells(131072),"ordinary player proxy update spends no collision traversal budget",passed);
+            PhysicsWork.beginTick();
+            require(BodyCollision.move(actor,Vec3.ZERO).equals(Vec3.ZERO) && PhysicsWork.cells(131072),"zero displacement skips body collision traversal",passed);
+            PhysicsWork.beginTick();
             require(PlayerBody.parts(actor,actor.position()).size()==6,"body geometry uses six internal parts",passed);
             var head=PlayerBody.parts(actor,actor.position()).getFirst();
             require(head.ray(head.center(),head.center().add(0,0,2)).orElseThrow().equals(head.center()),"ray starting inside a body part hits at its origin",passed);
@@ -98,8 +103,11 @@ public final class BodyPhysicsTests {
             require(Impact.feet(actor,0,true)==0,"airborne pressure rejected even with stale support state",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-6,-1,-6),ROOT.offset(6,-1,6)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
             Dimensions.set(actor,32,0);ready(actor);
-            for(int i=0;i<40;i++){PhysicsWork.beginTick();EntityQueries.beginTick();LocalProxy.update(actor);}
+            for(int i=0;i<40;i++){PhysicsWork.beginTick();EntityQueries.beginTick();EntityState.of(actor).nextProxyGrowth=Long.MIN_VALUE;LocalProxy.update(actor);}
             require(EntityState.of(actor).proxyLimit>8 && actor.getBbWidth()>4.8,"loaded free space allows proxy larger than previous fixed cap",passed);
+            double growthLimit=EntityState.of(actor).proxyLimit;
+            PhysicsWork.beginTick();EntityQueries.beginTick();LocalProxy.update(actor);
+            require(EntityState.of(actor).proxyLimit==growthLimit,"repeated proxy updates cannot repeat growth scan before deadline",passed);
             require(LocalProxy.cells(actor.getBoundingBox())<LocalProxy.CELLS_PER_MOVE,"dynamic proxy remains bounded by voxel traversal cost",passed);
             double proxy=EntityState.of(actor).proxyLimit;
             Dimensions.set(actor,ScaleSafety.MAXIMUM,0);

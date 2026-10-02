@@ -2,12 +2,29 @@ package dev.magnitude.physics;
 
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Oriented box with continuous SAT against an axis-aligned obstacle. */
-public record BodyBox(Vec3 center, Vec3 half, Vec3 x, Vec3 y, Vec3 z) {
-    public BodyBox move(Vec3 delta) { return new BodyBox(center.add(delta),half,x,y,z); }
+public final class BodyBox {
+    private final Vec3 center, half, x, y, z;
+    // Immutable orientation data shared by translated boxes. Each row contains an axis
+    // and the body's projected radius; SAT queries allocate no temporary axes/vectors.
+    private double[][] axes;
+    public BodyBox(Vec3 center, Vec3 half, Vec3 x, Vec3 y, Vec3 z) {
+        this(center,half,x,y,z,null);
+    }
+    private BodyBox(Vec3 center, Vec3 half, Vec3 x, Vec3 y, Vec3 z,double[][] axes) {
+        this.center=center;this.half=half;this.x=x;this.y=y;this.z=z;this.axes=axes;
+    }
+    public Vec3 center(){return center;}
+    public Vec3 half(){return half;}
+    public Vec3 x(){return x;}
+    public Vec3 y(){return y;}
+    public Vec3 z(){return z;}
+    public BodyBox move(Vec3 delta) { return new BodyBox(center.add(delta),half,x,y,z,axes()); }
+    private double[][] axes() {
+        if(axes==null)axes=axes(half,x,y,z);
+        return axes;
+    }
     public AABB bounds() {
         double rx=Math.abs(x.x)*half.x+Math.abs(y.x)*half.y+Math.abs(z.x)*half.z;
         double ry=Math.abs(x.y)*half.x+Math.abs(y.y)*half.y+Math.abs(z.y)*half.z;
@@ -15,21 +32,26 @@ public record BodyBox(Vec3 center, Vec3 half, Vec3 x, Vec3 y, Vec3 z) {
         return new AABB(center.x-rx,center.y-ry,center.z-rz,center.x+rx,center.y+ry,center.z+rz);
     }
     public boolean intersects(AABB obstacle) {
-        Vec3 separation=center.subtract(obstacle.getCenter());
-        Vec3 extent=new Vec3(obstacle.getXsize()/2,obstacle.getYsize()/2,obstacle.getZsize()/2);
-        for(Vec3 axis:axes()) {
-            if(axis.lengthSqr()<1e-16)continue;
-            double radius=Math.abs(axis.dot(x))*half.x+Math.abs(axis.dot(y))*half.y+Math.abs(axis.dot(z))*half.z
-                +Math.abs(axis.x)*extent.x+Math.abs(axis.y)*extent.y+Math.abs(axis.z)*extent.z;
-            if(Math.abs(separation.dot(axis))>=radius-1e-9)return false;
+        double sx=center.x-(obstacle.minX+obstacle.maxX)/2,sy=center.y-(obstacle.minY+obstacle.maxY)/2,sz=center.z-(obstacle.minZ+obstacle.maxZ)/2;
+        double ex=obstacle.getXsize()/2,ey=obstacle.getYsize()/2,ez=obstacle.getZsize()/2;
+        for(double[] axis:axes()) {
+            double radius=axis[3]+Math.abs(axis[0])*ex+Math.abs(axis[1])*ey+Math.abs(axis[2])*ez;
+            if(Math.abs(sx*axis[0]+sy*axis[1]+sz*axis[2])>=radius-1e-9)return false;
         }
         return true;
     }
-    private List<Vec3> axes() {
+    private static double[][] axes(Vec3 half,Vec3 x,Vec3 y,Vec3 z) {
         Vec3[] world={new Vec3(1,0,0),new Vec3(0,1,0),new Vec3(0,0,1)};
-        List<Vec3> axes=new ArrayList<>(15);axes.addAll(List.of(world));axes.addAll(List.of(x,y,z));
-        for(Vec3 local:List.of(x,y,z))for(Vec3 axis:world)axes.add(local.cross(axis));
-        return axes;
+        Vec3[] candidates=new Vec3[15];int n=0;
+        for(Vec3 axis:world)candidates[n++]=axis;
+        for(Vec3 axis:new Vec3[]{x,y,z})candidates[n++]=axis;
+        for(Vec3 local:new Vec3[]{x,y,z})for(Vec3 axis:world)candidates[n++]=local.cross(axis);
+        double[][] result=new double[15][];n=0;
+        for(Vec3 axis:candidates) {
+            if(axis.lengthSqr()<1e-16)continue;
+            result[n++]=new double[]{axis.x,axis.y,axis.z,Math.abs(axis.dot(x))*half.x+Math.abs(axis.dot(y))*half.y+Math.abs(axis.dot(z))*half.z};
+        }
+        return java.util.Arrays.copyOf(result,n);
     }
     public java.util.Optional<Vec3> ray(Vec3 start,Vec3 end) {
         Vec3 a=start.subtract(center),b=end.subtract(center);
@@ -41,17 +63,12 @@ public record BodyBox(Vec3 center, Vec3 half, Vec3 x, Vec3 y, Vec3 z) {
     }
     /** First contact fraction; pre-existing penetration may move out without trapping the player. */
     public double sweep(AABB obstacle, Vec3 delta) {
-        Vec3 separation=center.subtract(obstacle.getCenter());
-        Vec3 extent=new Vec3(obstacle.getXsize()/2,obstacle.getYsize()/2,obstacle.getZsize()/2);
-        Vec3[] world={new Vec3(1,0,0),new Vec3(0,1,0),new Vec3(0,0,1)};
-        List<Vec3> axes=new ArrayList<>(15);axes.addAll(List.of(world));axes.addAll(List.of(x,y,z));
-        for(Vec3 local:List.of(x,y,z)) for(Vec3 axis:world) axes.add(local.cross(axis));
+        double sx=center.x-(obstacle.minX+obstacle.maxX)/2,sy=center.y-(obstacle.minY+obstacle.maxY)/2,sz=center.z-(obstacle.minZ+obstacle.maxZ)/2;
+        double ex=obstacle.getXsize()/2,ey=obstacle.getYsize()/2,ez=obstacle.getZsize()/2;
         double enter=0,leave=1;boolean penetrating=true;
-        for(Vec3 axis:axes) {
-            if(axis.lengthSqr()<1e-16)continue;
-            double radius=Math.abs(axis.dot(x))*half.x+Math.abs(axis.dot(y))*half.y+Math.abs(axis.dot(z))*half.z
-                +Math.abs(axis.x)*extent.x+Math.abs(axis.y)*extent.y+Math.abs(axis.z)*extent.z;
-            double distance=separation.dot(axis),velocity=delta.dot(axis);
+        for(double[] axis:axes()) {
+            double radius=axis[3]+Math.abs(axis[0])*ex+Math.abs(axis[1])*ey+Math.abs(axis[2])*ez;
+            double distance=sx*axis[0]+sy*axis[1]+sz*axis[2],velocity=delta.x*axis[0]+delta.y*axis[1]+delta.z*axis[2];
             if(Math.abs(distance)>=radius-1e-8)penetrating=false;
             if(Math.abs(velocity)<1e-12) { if(Math.abs(distance)>=radius-1e-8)return 1;continue; }
             double a=(-radius-distance)/velocity,b=(radius-distance)/velocity;
