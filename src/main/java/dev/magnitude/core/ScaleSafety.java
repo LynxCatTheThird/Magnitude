@@ -26,7 +26,7 @@ public final class ScaleSafety {
             @Override public float modifyScale(ScaleData data, float scale, float delta) { return bounded(data,scale); }
             @Override public float modifyPrevScale(ScaleData data, float scale) { return bounded(data,scale); }
             private float bounded(ScaleData data, float scale) {
-                float limit=maximum;
+                float limit=name.equals("collision") && data.getEntity() instanceof net.minecraft.world.entity.player.Player ? (float)EntityState.of(data.getEntity()).proxyLimit : maximum;
                 if (name.equals("collision") && data.getEntity() instanceof net.minecraft.world.entity.LivingEntity living && !virtuoel.pehkui.api.PehkuiConfig.COMMON.applyVanillaScale.get()) limit/=living.getScale();
                 return Float.isFinite(scale) ? Math.clamp(scale,(float)MINIMUM,limit) : 1;
             }

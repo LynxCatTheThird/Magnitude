@@ -44,8 +44,8 @@ public final class Impact {
     }
     /** Two oriented boot contacts; side -1 or +1 selects one alternating step, 0 both. */
     public static int feet(ServerPlayer actor, int side, boolean pressure) {
-        if (!allowed(actor) || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
-        double scale = Math.min(8, dev.magnitude.core.Dimensions.size(actor));
+        if (!allowed(actor) || !actor.onGround() || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
+        double scale = Math.min(EntityState.of(actor).proxyLimit, dev.magnitude.core.Dimensions.size(actor));
         if (scale < (pressure ? 8 : 4)) return 0;
         double yaw = Math.toRadians(actor.getYRot());
         double halfWidth = scale * 0.09 + 0.35, halfLength = scale * 0.22 + 0.35;
@@ -53,7 +53,8 @@ public final class Impact {
         int changed = 0;
         for (int foot : new int[]{-1, 1}) {
             if (side != 0 && side != foot) continue;
-            Vec3 center = actor.position().add(Math.cos(yaw)*foot*scale*0.2, -0.01, Math.sin(yaw)*foot*scale*0.2);
+            if ((dev.magnitude.physics.PlayerBody.support(actor) & (foot<0?1:2))==0) continue;
+            Vec3 center = dev.magnitude.physics.PlayerBody.foot(actor,foot);
             BlockPos origin = BlockPos.containing(center);
             for (BlockPos offset : OFFSETS) {
                 if (offset.getY() != 0) continue;

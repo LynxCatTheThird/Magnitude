@@ -86,16 +86,20 @@ public final class Interactions {
         if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding();EntityState.of(player).initialized=false;EntityState.of(player).jumpImpact=false; }
     }
     public static void jump(ServerPlayer player) {
-        if (!player.isAlive() || player.isSpectator() || !player.onGround() || player.getAbilities().flying || player.isPassenger() || player.isNoGravity() || Dimensions.size(player)<4) return;
+        if (!player.isAlive() || player.isSpectator() || !player.onGround() || player.getAbilities().flying || player.isPassenger() || player.isNoGravity()) return;
         EntityState state = EntityState.of(player);
         long now = player.level().getGameTime();
         if (state.nextJumpImpact > now) return;
         state.nextJumpImpact = now + 5;
         state.jumpImpact = true;
+        dev.magnitude.physics.BodyPoses.update(player,0,true);
         Impact.feet(player, 0, false);
+        Messages.syncPhysics(player);
     }
     public static void groundContact(ServerPlayer player) {
         EntityState state = EntityState.of(player);
+        double travelled=state.previousPosition==null ? 0 : player.position().subtract(state.previousPosition).horizontalDistance();
+        dev.magnitude.physics.BodyPoses.update(player,travelled,false);
         if (!player.onGround() || player.isPassenger() || player.getAbilities().flying || player.isNoGravity()) { state.strideDistance=0;return; }
         if (state.initialized && state.previousPosition != null) {
             Vec3 movement = player.position().subtract(state.previousPosition);
@@ -106,8 +110,7 @@ public final class Interactions {
                 double stride = Math.max(0.4, Math.min(8, Dimensions.size(player))*0.4);
                 if (state.strideDistance >= stride) {
                     state.strideDistance %= stride;
-                    state.leftFoot = !state.leftFoot;
-                    Impact.feet(player, state.leftFoot ? -1 : 1, false);
+                    Impact.feet(player, 0, false);
                     if (Magnitude.settings.bodyDamage) damageSmall(player,player.getBoundingBox().inflate(0.1,0.25,0.1),2);
                 }
             }
@@ -118,6 +121,7 @@ public final class Interactions {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!player.isAlive() || player.isSpectator()) { release(player, false); continue; }
             EntityState state = EntityState.of(player);
+            dev.magnitude.physics.LocalProxy.update(player);
             double size = Dimensions.size(player);
             if (!Double.isFinite(size)) { Dimensions.reset(player); continue; }
             if (state.randomPeriod >= 20 && (Magnitude.settings.allowSelfChange || Dimensions.operator(player)) && --state.nextRandom <= 0) {
@@ -138,7 +142,8 @@ public final class Interactions {
                 }
                 if (size > state.previousSize + 0.05 && size >= 4) Impact.breakAround(player, player.position().add(0, Math.min(3, player.getBbHeight()/2), 0), Math.min(6, player.getBbWidth()/2), Math.min(6, player.getBbHeight()/2));
             }
-            if(size>=4) groundContact(player);else state.strideDistance=0;
+            groundContact(player);
+            Messages.syncPhysics(player);
             state.previousPosition = player.position();
             state.initialized = true;
             state.grounded = player.onGround();
@@ -170,8 +175,14 @@ public final class Interactions {
             if (!(candidate instanceof LivingEntity living) || !candidate.isAlive() || candidate.isSpectator()) continue;
             AABB box=candidate.getBoundingBox().inflate(candidate.getPickRadius());
             var intersection=box.clip(start,end);
+            boolean modelled=false;
+            if(candidate instanceof Player model && dev.magnitude.physics.BodyCollision.active(model)) {
+                modelled=true;
+                intersection=dev.magnitude.physics.PlayerBody.parts(model,model.position()).stream().map(part->part.ray(start,end)).flatMap(java.util.Optional::stream).min(java.util.Comparator.comparingDouble(start::distanceToSqr));
+                if(intersection.isEmpty())continue;
+            }
             if (!box.contains(start) && intersection.isEmpty()) continue;
-            double separation=box.contains(start)?0:start.distanceToSqr(intersection.orElseThrow());
+            double separation=!modelled && box.contains(start)?0:start.distanceToSqr(intersection.orElseThrow());
             if (separation<nearest) { nearest=separation;hit=living; }
         }
         return hit;

@@ -33,6 +33,19 @@ public final class EntityState {
     public boolean leftFoot;
     public long nextJumpImpact;
     public boolean jumpImpact;
+    public double proxyLimit = 8;
+    public boolean proxyFallback;
+    public boolean movementDenied;
+    public double posePhase;
+    public int jumpSequence;
+    public long poseStart;
+    public dev.magnitude.physics.BodyPose pose = dev.magnitude.physics.BodyPose.IDLE;
+    public dev.magnitude.physics.BodyPose previousPose = dev.magnitude.physics.BodyPose.IDLE;
+    public net.minecraft.resources.Identifier poseAdapter;
+    public long physicsRevision;
+    public long physicsTick = Long.MIN_VALUE;
+    public int physicsCells;
+    public int physicsPairs;
     public long lastFluidTick = Long.MIN_VALUE;
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
@@ -59,6 +72,14 @@ public final class EntityState {
         previousPosition = null;
         strideDistance = 0;
         jumpImpact = false;
+        proxyLimit = 8;
+        proxyFallback = false;
+        pose = dev.magnitude.physics.BodyPose.IDLE;
+        poseAdapter = null;
+        posePhase = 0;
+        jumpSequence = 0;
+        physicsTick = Long.MIN_VALUE;
+        physicsRevision = 0;
     }
     public void save(ValueOutput output, Entity entity) {
         ValueOutput data = output.child("magnitude");
