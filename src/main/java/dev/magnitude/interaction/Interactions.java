@@ -101,7 +101,9 @@ public final class Interactions {
         EntityState state = EntityState.of(player);
         double travelled=state.previousPosition==null ? 0 : player.position().subtract(state.previousPosition).horizontalDistance();
         dev.magnitude.physics.BodyPoses.update(player,travelled,false);
-        if (!player.onGround() || player.isPassenger() || player.getAbilities().flying || player.isNoGravity()) { state.strideDistance=0;return; }
+        if (!player.onGround() || player.isPassenger() || player.getAbilities().flying || player.isNoGravity()) {
+            state.strideDistance=0; state.pressureX=state.pressureZ=Double.NaN; state.pressureSize=-1; return;
+        }
         if (state.initialized && state.previousPosition != null) {
             Vec3 movement = player.position().subtract(state.previousPosition);
             double distance = movement.horizontalDistance();
@@ -116,14 +118,13 @@ public final class Interactions {
                 }
             }
         }
-        // Static pressure is a load check, not a timer that should endlessly mine the floor.
-        // Landing and movement already apply their own impacts; require a recent downward load
-        // before the periodic standing check can remove another support layer.
         double size = Dimensions.size(player);
         boolean newLoad = state.pressureSize < size - 0.05
             || !Double.isFinite(state.pressureX)
             || Math.hypot(player.getX() - state.pressureX, player.getZ() - state.pressureZ) > 0.5;
-        if (Magnitude.settings.standingPressure && player.tickCount % 20 == 0 && newLoad) {
+        // Static pressure is event driven: initial support, landing, movement to a new support,
+        // or a size change. There is no periodic mining timer.
+        if (Magnitude.settings.standingPressure && newLoad) {
             Impact.feet(player,0,true);
             state.pressureX = player.getX(); state.pressureZ = player.getZ(); state.pressureSize = size;
         }
