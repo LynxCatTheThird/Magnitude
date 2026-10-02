@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "magnitude-verification",
+  "name": "Magnitude Verification",
+  "version": "1.0.0",
+  "environment": "*",
+  "entrypoints": {"main": ["dev.magnitude.verification.RuntimeTests"]},
+  "depends": {"magnitude": "*"}
+}

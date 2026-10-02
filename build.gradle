@@ -46,4 +46,30 @@ tasks.register('ruleTest', JavaExec) {
 test {
     failOnNoDiscoveredTests = false
 }
-check.dependsOn ruleTest
+tasks.named('runVerificationServer') {
+    timeout = java.time.Duration.ofMinutes(2)
+    systemProperty 'magnitude.verification.fail', providers.gradleProperty('verificationFailure').getOrElse('false')
+    doFirst {
+        def directory = file('.local/verification')
+        directory.mkdirs()
+        file('.local/verification/results.json').delete()
+        file('.local/verification/eula.txt').text = 'eula=true\n'
+        file('.local/verification/server.properties').text = '''server-ip=127.0.0.1
+server-port=0
+online-mode=false
+level-name=test-world
+view-distance=2
+simulation-distance=2
+spawn-protection=0
+pause-when-empty-seconds=0
+max-tick-time=60000
+'''
+    }
+    doLast {
+        def result = file('.local/verification/results.json')
+        if (!result.exists()) throw new GradleException('Verification server exited without a test result')
+        def report = new groovy.json.JsonSlurper().parse(result)
+        if (report.success != true) throw new GradleException("Runtime verification failed: ${report.failure}")
+    }
+}
+check.dependsOn ruleTest, tasks.named('runVerificationServer')
