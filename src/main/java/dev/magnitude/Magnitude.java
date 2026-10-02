@@ -25,7 +25,7 @@ public final class Magnitude implements ModInitializer {
         settings = Settings.load();
         Content.register();
         Interactions.register();
-        ServerTickEvents.START_SERVER_TICK.register(server -> dev.magnitude.interaction.Impact.beginTick());
+        ServerTickEvents.START_SERVER_TICK.register(server -> {dev.magnitude.interaction.Impact.beginTick();dev.magnitude.interaction.EntityQueries.beginTick();});
         ServerTickEvents.END_SERVER_TICK.register(Interactions::tick);
         ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> EntityState.of(entity).initialized = false);
         UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> entity instanceof LivingEntity living && player instanceof ServerPlayer server && Interactions.toolUse(server, living, hand) ? InteractionResult.SUCCESS : InteractionResult.PASS);

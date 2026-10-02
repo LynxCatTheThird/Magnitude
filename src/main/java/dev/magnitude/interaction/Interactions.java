@@ -36,27 +36,54 @@ public final class Interactions {
     public static void register() {
         Messages.register();
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            release(handler.player, false);
-            handler.player.stopRiding();
+            detach(handler.player);
         });
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> {
-            if (entity instanceof ServerPlayer player && EntityState.of(player).carrying) release(player, false);
+            detach(entity);
         });
+        net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> detach(entity));
         ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, player, alive) -> {
             EntityState old = EntityState.of(oldPlayer), state = EntityState.of(player);
-            state.acceptResize = old.acceptResize;
-            state.acceptCarry = old.acceptCarry;
-            state.carryPosition = old.carryPosition;
-            if (alive || Magnitude.settings.keepSizeAfterDeath) Dimensions.set(player, Dimensions.size(oldPlayer), 0);
+            detach(oldPlayer);
+            state.copyPersistentFrom(old);
+            if (alive || Magnitude.settings.keepSizeAfterDeath) virtuoel.pehkui.util.ScaleUtils.loadScale(player, oldPlayer);
             else Dimensions.reset(player);
         });
     }
     public static boolean cooldown(ServerPlayer player, int ticks) {
-        int now = player.level().getServer().getTickCount();
+        long now = player.level().getGameTime();
         EntityState state = EntityState.of(player);
         if (state.nextAction > now) return false;
         state.nextAction = now + Math.max(1, ticks);
         return true;
+    }
+    public static boolean request(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator()) return false;
+        EntityState state=EntityState.of(player);
+        long now=player.level().getGameTime();
+        if (state.nextRequest>now || state.nextAction>now) return false;
+        state.nextRequest=now+2;
+        return true;
+    }
+    public static boolean action(ServerPlayer player, int action) {
+        if (action<0 || action>5 || !request(player)) return false;
+        return switch(action) {
+            case 0 -> blow(player);
+            case 1 -> shock(player,Math.min(6,Dimensions.size(player)*0.3),false);
+            case 2,3 -> { if(!cooldown(player,10))yield false;release(player,action==3);yield true; }
+            case 4 -> ability(player);
+            case 5 -> { var target=aim(player,16);yield target!=null&&ride(player,target); }
+            default -> false;
+        };
+    }
+    public static boolean pickup(ServerPlayer player) {
+        if (!request(player)) return false;
+        var target=aim(player,16);
+        return target!=null&&carry(player,target);
+    }
+    public static void detach(Entity entity) {
+        if (entity.getVehicle() instanceof ServerPlayer carrier && EntityState.of(carrier).carrying) release(carrier,false);
+        if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding(); }
     }
     public static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -70,7 +97,11 @@ public final class Interactions {
                 Dimensions.set(player, value, 20);
             }
             if (state.carrying && player.getFirstPassenger() == null) { state.carrying = false; Messages.syncCarry(player); }
-            if (state.carrying && player.getFirstPassenger() != null && !Rules.ratio(size, Dimensions.size(player.getFirstPassenger()), 2)) release(player, false);
+            if (state.carrying && player.getFirstPassenger() != null) {
+                Entity passenger=player.getFirstPassenger();
+                if (!passenger.isAlive() || passenger.isSpectator() || !Rules.ratio(size,Dimensions.size(passenger),2)
+                    || (state.riderInitiated ? !state.acceptCarry : passenger instanceof Player && !EntityState.of(passenger).acceptCarry)) release(player,false);
+            }
             if (state.initialized) {
                 if (size >= 4 && player.onGround() && !state.grounded && state.downward < -0.1) shock(player, Math.min(6, size * 0.3), true);
                 if (size > state.previousSize + 0.05 && size >= 4) Impact.breakAround(player, player.position().add(0, Math.min(3, player.getBbHeight()/2), 0), Math.min(6, player.getBbWidth()/2), Math.min(6, player.getBbHeight()/2));
@@ -103,8 +134,17 @@ public final class Interactions {
         Vec3 end = start.add(player.getViewVector(1).scale(distance));
         var block = player.level().clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         double allowed = start.distanceToSqr(block.getLocation());
-        EntityHitResult hit = net.minecraft.world.entity.projectile.ProjectileUtil.getEntityHitResult(player, start, end, player.getBoundingBox().expandTowards(end.subtract(start)).inflate(1), e -> e instanceof LivingEntity && e != player && e.isAlive() && !e.isSpectator(), Math.min(distance*distance, allowed));
-        return hit != null && hit.getEntity() instanceof LivingEntity living ? living : null;
+        double nearest=Math.min(distance*distance,allowed);
+        LivingEntity hit=null;
+        for (Entity candidate:EntityQueries.nearby(player.level(),player.getBoundingBox().expandTowards(end.subtract(start)).inflate(1),player,256)) {
+            if (!(candidate instanceof LivingEntity living) || !candidate.isAlive() || candidate.isSpectator()) continue;
+            AABB box=candidate.getBoundingBox().inflate(candidate.getPickRadius());
+            var intersection=box.clip(start,end);
+            if (!box.contains(start) && intersection.isEmpty()) continue;
+            double separation=box.contains(start)?0:start.distanceToSqr(intersection.orElseThrow());
+            if (separation<nearest) { nearest=separation;hit=living; }
+        }
+        return hit;
     }
     public static boolean toolUse(ServerPlayer player, LivingEntity target, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -115,17 +155,23 @@ public final class Interactions {
     }
     public static boolean carry(ServerPlayer player, LivingEntity target) {
         double range = Math.min(16, Math.max(4, Dimensions.size(player)*2));
-        if (target == player || !within(player,target,range) || !player.getAbilities().mayBuild || target.isPassenger() || !target.getPassengers().isEmpty() || !Rules.ratio(Dimensions.size(player), Dimensions.size(target), 2)) return false;
+        if (target == player || player.isPassenger() || !within(player,target,range) || !player.getAbilities().mayBuild || target.isPassenger() || !target.getPassengers().isEmpty() || !Rules.ratio(Dimensions.size(player), Dimensions.size(target), 2)) return false;
         if (target instanceof Player && !EntityState.of(target).acceptCarry) return false;
         if (player.getFirstPassenger() != null || !cooldown(player, 10)) return false;
-        boolean result = target.startRiding(player, true, true);
-        if (result) { EntityState.of(player).carrying = true; Messages.syncCarry(player); }
+        boolean result = PlayerMounts.start(target,player);
+        if (result) { EntityState.of(player).carrying = true;EntityState.of(player).riderInitiated=false;Messages.syncCarry(player); }
         return result;
     }
     public static boolean ride(ServerPlayer player, LivingEntity target) {
-        if (!within(player,target,Math.min(16,Math.max(4,Dimensions.size(target)*2))) || !Rules.ratio(Dimensions.size(target), Dimensions.size(player), 4) || player.isPassenger() || !target.getPassengers().isEmpty()) return false;
+        if (!player.getAbilities().mayBuild || target.isPassenger() || !player.getPassengers().isEmpty() || !within(player,target,Math.min(16,Math.max(4,Dimensions.size(target)*2))) || !Rules.ratio(Dimensions.size(target), Dimensions.size(player), 4) || player.isPassenger() || !target.getPassengers().isEmpty()) return false;
         if (target instanceof Player && !EntityState.of(target).acceptCarry) return false;
-        return cooldown(player,10) && player.startRiding(target,true,true);
+        if (!cooldown(player,10)) return false;
+        if (target instanceof ServerPlayer carrier) {
+            if (!PlayerMounts.start(player,carrier)) return false;
+            EntityState.of(carrier).carrying=true;EntityState.of(carrier).riderInitiated=true;Messages.syncCarry(carrier);
+            return true;
+        }
+        return player.startRiding(target,true,true);
     }
     public static void release(ServerPlayer player, boolean thrown) {
         Entity passenger = player.getFirstPassenger();
@@ -160,7 +206,7 @@ public final class Interactions {
     }
     private static void damageSmall(ServerPlayer player, AABB box, float damage) {
         int count=0;
-        for (Entity entity:player.level().getEntities(player,box)) {
+        for (Entity entity:EntityQueries.nearby(player.level(),box,player,32)) {
             if (++count>32) break;
             if(entity instanceof LivingEntity living && canDamage(player,living) && Rules.ratio(Dimensions.size(player),Dimensions.size(living),4)) living.hurtServer(player.level(),player.damageSources().playerAttack(player),damage);
         }
@@ -178,7 +224,7 @@ public final class Interactions {
         Vec3 forward=player.getLookAngle(); Vec3 origin=player.getEyePosition();
         double range=Math.min(24,Dimensions.size(player)*3);
         int count=0;
-        for(Entity entity:player.level().getEntities(player,new AABB(origin,origin.add(forward.scale(range))).inflate(range*0.4))) {
+        for(Entity entity:EntityQueries.nearby(player.level(),new AABB(origin,origin.add(forward.scale(range))).inflate(range*0.4),player,64)) {
             if(++count>64) break;
             Vec3 direction=entity.getBoundingBox().getCenter().subtract(origin);
             if(direction.lengthSqr()>range*range || direction.normalize().dot(forward)<0.7 || !Rules.ratio(Dimensions.size(player),Dimensions.size(entity),2) || !player.hasLineOfSight(entity)) continue;

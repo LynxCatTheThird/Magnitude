@@ -21,6 +21,6 @@ public abstract class FoodMixin {
         ItemStack stack=getUseItem();
         if (!stack.has(net.minecraft.core.component.DataComponents.FOOD)) return;
         Double factor=Magnitude.settings.foodFactors.get(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-        if (factor!=null) Dimensions.set(entity,Dimensions.target(entity)*factor,20);
+        if (factor!=null && Dimensions.canApplyEffect(entity,entity)) Dimensions.set(entity,Dimensions.target(entity)*factor,20);
     }
 }

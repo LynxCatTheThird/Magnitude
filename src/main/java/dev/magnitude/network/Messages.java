@@ -15,16 +15,7 @@ public final class Messages {
         PayloadTypeRegistry.clientboundPlay().register(CarryPayload.TYPE,CarryPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(ActionPayload.TYPE,(payload,context) -> {
             ServerPlayer player=context.player();
-            if (!player.isAlive() || player.isSpectator()) return;
-            switch(payload.action()) {
-                case 0 -> Interactions.blow(player);
-                case 1 -> Interactions.shock(player,Math.min(6,dev.magnitude.core.Dimensions.size(player)*0.3),false);
-                case 2 -> { if (Interactions.cooldown(player,10)) Interactions.release(player,false); }
-                case 3 -> { if (Interactions.cooldown(player,10)) Interactions.release(player,true); }
-                case 4 -> Interactions.ability(player);
-                case 5 -> { var target=Interactions.aim(player,16); if(target!=null) Interactions.ride(player,target); }
-                default -> { /* Unknown actions cannot mutate game state. */ }
-            }
+            Interactions.action(player,payload.action());
         });
         EntityTrackingEvents.START_TRACKING.register((entity,observer) -> { if(entity instanceof ServerPlayer player) sendCarry(player,observer); });
     }

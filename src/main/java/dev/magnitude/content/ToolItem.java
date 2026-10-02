@@ -2,6 +2,7 @@ package dev.magnitude.content;
 
 import dev.magnitude.Magnitude;
 import dev.magnitude.core.Dimensions;
+import dev.magnitude.core.EntityState;
 import dev.magnitude.core.Rules;
 import dev.magnitude.interaction.Interactions;
 import net.minecraft.core.component.DataComponents;
@@ -32,7 +33,7 @@ public final class ToolItem extends Item {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (!(user instanceof ServerPlayer player) || player.isSpectator()) return InteractionResult.FAIL;
         ItemStack stack = user.getItemInHand(hand);
-        if (kind == Kind.HARNESS) { Interactions.release(player, user.isShiftKeyDown()); return InteractionResult.SUCCESS; }
+        if (kind == Kind.HARNESS) return Interactions.action(player,user.isShiftKeyDown()?3:2)?InteractionResult.SUCCESS:InteractionResult.FAIL;
         if (kind == Kind.REST) {
             if (Dimensions.size(player) > 0.25 || !player.onGround()) return InteractionResult.FAIL;
             var bed = player.blockPosition();
@@ -50,7 +51,10 @@ public final class ToolItem extends Item {
             return InteractionResult.SUCCESS;
         }
         LivingEntity target = player;
-        if (kind == Kind.BEAM) target = Interactions.aim(player, 32);
+        if (kind == Kind.BEAM) {
+            if (!Interactions.request(player)) return InteractionResult.FAIL;
+            target = Interactions.aim(player, 32);
+        }
         if (kind == Kind.TUNER && !data(stack).getStringOr("binding", "").isEmpty()) {
             try {
                 var entity = player.level().getEntity(UUID.fromString(data(stack).getStringOr("binding", "")));
@@ -64,6 +68,7 @@ public final class ToolItem extends Item {
         if (user.level().isClientSide()) return InteractionResult.SUCCESS;
         if (!(user instanceof ServerPlayer actor) || user.isSpectator()) return InteractionResult.FAIL;
         if (kind == Kind.TUNER) {
+            if (!Interactions.request(actor)) return InteractionResult.FAIL;
             if (!Dimensions.canChange(actor, target)) return InteractionResult.FAIL;
             CompoundTag tag = data(stack);
             tag.putString("binding", target.getUUID().toString());
@@ -71,10 +76,11 @@ public final class ToolItem extends Item {
             actor.sendOverlayMessage(Component.translatable("message.magnitude.bound", target.getName()));
             return InteractionResult.SUCCESS;
         }
-        if (kind == Kind.HARNESS) return Interactions.carry(actor, target) ? InteractionResult.SUCCESS : InteractionResult.FAIL;
+        if (kind == Kind.HARNESS) return Interactions.request(actor)&&Interactions.carry(actor,target)?InteractionResult.SUCCESS:InteractionResult.FAIL;
         return apply(stack, actor, target) ? InteractionResult.SUCCESS : InteractionResult.FAIL;
     }
     public boolean apply(ItemStack stack, ServerPlayer actor, LivingEntity target) {
+        if (EntityState.of(actor).nextAction>actor.level().getGameTime()) return false;
         if (!Dimensions.canChange(actor, target) || !Dimensions.settled(target) || !Interactions.cooldown(actor, 10)) return false;
         CompoundTag tag = data(stack);
         double current = Dimensions.size(target);
@@ -101,7 +107,7 @@ public final class ToolItem extends Item {
         if (kind == Kind.BEAM) return Dimensions.set(target, current * (actor.isShiftKeyDown() ? 0.5 : 2), 20);
         if (kind != Kind.TUNER) return false;
         if (operation == 3 || operation == 4) {
-            if (target == actor || !Dimensions.settled(actor)) return false;
+            if (target == actor || !Dimensions.settled(actor) || !Dimensions.canChange(actor, actor)) return false;
             double own = Dimensions.size(actor);
             if (operation == 3) { Dimensions.set(actor, current, 20); Dimensions.set(target, own, 20); }
             else {

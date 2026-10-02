@@ -46,6 +46,7 @@ public final class EssenceFluid extends WaterFluid {
     public static void contact(Level level, Entity entity, boolean ascending) {
         if (!(level instanceof ServerLevel) || !(entity instanceof net.minecraft.world.entity.LivingEntity) || entity.isSpectator()) return;
         EntityState state = EntityState.of(entity);
+        if (entity instanceof net.minecraft.world.entity.player.Player && !state.acceptResize) return;
         long time = level.getGameTime();
         if (time % 10 != 0 || state.lastFluidTick == time) return;
         state.lastFluidTick = time;

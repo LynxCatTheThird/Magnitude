@@ -44,14 +44,14 @@ public final class FieldBlock extends Block {
     @Override protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (generator) {
             int power = 0;
-            for (Entity entity : level.getEntities(null, new AABB(pos).inflate(0, 1, 0))) {
+            for (Entity entity : dev.magnitude.interaction.EntityQueries.nearby(level,new AABB(pos).inflate(0,1,0),null,32)) {
                 if (!(entity instanceof LivingEntity) || entity.isSpectator() || Dimensions.size(entity) > 0.25) continue;
                 if (entity.getDeltaMovement().horizontalDistanceSqr() > 0.0000001) power = Math.max(power, Math.clamp((int)Math.ceil(Dimensions.size(entity) * 60), 1, 15));
             }
             if (state.getValue(POWER) != power) level.setBlock(pos, state.setValue(POWER, power), 3);
         } else if (level.hasNeighborSignal(pos)) {
             int count = 0;
-            for (Entity entity : level.getEntities(null, new AABB(pos).inflate(3))) {
+            for (Entity entity : dev.magnitude.interaction.EntityQueries.nearby(level,new AABB(pos).inflate(3),null,32)) {
                 if (!(entity instanceof LivingEntity) || entity.isSpectator() || ++count > 32) continue;
                 // Players explicitly opt in; unowned fields never bypass consent.
                 if (entity instanceof Player && !EntityState.of(entity).acceptResize) continue;

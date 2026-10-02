@@ -1,6 +1,8 @@
 package dev.magnitude.content;
 
 import dev.magnitude.core.Dimensions;
+import dev.magnitude.core.EntityState;
+import dev.magnitude.Magnitude;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -16,12 +18,19 @@ public final class SizeEffect extends MobEffect {
         this.instant = instant;
     }
     @Override public boolean isInstantaneous() { return instant; }
+    public boolean ascending() { return direction > 0; }
     @Override public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) { return instant || duration % 10 == 0; }
     @Override public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
+        if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
+            if (!player.hasEffect(ascending() ? Content.ASCENT : Content.DESCENT)) return false;
+            boolean external=ascending() ? EntityState.of(player).ascentExternal : EntityState.of(player).descentExternal;
+            if (external ? !EntityState.of(player).acceptResize : !Magnitude.settings.allowSelfChange && !Dimensions.operator(player)) return false;
+        }
         apply(entity, amplifier, 1);
         return true;
     }
     @Override public void applyInstantaneousEffect(ServerLevel level, Entity source, Entity owner, LivingEntity entity, int amplifier, double proximity) {
+        if (!Dimensions.canApplyEffect(entity, owner != null ? owner : source)) return;
         apply(entity, amplifier, proximity);
     }
     private void apply(LivingEntity entity, int amplifier, double proximity) {

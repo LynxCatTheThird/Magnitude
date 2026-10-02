@@ -46,8 +46,7 @@ public final class Commands {
         root.then(literal("ability").executes(c -> action(c,4)));
         root.then(literal("ride").executes(c -> action(c,5)));
         root.then(literal("pickup").executes(c -> {
-            var p=c.getSource().getPlayerOrException();var target=Interactions.aim(p,16);
-            return target!=null&&Interactions.carry(p,target)?1:denied(c);
+            return Interactions.pickup(c.getSource().getPlayerOrException())?1:denied(c);
         }));
         var carry=literal("carry");
         for(int mode=0;mode<3;mode++) {final int position=mode;carry.then(literal(new String[]{"shoulder","hand","custom"}[mode]).executes(c -> {
@@ -98,7 +97,7 @@ public final class Commands {
     }
     private static int action(CommandContext<CommandSourceStack> c,int action)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
         var player=c.getSource().getPlayerOrException();
-        boolean result=switch(action){case 0->Interactions.blow(player);case 1->Interactions.shock(player,Math.min(6,Dimensions.size(player)*0.3),false);case 2,3->{if(!Interactions.cooldown(player,10))yield false;Interactions.release(player,action==3);yield true;}case 4->Interactions.ability(player);case 5->{var target=Interactions.aim(player,16);yield target!=null&&Interactions.ride(player,target);}default->false;};
+        boolean result=Interactions.action(player,action);
         return result?1:denied(c);
     }
     private static int message(CommandContext<CommandSourceStack> c,String key){c.getSource().sendSuccess(() -> Component.translatable("message.magnitude."+key),false);return 1;}

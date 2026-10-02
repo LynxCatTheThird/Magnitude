@@ -14,7 +14,7 @@ public final class MealItem extends Item {
     @Override public ItemStack finishUsingItem(ItemStack stack, Level level, LivingEntity entity) {
         if (level instanceof ServerLevel) {
             if (factor == 0) { EntityState.of(entity).randomPeriod = 0; Dimensions.set(entity, 1, 20); }
-            else Dimensions.set(entity, Dimensions.target(entity) * factor, 20);
+            else if (Dimensions.canApplyEffect(entity,entity)) Dimensions.set(entity, Dimensions.target(entity) * factor, 20);
         }
         return super.finishUsingItem(stack, level, entity);
     }

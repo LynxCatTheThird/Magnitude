@@ -9,6 +9,7 @@ public final class EntityState {
     public boolean acceptCarry;
     public boolean terrainEnabled;
     public boolean carrying;
+    public boolean riderInitiated;
     public int carryPosition;
     public double offsetForward = 0.4;
     public double offsetSide = 0;
@@ -17,8 +18,10 @@ public final class EntityState {
     public double randomHigh = 2;
     public int randomPeriod;
     public int nextRandom;
-    public int nextAction;
-    public int nextContact;
+    public long nextAction;
+    public long nextRequest;
+    public boolean ascentExternal = true;
+    public boolean descentExternal = true;
     public boolean initialized;
     public boolean grounded;
     public double downward;
@@ -26,7 +29,7 @@ public final class EntityState {
     public long lastFluidTick = Long.MIN_VALUE;
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
-    public void load(ValueInput input) {
+    public void load(ValueInput input, Entity entity) {
         ValueInput data = input.childOrEmpty("magnitude");
         acceptResize = data.getBooleanOr("resizeConsent", false);
         acceptCarry = data.getBooleanOr("carryConsent", false);
@@ -38,8 +41,14 @@ public final class EntityState {
         randomLow = safe(data.getDoubleOr("randomLow", 0.5), 1.0/64, 32, 0.5);
         randomHigh = safe(data.getDoubleOr("randomHigh", 2), randomLow, 32, 2);
         randomPeriod = Math.clamp(data.getIntOr("randomPeriod", 0), 0, 72000);
+        nextRandom = Math.clamp(data.getIntOr("nextRandom", randomPeriod), 0, randomPeriod);
+        nextAction = entity.level().getGameTime() + Math.clamp(data.getIntOr("actionCooldown", 0), 0, 1200);
+        ascentExternal = data.getBooleanOr("ascentExternal", true);
+        descentExternal = data.getBooleanOr("descentExternal", true);
+        carrying = false;
+        initialized = false;
     }
-    public void save(ValueOutput output) {
+    public void save(ValueOutput output, Entity entity) {
         ValueOutput data = output.child("magnitude");
         data.putBoolean("resizeConsent", acceptResize);
         data.putBoolean("carryConsent", acceptCarry);
@@ -51,6 +60,26 @@ public final class EntityState {
         data.putDouble("randomLow", randomLow);
         data.putDouble("randomHigh", randomHigh);
         data.putInt("randomPeriod", randomPeriod);
+        data.putInt("nextRandom", Math.clamp(nextRandom, 0, randomPeriod));
+        data.putInt("actionCooldown", (int)Math.clamp(nextAction - entity.level().getGameTime(), 0, 1200));
+        data.putBoolean("ascentExternal", ascentExternal);
+        data.putBoolean("descentExternal", descentExternal);
+    }
+    public void copyPersistentFrom(EntityState old) {
+        acceptResize = old.acceptResize;
+        acceptCarry = old.acceptCarry;
+        terrainEnabled = old.terrainEnabled;
+        carryPosition = old.carryPosition;
+        offsetForward = old.offsetForward;
+        offsetSide = old.offsetSide;
+        offsetUp = old.offsetUp;
+        randomLow = old.randomLow;
+        randomHigh = old.randomHigh;
+        randomPeriod = old.randomPeriod;
+        nextRandom = old.nextRandom;
+        nextAction = old.nextAction;
+        ascentExternal = old.ascentExternal;
+        descentExternal = old.descentExternal;
     }
     private static double safe(double number, double min, double max, double fallback) {
         return Double.isFinite(number) ? Math.clamp(number, min, max) : fallback;

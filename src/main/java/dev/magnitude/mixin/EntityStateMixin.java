@@ -16,7 +16,7 @@ public abstract class EntityStateMixin implements StateAccess {
     @Unique private final EntityState magnitude$state = new EntityState();
     @Override public EntityState magnitudeState() { return magnitude$state; }
     @Inject(method = "load", at = @At("RETURN"))
-    private void magnitude$load(ValueInput input, CallbackInfo info) { magnitude$state.load(input); }
+    private void magnitude$load(ValueInput input, CallbackInfo info) { magnitude$state.load(input, (Entity)(Object)this); }
     @Inject(method = "saveWithoutId", at = @At("HEAD"))
-    private void magnitude$save(ValueOutput output, CallbackInfo info) { magnitude$state.save(output); }
+    private void magnitude$save(ValueOutput output, CallbackInfo info) { magnitude$state.save(output, (Entity)(Object)this); }
 }

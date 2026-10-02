@@ -27,6 +27,20 @@ public final class Dimensions {
         if (!canChange(actor, entity)) return false;
         return set(entity, value, ticks);
     }
+    public static boolean canApplyEffect(LivingEntity target, Entity source) {
+        if (!(target.level() instanceof ServerLevel) || !target.isAlive() || target.isSpectator()) return false;
+        for (int i = 0; i < 4 && source instanceof net.minecraft.world.entity.TraceableEntity traceable; i++) {
+            Entity owner = traceable.getOwner();
+            if (owner == null || owner == source) break;
+            source = owner;
+        }
+        if (source == null || source == target) {
+            return !(target instanceof ServerPlayer player) || Magnitude.settings.allowSelfChange || operator(player);
+        }
+        if (source.isSpectator() || source.level() != target.level()) return false;
+        if (source instanceof ServerPlayer player) return canChange(player, target);
+        return !(target instanceof Player) || EntityState.of(target).acceptResize;
+    }
     public static boolean set(Entity entity, double value, int ticks) {
         if (!(entity.level() instanceof ServerLevel) || !Double.isFinite(value)) return false;
         double bounded = Rules.bounded(value, Magnitude.settings.minimum, Magnitude.settings.maximum);
@@ -39,6 +53,7 @@ public final class Dimensions {
     public static boolean settled(Entity entity) { return Math.abs(size(entity) - target(entity)) < 0.000001; }
     public static void reset(Entity entity) {
         if (!(entity.level() instanceof ServerLevel)) return;
+        dev.magnitude.interaction.Interactions.detach(entity);
         for (var type : virtuoel.pehkui.api.ScaleRegistries.SCALE_TYPES.values()) type.getScaleData(entity).resetScale();
         set(entity, 1, 0);
         EntityState state = EntityState.of(entity);
