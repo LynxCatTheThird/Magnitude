@@ -49,7 +49,7 @@ public final class Impact {
         if (scale < (pressure ? 8 : 4)) return 0;
         double yaw = Math.toRadians(actor.getYRot());
         double halfWidth = scale * 0.09 + 0.35, halfLength = scale * 0.22 + 0.35;
-        float hardness = pressure ? (float)Math.min(8, dev.magnitude.core.Dimensions.size(actor)/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
+        float hardness = pressure ? (float)Math.min(Float.MAX_VALUE / 2, dev.magnitude.core.Dimensions.size(actor)/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
         int changed = 0;
         for (int foot : new int[]{-1, 1}) {
             if (side != 0 && side != foot) continue;

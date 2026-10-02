@@ -62,7 +62,10 @@ public final class BodyCollision {
         List<BodyBox> parts=PlayerBody.parts(player,player.position());
         AABB bounds=parts.getFirst().bounds();
         for(BodyBox part:parts)bounds=bounds.minmax(part.bounds());
-        double step=Math.min(4.8,player.maxUpStep());
+        // A scaled step height is useful for slabs, but treating several blocks of a wall
+        // as one step lets a player walk up trees and buildings. Keep the automatic step
+        // resolver at the vanilla half-block envelope; taller obstacles require jumping.
+        double step=Math.min(0.6,player.maxUpStep());
         AABB swept=bounds.expandTowards(wanted).expandTowards(0,step,0).inflate(1e-7);
         long cells=LocalProxy.cells(swept);
         if(cells>LocalProxy.CELLS_PER_MOVE || state.physicsCells+cells>LocalProxy.CELLS_PER_TICK || !LocalProxy.loaded(player.level(),swept) || !PhysicsWork.cells(cells))return fallback(player);
