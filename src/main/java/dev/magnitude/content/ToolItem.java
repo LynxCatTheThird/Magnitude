@@ -87,6 +87,7 @@ public final class ToolItem extends Item {
         double parameter = tag.getDoubleOr("value", 0.5);
         if (!Double.isFinite(parameter)) return false;
         if (kind == Kind.RESERVOIR) {
+            if (!Dimensions.withinLimits(target)) return false;
             double stored = tag.getDoubleOr("charge", 0);
             if (!Double.isFinite(stored) || stored < 0 || stored > Magnitude.settings.maximum) return false;
             if (stored == 0) {
@@ -107,7 +108,7 @@ public final class ToolItem extends Item {
         if (kind == Kind.BEAM) return Dimensions.set(target, current * (actor.isShiftKeyDown() ? 0.5 : 2), 20);
         if (kind != Kind.TUNER) return false;
         if (operation == 3 || operation == 4) {
-            if (target == actor || !Dimensions.settled(actor) || !Dimensions.canChange(actor, actor)) return false;
+            if (target == actor || !Dimensions.settled(actor) || !Dimensions.canChange(actor, actor) || !Dimensions.withinLimits(actor) || !Dimensions.withinLimits(target)) return false;
             double own = Dimensions.size(actor);
             if (operation == 3) { Dimensions.set(actor, current, 20); Dimensions.set(target, own, 20); }
             else {

@@ -116,6 +116,14 @@ public final class RegressionTests {
             Magnitude.settings.allowSelfChange=true;randomState.nextRandom=1;tick(server,actor);
             require(Dimensions.target(actor)==2&&randomState.nextRandom==20,"reenabled random change resumes normally",passed);
             randomState.randomPeriod=0;
+            Dimensions.set(actor,16,0);Dimensions.set(pig,16,0);Magnitude.settings.maximum=8;
+            ItemStack reservoir=new ItemStack(Content.RESERVOIR);ready(actor);
+            require(!((ToolItem)Content.RESERVOIR).apply(reservoir,actor,pig)&&Dimensions.target(pig)==16&&ToolItem.data(reservoir).getDoubleOr("charge",0)==0,"tightened config cannot destroy reservoir charge through clamping",passed);
+            for(int mode:new int[]{3,4}) {
+                ready(actor);tag.putInt("operation",mode);ToolItem.data(tuner,tag);
+                require(!((ToolItem)Content.TUNER).apply(tuner,actor,pig)&&Dimensions.target(actor)==16&&Dimensions.target(pig)==16,"tightened config rejects out of range conserved mode "+mode,passed);
+            }
+            Magnitude.settings.maximum=32;
 
             var state=EntityState.of(pig);state.nextAction=level.getGameTime()+17;state.randomPeriod=100;state.nextRandom=31;
             var saved=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,level.registryAccess());pig.saveWithoutId(saved);

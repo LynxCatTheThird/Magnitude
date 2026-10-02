@@ -55,6 +55,10 @@ public final class Dimensions {
         return true;
     }
     public static boolean settled(Entity entity) { return Math.abs(size(entity) - target(entity)) < 0.000001; }
+    public static boolean withinLimits(Entity entity) {
+        double current=size(entity);
+        return Double.isFinite(current) && current>=(float)Magnitude.settings.minimum && current<=(float)Magnitude.settings.maximum;
+    }
     public static void reset(Entity entity) {
         if (!(entity.level() instanceof ServerLevel)) return;
         dev.magnitude.interaction.Interactions.detach(entity);
