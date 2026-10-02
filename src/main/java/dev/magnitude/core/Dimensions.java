@@ -29,17 +29,21 @@ public final class Dimensions {
     }
     public static boolean canApplyEffect(LivingEntity target, Entity source) {
         if (!(target.level() instanceof ServerLevel) || !target.isAlive() || target.isSpectator()) return false;
-        for (int i = 0; i < 4 && source instanceof net.minecraft.world.entity.TraceableEntity traceable; i++) {
-            Entity owner = traceable.getOwner();
-            if (owner == null || owner == source) break;
-            source = owner;
-        }
+        source=effectSource(source);
         if (source == null || source == target) {
             return !(target instanceof ServerPlayer player) || Magnitude.settings.allowSelfChange || operator(player);
         }
         if (source.isSpectator() || source.level() != target.level()) return false;
         if (source instanceof ServerPlayer player) return canChange(player, target);
         return !(target instanceof Player) || EntityState.of(target).acceptResize;
+    }
+    public static Entity effectSource(Entity source) {
+        for (int i = 0; i < 4 && source instanceof net.minecraft.world.entity.TraceableEntity traceable; i++) {
+            Entity owner = traceable.getOwner();
+            if (owner == null || owner == source) break;
+            source = owner;
+        }
+        return source;
     }
     public static boolean set(Entity entity, double value, int ticks) {
         if (!(entity.level() instanceof ServerLevel) || !Double.isFinite(value)) return false;

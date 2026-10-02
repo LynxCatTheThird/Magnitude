@@ -77,6 +77,25 @@ public final class RegressionTests {
             Content.ASCENT.value().applyEffectTick(level,victim,0);
             require(Dimensions.target(victim)>1,"self consumed continuous effect applies",passed);
             victim.removeEffect(Content.ASCENT);
+            Dimensions.set(victim,1,0);
+            require(victim.addEffect(new MobEffectInstance(Content.ENLARGE,1),victim),"self consumed instant effect installs",passed);
+            Content.ENLARGE.value().applyEffectTick(level,victim,0);
+            require(Dimensions.target(victim)==2,"self consumed instant effect uses its own effect holder",passed);
+            victim.removeEffect(Content.ENLARGE);
+            EntityState.of(victim).acceptResize=true;
+            victim.addEffect(new MobEffectInstance(Content.ASCENT,40),actor);
+            victim.addEffect(new MobEffectInstance(Content.ENLARGE,1),victim);
+            EntityState.of(victim).acceptResize=false;before=Dimensions.target(victim);
+            Content.ASCENT.value().applyEffectTick(level,victim,0);
+            require(Dimensions.target(victim)==before,"self instant effect cannot erase foreign continuous provenance",passed);
+            victim.removeEffect(Content.ASCENT);victim.removeEffect(Content.ENLARGE);
+            EntityState.of(victim).acceptResize=true;
+            victim.addEffect(new MobEffectInstance(Content.ASCENT,40),actor);
+            victim.addEffect(new MobEffectInstance(Content.ASCENT,40,1),victim);
+            EntityState.of(victim).acceptResize=false;before=Dimensions.target(victim);
+            Content.ASCENT.value().applyEffectTick(level,victim,1);
+            require(Dimensions.target(victim)==before,"hidden mixed effect chain retains external consent restriction",passed);
+            victim.removeEffect(Content.ASCENT);
 
             Magnitude.settings.allowSelfChange=false;Dimensions.set(actor,1,0);Dimensions.set(pig,2,0);
             ItemStack tuner=new ItemStack(Content.TUNER);var tag=ToolItem.data(tuner);tag.putDouble("value",0.5);
@@ -90,6 +109,13 @@ public final class RegressionTests {
             Magnitude.settings.allowSelfChange=true;ready(actor);
             require(((ToolItem)Content.TUNER).apply(tuner,actor,pig),"permitted transfer applies",passed);
             require(Math.abs(Dimensions.target(actor)+Dimensions.target(pig)-3)<1e-6,"permitted transfer conserves both targets",passed);
+            Dimensions.set(actor,1,0);var randomState=EntityState.of(actor);
+            randomState.randomPeriod=20;randomState.nextRandom=3;randomState.randomLow=2;randomState.randomHigh=2;
+            Magnitude.settings.allowSelfChange=false;tick(server,actor);
+            require(randomState.nextRandom==3&&Dimensions.target(actor)==1,"disabled self change pauses random countdown",passed);
+            Magnitude.settings.allowSelfChange=true;randomState.nextRandom=1;tick(server,actor);
+            require(Dimensions.target(actor)==2&&randomState.nextRandom==20,"reenabled random change resumes normally",passed);
+            randomState.randomPeriod=0;
 
             var state=EntityState.of(pig);state.nextAction=level.getGameTime()+17;state.randomPeriod=100;state.nextRandom=31;
             var saved=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,level.registryAccess());pig.saveWithoutId(saved);

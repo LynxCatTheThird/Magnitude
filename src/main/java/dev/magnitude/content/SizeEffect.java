@@ -22,8 +22,9 @@ public final class SizeEffect extends MobEffect {
     @Override public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) { return instant || duration % 10 == 0; }
     @Override public boolean applyEffectTick(ServerLevel level, LivingEntity entity, int amplifier) {
         if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
-            if (!player.hasEffect(ascending() ? Content.ASCENT : Content.DESCENT)) return false;
-            boolean external=ascending() ? EntityState.of(player).ascentExternal : EntityState.of(player).descentExternal;
+            var holder=instant ? ascending()?Content.ENLARGE:Content.REDUCE : ascending()?Content.ASCENT:Content.DESCENT;
+            if (!player.hasEffect(holder)) return false;
+            boolean external=EntityState.of(player).externalEffect(instant,ascending());
             if (external ? !EntityState.of(player).acceptResize : !Magnitude.settings.allowSelfChange && !Dimensions.operator(player)) return false;
         }
         apply(entity, amplifier, 1);

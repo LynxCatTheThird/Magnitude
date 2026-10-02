@@ -35,12 +35,12 @@ public abstract class SizeEffectPermissionMixin {
     private void remember(MobEffectInstance effect, Entity source, boolean newlyAdded) {
         LivingEntity target=(LivingEntity)(Object)this;
         if (target.level().isClientSide() || !(effect.getEffect().value() instanceof SizeEffect sizeEffect)) return;
+        source=Dimensions.effectSource(source);
         boolean external=source!=null && source!=target;
-        if (source instanceof net.minecraft.world.entity.TraceableEntity traceable && traceable.getOwner()==target) external=false;
         EntityState state=EntityState.of(target);
         // A vanilla effect may hide and later restore a weaker instance. Mixed chains
         // keep the external restriction until the entire effect has been removed.
-        if (sizeEffect.ascending()) state.ascentExternal=external || !newlyAdded && state.ascentExternal;
-        else state.descentExternal=external || !newlyAdded && state.descentExternal;
+        boolean restricted=external || !newlyAdded && state.externalEffect(sizeEffect.isInstantaneous(),sizeEffect.ascending());
+        state.externalEffect(sizeEffect.isInstantaneous(),sizeEffect.ascending(),restricted);
     }
 }

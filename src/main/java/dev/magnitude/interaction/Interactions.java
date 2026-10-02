@@ -91,7 +91,7 @@ public final class Interactions {
             EntityState state = EntityState.of(player);
             double size = Dimensions.size(player);
             if (!Double.isFinite(size)) { Dimensions.reset(player); continue; }
-            if (state.randomPeriod >= 20 && --state.nextRandom <= 0 && Magnitude.settings.allowSelfChange) {
+            if (state.randomPeriod >= 20 && (Magnitude.settings.allowSelfChange || Dimensions.operator(player)) && --state.nextRandom <= 0) {
                 state.nextRandom = state.randomPeriod;
                 double value = state.randomLow + player.getRandom().nextDouble() * (state.randomHigh - state.randomLow);
                 Dimensions.set(player, value, 20);

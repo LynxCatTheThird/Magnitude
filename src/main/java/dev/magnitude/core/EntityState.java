@@ -22,6 +22,8 @@ public final class EntityState {
     public long nextRequest;
     public boolean ascentExternal = true;
     public boolean descentExternal = true;
+    public boolean enlargeExternal = true;
+    public boolean reduceExternal = true;
     public boolean initialized;
     public boolean grounded;
     public double downward;
@@ -45,6 +47,8 @@ public final class EntityState {
         nextAction = entity.level().getGameTime() + Math.clamp(data.getIntOr("actionCooldown", 0), 0, 1200);
         ascentExternal = data.getBooleanOr("ascentExternal", true);
         descentExternal = data.getBooleanOr("descentExternal", true);
+        enlargeExternal = data.getBooleanOr("enlargeExternal", true);
+        reduceExternal = data.getBooleanOr("reduceExternal", true);
         carrying = false;
         initialized = false;
     }
@@ -64,6 +68,8 @@ public final class EntityState {
         data.putInt("actionCooldown", (int)Math.clamp(nextAction - entity.level().getGameTime(), 0, 1200));
         data.putBoolean("ascentExternal", ascentExternal);
         data.putBoolean("descentExternal", descentExternal);
+        data.putBoolean("enlargeExternal", enlargeExternal);
+        data.putBoolean("reduceExternal", reduceExternal);
     }
     public void copyPersistentFrom(EntityState old) {
         acceptResize = old.acceptResize;
@@ -80,6 +86,15 @@ public final class EntityState {
         nextAction = old.nextAction;
         ascentExternal = old.ascentExternal;
         descentExternal = old.descentExternal;
+        enlargeExternal = old.enlargeExternal;
+        reduceExternal = old.reduceExternal;
+    }
+    public boolean externalEffect(boolean instant, boolean ascending) {
+        return instant ? ascending ? enlargeExternal : reduceExternal : ascending ? ascentExternal : descentExternal;
+    }
+    public void externalEffect(boolean instant, boolean ascending, boolean external) {
+        if (instant) {if(ascending)enlargeExternal=external;else reduceExternal=external;}
+        else {if(ascending)ascentExternal=external;else descentExternal=external;}
     }
     private static double safe(double number, double min, double max, double fallback) {
         return Double.isFinite(number) ? Math.clamp(number, min, max) : fallback;
