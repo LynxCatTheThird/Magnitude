@@ -24,7 +24,7 @@ public final class LocalProxy {
         int minX=((int)Math.floor(box.minX))>>4,maxX=((int)Math.floor(box.maxX))>>4;
         int minZ=((int)Math.floor(box.minZ))>>4,maxZ=((int)Math.floor(box.maxZ))>>4;
         if((long)(maxX-minX+1)*(maxZ-minZ+1)>16)return false;
-        for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++)if(!level.hasChunkAt(new BlockPos(x<<4,0,z<<4)))return false;
+        for(int x=minX;x<=maxX;x++)for(int z=minZ;z<=maxZ;z++)if(!level.getChunkSource().hasChunk(x,z))return false;
         return true;
     }
     public static void update(ServerPlayer player) {

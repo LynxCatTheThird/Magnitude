@@ -30,7 +30,8 @@ public final class DiagnosticCommand {
                 + "; scale=" + scale.base() + " revision=" + scale.revision() + " proxy=" + scale.proxyLimit()
                 + "; step=" + dev.magnitude.physics.StepPolicy.height(player)
                 + "; pose=" + state.pose.action() + " feet=" + state.pose.support()
-                + "; support=" + state.contacts.support
+                + "; support=" + (state.contacts.support==null?"none":
+                    "left{"+state.contacts.support.leftContact().summary()+"} right{"+state.contacts.support.rightContact().summary()+"}")
                 + "; event=" + (event == null ? "none" : event.type() + "#" + event.sequence())
                 + "; pendingFootprints="+state.contacts.footprints.size()
                 + "; reason=" + state.contacts.reason + " writes=" + state.contacts.changedBlocks

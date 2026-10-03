@@ -9,14 +9,21 @@ public final class SoleGeometry {
     private SoleGeometry(){}
     public record Point(double x,double z){}
     public static List<Point> clip(double dx,double dz,double halfWidth,double halfLength,double yaw){
+        return clipRectangle(dx,dz,halfWidth,halfLength,yaw,0,0,1,1);
+    }
+    public static double area(List<Point> polygon){
+        double twice=0;for(int i=0;i<polygon.size();i++){var a=polygon.get(i);var b=polygon.get((i+1)%polygon.size());twice+=a.x*b.z-b.x*a.z;}
+        return Math.abs(twice)*.5;
+    }
+    public static List<Point> clipRectangle(double dx,double dz,double halfWidth,double halfLength,double yaw,double minX,double minZ,double maxX,double maxZ){
         double c=Math.cos(yaw),s=Math.sin(yaw);
         List<Point> polygon=new ArrayList<>(4);
         for(int[] corner:new int[][]{{-1,-1},{-1,1},{1,1},{1,-1}}){
             double x=corner[0]*halfWidth,z=corner[1]*halfLength;
             polygon.add(new Point(dx+c*x-s*z,dz+s*x+c*z));
         }
-        polygon=boundary(polygon,0,0,true);polygon=boundary(polygon,0,1,false);
-        polygon=boundary(polygon,1,0,true);polygon=boundary(polygon,1,1,false);
+        polygon=boundary(polygon,0,minX,true);polygon=boundary(polygon,0,maxX,false);
+        polygon=boundary(polygon,1,minZ,true);polygon=boundary(polygon,1,maxZ,false);
         return List.copyOf(polygon);
     }
     private static List<Point> boundary(List<Point> input,int axis,double limit,boolean lower){
