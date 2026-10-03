@@ -73,13 +73,13 @@ public final class GameplayPhysicsTests {
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-6,-1,-6),ROOT.offset(6,-1,6)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
             Dimensions.set(player,2,0);ready(player);
-            require(Impact.feet(player,0,false)>0,"soft ground contact begins below former four-times cutoff",passed);
+            require(FootprintRelease.feet(player,0,false)>0,"soft ground contact begins below former four-times cutoff",passed);
             Dimensions.set(player,8,0);ready(player);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-6,-1,-6),ROOT.offset(6,-1,6)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
             var support=BlockPos.containing(PlayerBody.foot(player,1));
-            require(Impact.feet(player,0,true)>0 && level.getBlockState(support).is(Blocks.DIRT),
-                "static pressure preserves actual boot support while deforming surrounding ground",passed);
+            require(FootprintRelease.feet(player,0,true)>0 && level.getBlockState(support).isAir(),
+                "released pressure impression excavates the center uniformly",passed);
             // Arbitrary fractional scales share true geometry; a lamp stays between the legs.
             for(int y=0;y<12;y++)level.setBlock(ROOT.offset(2,y,0),Blocks.AIR.defaultBlockState(),2);
             level.setBlock(ROOT.offset(2,0,3),Blocks.AIR.defaultBlockState(),2);
@@ -106,11 +106,11 @@ public final class GameplayPhysicsTests {
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,-4,-12),ROOT.offset(12,-1,12)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
             Dimensions.set(player,49.5,0);ready(player);
-            int first=Impact.feet(player,0,false);
+            int first=FootprintRelease.feet(player,0,false);
             require(first<=Magnitude.settings.blocksPerImpact && !EntityState.of(player).contacts.footprints.isEmpty(),
                 "large footprint retains bounded unfinished work",passed);
             for(int i=0;i<40 && !EntityState.of(player).contacts.footprints.isEmpty();i++) {
-                Impact.beginTick();Impact.continueFeet(player);
+                Impact.beginTick();FootprintRelease.drain(player);
             }
             require(level.getBlockState(ROOT.offset(10,-1,2)).isAir(),
                 "fractional giant sole deforms ground beyond old fixed radius",passed);
@@ -118,27 +118,27 @@ public final class GameplayPhysicsTests {
                 level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
             ready(player);int landed=Impact.landing(player,2,12);
             for(int i=0;i<40 && !EntityState.of(player).contacts.footprints.isEmpty();i++) {
-                Impact.beginTick();Impact.continueFeet(player);
+                Impact.beginTick();FootprintRelease.drain(player);
             }
             require(landed>0 && level.getBlockState(ROOT.offset(7,-2,0)).isAir()
                 && level.getBlockState(ROOT.offset(0,-1,0)).is(Blocks.STONE),
                 "giant landing uses actual soles and bounded depth while preserving leg gap",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,-1,-12),ROOT.offset(12,-1,12)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
-            ready(player);Impact.feet(player,0,false);
+            ready(player);FootprintRelease.feet(player,0,false);
             var protectedLater=ROOT.offset(10,-1,2);
             level.setBlock(protectedLater,Blocks.CHEST.defaultBlockState(),2);
             for(int i=0;i<40 && !EntityState.of(player).contacts.footprints.isEmpty();i++) {
-                Impact.beginTick();Impact.continueFeet(player);
+                Impact.beginTick();FootprintRelease.drain(player);
             }
             require(level.getBlockState(protectedLater).is(Blocks.CHEST),
                 "queued footprint rechecks container protection at write time",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,-1,-12),ROOT.offset(12,-1,12)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
-            ready(player);Impact.feet(player,0,false);
+            ready(player);FootprintRelease.feet(player,0,false);
             require(!EntityState.of(player).contacts.footprints.isEmpty(),"permission cancellation fixture has pending work",passed);
             EntityState.of(player).terrainEnabled=false;
-            int budget=Impact.remaining();Impact.continueFeet(player);
+            int budget=Impact.remaining();FootprintRelease.drain(player);
             require(EntityState.of(player).contacts.footprints.isEmpty() && Impact.remaining()==budget,
                 "revoked terrain permission cancels pending footprint writes",passed);
             EntityState.of(player).terrainEnabled=true;
@@ -157,7 +157,7 @@ public final class GameplayPhysicsTests {
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-1,-12),ROOT.offset(14,-1,12)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
             var fact=ContactEvents.emit(player,ContactEvent.Type.WALKING_STRIDE,new Vec3(0,0,1),0,null);
-            require(rejectedGait.contacts.changedBlocks>0 && fact.pose().support()!=0,
+            require(FootprintRelease.drain(player)>0 && fact.pose().support()!=0,
                 "rejected pose switch still produces a grounded footprint",passed);
             ready(player);long fullCells=0;
             for(var region:WorldObstacles.regions(PlayerBody.parts(player,player.position()),Vec3.ZERO,0))fullCells+=LocalProxy.cells(region);
@@ -188,7 +188,7 @@ public final class GameplayPhysicsTests {
                     ContactEvents.sample(player);
                     require(!gait.contacts.reason.equals("pressure disabled") && gait.contacts.last.type()!=ContactEvent.Type.LANDING,
                         "walking contact stays grounded at "+size+" sample "+step,ignored->{});
-                    Impact.continueFeet(player);
+                    FootprintRelease.drain(player);
                 }
                 long footfalls=gait.contacts.counts[ContactEvent.Type.WALKING_STRIDE.ordinal()]-beforeSteps;
                 require(footfalls==(long)Math.floor(100/stride),"long walk footfalls follow full-size stride at "+size,passed);

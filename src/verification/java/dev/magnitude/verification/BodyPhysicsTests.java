@@ -96,10 +96,10 @@ public final class BodyPhysicsTests {
             actor.setOnGround(false);require(BodyPoses.update(actor,0,false).support()==0,"adapter cannot manufacture airborne support",passed);actor.setOnGround(true);BodyPoses.select(actor,null);
             Dimensions.set(actor,8,0);LocalProxy.apply(actor,8);ready(actor);EntityState.of(actor).jumpSequence=0;
             Magnitude.settings.terrainDamage=true;EntityState.of(actor).terrainEnabled=true;EntityState.of(actor).nextJumpImpact=0;
-            actor.jumpFromGround();
+            actor.jumpFromGround();FootprintRelease.drain(actor);
             require(level.getBlockState(ROOT.offset(2,-1,0)).isAir() && level.getBlockState(ROOT.offset(-2,-1,0)).is(Blocks.STONE),"real jump destroys only right supporting footprint",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-6,-1,-6),ROOT.offset(6,-1,6)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
-            ready(actor);EntityState.of(actor).nextJumpImpact=0;actor.jumpFromGround();
+            ready(actor);EntityState.of(actor).nextJumpImpact=0;actor.jumpFromGround();FootprintRelease.drain(actor);
             require(level.getBlockState(ROOT.offset(-2,-1,0)).isAir() && level.getBlockState(ROOT.offset(2,-1,0)).is(Blocks.STONE),"next real jump destroys only left supporting footprint",passed);
             actor.setOnGround(false);Impact.beginTick();
             require(Impact.feet(actor,0,true)==0,"airborne pressure rejected even with stale support state",passed);

@@ -42,7 +42,7 @@ public final class ScaleImpactTests {
         EntityState.of(actor).physicsTick = Long.MIN_VALUE;
         EntityState.of(actor).contacts.sampleTick = Long.MIN_VALUE;
         server.getPlayerList().getPlayers().add(actor);
-        try {Interactions.tick(server);} finally {server.getPlayerList().getPlayers().remove(actor);}
+        try {Interactions.tick(server);FootprintRelease.drain(actor);} finally {server.getPlayerList().getPlayers().remove(actor);}
     }
     public static void run(MinecraftServer server, Consumer<String> passed) {
         var original=Magnitude.settings;Magnitude.settings=new Settings();var level=server.overworld();
@@ -117,10 +117,10 @@ public final class ScaleImpactTests {
             Dimensions.set(actor,8,0);actor.setPos(5000.5,220,5000.5);actor.setYRot(0);actor.setOnGround(true);EntityState.of(actor).terrainEnabled=true;
             Magnitude.settings.terrainDamage=true;Magnitude.settings.standingPressure=false;
             floor(actor,Blocks.STONE);
-            int changed=Impact.feet(actor,0,false);
+            int changed=FootprintRelease.feet(actor,0,false);
             require(changed>0&&level.getBlockState(CENTER.offset(-2,-1,0)).isAir()&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"two boot contacts carve distinct footprints",passed);
             require(level.getBlockState(CENTER.offset(3,-1,3)).is(Blocks.STONE),"sole contacts preserve blocks beyond rectangular bounds",passed);
-            floor(actor,Blocks.STONE);actor.setYRot(90);Impact.feet(actor,0,false);
+            floor(actor,Blocks.STONE);actor.setYRot(90);FootprintRelease.feet(actor,0,false);
             require(level.getBlockState(CENTER.offset(0,-1,2)).isAir()&&level.getBlockState(CENTER.offset(0,-1,-2)).isAir()&&level.getBlockState(CENTER.offset(2,-1,0)).is(Blocks.STONE),"footprints rotate with player orientation",passed);
             actor.setYRot(0);floor(actor,Blocks.STONE);
             var state=EntityState.of(actor);state.initialized=true;state.grounded=true;state.previousSize=8;state.previousPosition=actor.position();state.strideDistance=0;actor.tickCount=1;
@@ -128,15 +128,15 @@ public final class ScaleImpactTests {
             actor.setPos(5000.5,220,5004.5);tick(server,actor);
             require(Impact.remaining()<Magnitude.settings.blocksPerTick,"walking uses actual displacement rather than server velocity",passed);
             actor.setPos(5000.5,220,5000.5);state.previousPosition=actor.position();floor(actor,Blocks.DIRT);Magnitude.settings.standingPressure=true;actor.tickCount=20;
-            tick(server,actor);require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"stationary scale 8 compresses soft terrain",passed);
+            tick(server,actor);require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"released static load at scale 8 compresses soft terrain",passed);
             floor(actor,Blocks.STONE);tick(server,actor);require(level.getBlockState(CENTER.offset(2,-1,0)).is(Blocks.STONE),"moderate static load preserves stronger stone",passed);
             Dimensions.set(actor,32,0);state.previousSize=32;floor(actor,Blocks.STONE);tick(server,actor);
-            for(int i=0;i<20 && !state.contacts.footprints.isEmpty();i++){Impact.beginTick();Impact.continueFeet(actor);}
-            require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"greater stationary load breaks stone",passed);
+            for(int i=0;i<20 && !state.contacts.footprints.isEmpty();i++){Impact.beginTick();FootprintRelease.drain(actor);}
+            require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"released greater static load breaks stone",passed);
             floor(actor,Blocks.DIRT);actor.getAbilities().flying=true;tick(server,actor);
             require(Impact.remaining()==Magnitude.settings.blocksPerTick,"flying player does not apply standing pressure",passed);actor.getAbilities().flying=false;
             Dimensions.set(actor,8,0);state.previousSize=8;Magnitude.settings.standingPressure=false;floor(actor,Blocks.STONE);state.nextJumpImpact=0;
-            actor.jumpFromGround();require(state.jumpImpact&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"ordinary vanilla jump hook breaks ground on takeoff",passed);
+            actor.jumpFromGround();FootprintRelease.drain(actor);require(state.jumpImpact&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"ordinary vanilla jump hook breaks ground on takeoff",passed);
             floor(actor,Blocks.STONE);actor.jumpFromGround();require(Impact.remaining()==Magnitude.settings.blocksPerTick,"repeated same-tick jump hooks share cooldown",passed);
             actor.setOnGround(false);actor.setDeltaMovement(new Vec3(0,-0.42,0));tick(server,actor);actor.setOnGround(true);floor(actor,Blocks.STONE);tick(server,actor);
             require(!state.jumpImpact&&level.getBlockState(BlockPos.containing(dev.magnitude.physics.PlayerBody.foot(actor,1))).isAir(),"normal jump landing produces impact without manual stomp",passed);
@@ -145,20 +145,21 @@ public final class ScaleImpactTests {
             actor.connection.resetPosition();
             level.addNewPlayer(actor);attached=true;
             actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(actor.getX(),actor.getY()+0.42,actor.getZ(),false,false));
-            require(state.jumpImpact&&Impact.remaining()<Magnitude.settings.blocksPerTick,"ordinary movement packet invokes jump terrain effect",passed);
+            FootprintRelease.drain(actor);
+            require(state.jumpImpact&&Impact.remaining()<Magnitude.settings.blocksPerTick,"ordinary movement packet invokes released jump terrain effect",passed);
             actor.setPos(5000.5,220,5000.5);actor.setOnGround(true);state.jumpImpact=false;
-            floor(actor,Blocks.BEDROCK);require(Impact.feet(actor,0,false)==0,"foot contacts protect unbreakable terrain",passed);
-            floor(actor,Blocks.CHEST);require(Impact.feet(actor,0,false)==0,"foot contacts preserve containers",passed);
-            floor(actor,Blocks.STONE);veto=true;require(Impact.feet(actor,0,false)==0,"foot contacts respect Fabric protection veto",passed);veto=false;
-            floor(actor,Blocks.STONE);EntityState.of(actor).terrainEnabled=false;require(Impact.feet(actor,0,false)==0,"foot contacts require personal terrain opt-in",passed);EntityState.of(actor).terrainEnabled=true;
+            floor(actor,Blocks.BEDROCK);require(FootprintRelease.feet(actor,0,false)==0,"foot contacts protect unbreakable terrain",passed);
+            floor(actor,Blocks.CHEST);require(FootprintRelease.feet(actor,0,false)==0,"foot contacts preserve containers",passed);
+            floor(actor,Blocks.STONE);veto=true;require(FootprintRelease.feet(actor,0,false)==0,"foot contacts respect Fabric protection veto",passed);veto=false;
+            floor(actor,Blocks.STONE);EntityState.of(actor).terrainEnabled=false;require(FootprintRelease.feet(actor,0,false)==0,"foot contacts require personal terrain opt-in",passed);EntityState.of(actor).terrainEnabled=true;
             Magnitude.settings.blocksPerTick=3;Magnitude.settings.blocksPerImpact=2;Magnitude.settings.checksPerTick=16;floor(actor,Blocks.STONE);
-            int first=Impact.feet(actor,0,false),second=Impact.feet(actor,0,false);
+            int first=FootprintRelease.feet(actor,0,false),second=FootprintRelease.feet(actor,0,false);
             require(first<=2&&first+second<=3&&Impact.remaining()==0,"feet share global and per-impact mutation budgets",passed);
-            Magnitude.settings.blocksPerTick=256;Magnitude.settings.blocksPerImpact=64;Magnitude.settings.checksPerTick=1;floor(actor,Blocks.STONE);Impact.feet(actor,0,false);
+            Magnitude.settings.blocksPerTick=256;Magnitude.settings.blocksPerImpact=64;Magnitude.settings.checksPerTick=1;floor(actor,Blocks.STONE);FootprintRelease.feet(actor,0,false);
             require(Impact.checksRemaining()==0&&Impact.remaining()>=255,"foot inspection stops at exhausted global check budget",passed);
             Magnitude.settings.checksPerTick=2048;Magnitude.settings.blocksPerTick=256;floor(actor,Blocks.STONE);Dimensions.set(actor,ScaleSafety.MAXIMUM,0);
             AABB region=new AABB(4992,218,4992,5009,238,5009);int before=level.getEntitiesOfClass(Entity.class,region).size();
-            for(int i=0;i<1000;i++){Impact.feet(actor,0,false);Impact.breakAround(actor,actor.position().add(0,-0.5,0),8,2);}
+            for(int i=0;i<1000;i++){FootprintRelease.feet(actor,0,false);Impact.breakAround(actor,actor.position().add(0,-0.5,0),8,2);}
             require(level.getEntitiesOfClass(Entity.class,region).size()==before,"thousands of giant impacts create no debris or item entities",passed);
             require(Impact.remaining()>=0&&Impact.checksRemaining()>=0,"giant impact stress cannot underflow shared quotas",passed);
             Dimensions.reset(actor);require(actor.getBbHeight()<2&&Dimensions.size(actor)==1,"reset removes extreme dimensions",passed);

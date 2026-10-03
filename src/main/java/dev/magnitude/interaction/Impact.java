@@ -102,11 +102,18 @@ public final class Impact {
         if(!allowed(actor) || actor.getAbilities().flying || actor.isNoGravity() || actor.isPassenger()) {
             pending.clear();return 0;
         }
-        int changed=0,visited=0;
+        int changed=0,visited=0,deferred=0;
         while(!pending.isEmpty() && changed<Magnitude.settings.blocksPerImpact
             && BLOCKS.remaining()>0 && CHECKS.remaining()>0 && visited<2048) {
             var work=pending.peekFirst();
             if(!work.valid(actor) || work.complete()) {pending.removeFirst();continue;}
+            if(work.occupied(actor)) {
+                pending.removeFirst();pending.addLast(work);
+                EntityState.of(actor).contacts.reason="footprint waiting for foot release";
+                if(++deferred>=pending.size())break;
+                continue;
+            }
+            deferred=0;
             var pos=work.next(); visited++;
             // Every cursor visit is charged, including empty space and retained support.
             if(!CHECKS.take())break;
