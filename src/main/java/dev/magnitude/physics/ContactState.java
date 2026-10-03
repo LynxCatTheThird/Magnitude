@@ -12,6 +12,10 @@ public final class ContactState {
     public final long[] counts = new long[ContactEvent.Type.values().length];
     public SupportSnapshot support;
     public double loadSize = -1, loadX = Double.NaN, loadZ = Double.NaN, peakY = Double.NaN;
+    /** Self-created support loss cannot bootstrap another landing excavation. */
+    public boolean selfTerrainFall;
+    public double excavationY=Double.NaN;
+    public net.minecraft.world.phys.Vec3 excavationRoot;
     public boolean walking;
     public boolean pressureActive;
     public boolean terrainActive;

@@ -70,6 +70,12 @@ public final class Impact {
         if (!allowed(actor) || !actor.onGround() || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
         var snapshot = dev.magnitude.core.Dimensions.snapshot(actor);
         if (snapshot.base() <= 1) return 0;
+        var history=EntityState.of(actor).contacts;
+        if(pressure && Double.isFinite(history.excavationY) && actor.getY()<history.excavationY-.1
+            && history.excavationRoot!=null
+            && actor.position().subtract(history.excavationRoot).horizontalDistance()<snapshot.stride()) {
+            history.reason="self-created support loss; deeper pressure suppressed";return 0;
+        }
         float hardness = pressure ? (float)Math.min(128, snapshot.base()/Magnitude.settings.pressureHardnessFactor)
             : (float)Math.min(128,Math.max(0,snapshot.base()-1)*0.75);
         var pending=EntityState.of(actor).contacts.footprints;
@@ -120,6 +126,14 @@ public final class Impact {
         if (block.isAir() || !block.getFluidState().isEmpty() || block.hasBlockEntity() || block.is(PROTECTED) || hardness < 0 || hardness > maximumHardness + 1.0e-5f) return false;
         if (!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level, actor, pos, block, null) || !BLOCKS.take()) return false;
         if (!level.destroyBlock(pos, false, actor)) return false;
+        if(actor.onGround() && pos.getY()<actor.getY()) {
+            var contacts=EntityState.of(actor).contacts;
+            if(!contacts.selfTerrainFall || contacts.excavationRoot==null
+                || actor.position().subtract(contacts.excavationRoot).horizontalDistance()>=dev.magnitude.core.Dimensions.snapshot(actor).stride()) {
+                contacts.excavationY=actor.getY();contacts.excavationRoot=actor.position();
+            }
+            contacts.selfTerrainFall=true;
+        }
         PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level, actor, pos, block, null);
         return true;
     }

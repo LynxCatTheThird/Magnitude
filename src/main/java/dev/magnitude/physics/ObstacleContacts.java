@@ -29,7 +29,7 @@ public final class ObstacleContacts {
         var context=CollisionContext.of(player);
         for(var region:regions)for(var pos:BlockPos.betweenClosed(BlockPos.containing(region.minX,region.minY,region.minZ),
             BlockPos.containing(region.maxX,region.maxY,region.maxZ))) {
-            if(pos.getY()<Math.floor(player.getY()+(player.onGround()?0:Math.min(0,movement.y))))continue;
+            if(pos.getY()<Math.ceil(player.getY()-1e-7))continue;
             var block=player.level().getBlockState(pos);
             var shape=block.getCollisionShape(player.level(),pos,context);
             // Vegetation and cobwebs have contact even when they do not block movement.

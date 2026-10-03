@@ -22,6 +22,8 @@ public final class ContactEvents {
         state.jumpImpact = true; // Compatibility status only; landing never uses this flag.
         BodyPoses.update(player, 0, true);
         emit(player, ContactEvent.Type.TAKEOFF, Vec3.ZERO, 0, SupportSnapshot.capture(player));
+        // Explicit takeoff is a new source of impact, even when it breaks its starting surface.
+        state.contacts.selfTerrainFall=false;
     }
     public static void sample(ServerPlayer player) {
         var state = EntityState.of(player);
@@ -32,6 +34,9 @@ public final class ContactEvents {
         Vec3 movement = state.initialized && state.previousPosition != null
             ? player.position().subtract(state.previousPosition) : Vec3.ZERO;
         double distance = movement.horizontalDistance();
+        if(movement.y>0.05 || contact.excavationRoot!=null
+            && player.position().subtract(contact.excavationRoot).horizontalDistance()>=Dimensions.snapshot(player).stride())
+            contact.selfTerrainFall=false;
         boolean teleport = !Double.isFinite(movement.lengthSqr()) || distance > 16 || Math.abs(movement.y) > 16;
         BodyPoses.update(player, teleport ? 0 : distance, false);
         boolean grounded = supported(player);

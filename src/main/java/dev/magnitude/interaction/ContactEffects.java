@@ -29,6 +29,7 @@ public final class ContactEffects {
                         Math.min(6, event.scale().width()/2), Math.min(6, event.scale().height()/2));
             }
             case LANDING -> {
+                if(state.contacts.selfTerrainFall) {state.contacts.reason="self-created support loss; landing excavation suppressed";break;}
                 // The contact transition, captured descent and actual fall establish an impact.
                 // A remembered jump-key flag is neither required nor sufficient.
                 if (event.scale().base() > 1 && (event.velocity().y < -0.1 || event.fallHeight() > 0.05)) {

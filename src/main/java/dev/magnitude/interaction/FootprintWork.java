@@ -66,7 +66,7 @@ public final class FootprintWork {
             || Math.abs(dx)>=Math.abs(c)*width+Math.abs(s)*length+.5
             || Math.abs(dz)>=Math.abs(s)*width+Math.abs(c)*length+.5)return null;
         double rx=pos.getX()+.5-root.x,rz=pos.getZ()+.5-root.z;
-        if(pressure && (rx*rx+rz*rz<.75*.75 || dx*dx+dz*dz<.55*.55))return null;
+        if(pressure && (pos.equals(BlockPos.containing(center)) || rx*rx+rz*rz<.75*.75 || dx*dx+dz*dz<.55*.55))return null;
         return pos;
     }
 }

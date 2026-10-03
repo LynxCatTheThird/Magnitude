@@ -219,6 +219,37 @@ public final class GameplayPhysicsTests {
             ready(player);BodyCollision.move(player,new Vec3(0,0,.2));
             require(level.getBlockState(ROOT.offset(7,2,1)).isAir(),
                 "nonblocking cobweb outline still registers actual leg contact",passed);
+            // Real standing movement, fractional foot centers, and queued pressure must not tunnel.
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-12,-12),ROOT.offset(14,-1,12)))
+                level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
+            Dimensions.set(player,50,0);ready(player);
+            var stable=EntityState.of(player);stable.contacts.selfTerrainFall=false;
+            stable.contacts.excavationY=Double.NaN;stable.contacts.support=null;
+            stable.initialized=true;stable.previousPosition=player.position();stable.previousSize=50;stable.grounded=true;
+            Magnitude.settings.standingPressure=true;
+            for(int frame=0;frame<100;frame++) {
+                stable.physicsTick=Long.MIN_VALUE;stable.contacts.obstacleTick=Long.MIN_VALUE;
+                stable.contacts.sampleTick=Long.MIN_VALUE;
+                PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
+                player.move(net.minecraft.world.entity.MoverType.SELF,new Vec3(0,-.08,0));
+                ContactEvents.sample(player);Impact.continueFeet(player);
+            }
+            require(Math.abs(player.getY()-200)<1e-5
+                && level.getBlockState(ROOT.offset(7,-1,0)).is(Blocks.STONE)
+                && level.getBlockState(ROOT.offset(-8,-1,0)).is(Blocks.STONE),
+                "one hundred real standing gravity frames retain both fractional giant support blocks",passed);
+            require(level.getBlockState(ROOT.offset(7,-2,0)).is(Blocks.STONE),
+                "standing pressure never excavates the next support layer",passed);
+            // Force the self-created fall transition: no new landing or lower pressure excavation.
+            stable.contacts.selfTerrainFall=true;stable.contacts.excavationY=200;
+            stable.contacts.excavationRoot=player.position();
+            player.setPos(player.getX(),199,player.getZ());player.setOnGround(true);
+            PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
+            ContactEvents.emit(player,ContactEvent.Type.LANDING,new Vec3(0,-1,0),1,null);
+            require(Impact.remaining()==Magnitude.settings.blocksPerTick,
+                "self-created fall cannot bootstrap another landing excavation",passed);
+            require(Impact.feet(player,0,true)==0,
+                "same-position self-created fall cannot bootstrap deeper static pressure",passed);
             Magnitude.settings.terrainDamage=false;Magnitude.settings.standingPressure=false;
             try {
                 server.getCommands().getDispatcher().execute("magnitude physics enable",player.createCommandSourceStack());
