@@ -40,6 +40,7 @@ public final class DiagnosticCommand {
                 + " cells=" + PhysicsWork.cellsRemaining() + " pairs=" + PhysicsWork.pairsRemaining()
                 + "; serverTickMs="+c.getSource().getServer().getAverageTickTimeNanos()/1_000_000.0
                 + "; moveAvgMs="+metrics.averageMillis()+" moveMaxMs="+metrics.maximumNanos/1_000_000.0
+                + "; rejectionEvents="+metrics.rejectionEvents
                 + "; moveDenied="+metrics.denied+"/"+metrics.samples+" lastFailure="+metrics.failure
                 + "; tickP50P95P99="+tickTimings.p50()+"/"+tickTimings.p95()+"/"+tickTimings.p99()
                 + "; moveP50P95P99="+moveTimings.p50()+"/"+moveTimings.p95()+"/"+moveTimings.p99()

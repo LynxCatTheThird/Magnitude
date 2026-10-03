@@ -20,5 +20,8 @@
   },
   "depends": {
     "magnitude": "*"
-  }
+  },
+  "mixins": [
+    "magnitude.verification.mixins.json"
+  ]
 }

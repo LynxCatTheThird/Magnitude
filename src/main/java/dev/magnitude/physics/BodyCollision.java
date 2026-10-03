@@ -60,7 +60,7 @@ public final class BodyCollision {
             boolean was=false,now=false;
             for(BodyBox box:before)was|=box.intersects(obstacle);
             for(BodyBox box:after)now|=box.intersects(obstacle);
-            if(now && !was)return true;
+            if(now && !was){state.contacts.diagnostics.failure="new body penetration";state.contacts.diagnostics.rejected();return true;}
         }
         return false;
     }
@@ -123,9 +123,9 @@ public final class BodyCollision {
         var state=EntityState.of(player);state.proxyFallback=true;
         // Unknown space is never treated as air. Upward escape is handled by the
         // normal collision solver once the destination has been verified.
-        state.movementDenied=true;return Vec3.ZERO;
+        state.contacts.diagnostics.rejected();state.movementDenied=true;return Vec3.ZERO;
     }
-    private static void fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.movementDenied=true; }
+    private static void fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.contacts.diagnostics.rejected();state.movementDenied=true; }
     private static List<BodyBox> shift(List<BodyBox> parts,Vec3 delta) {
         if(delta.lengthSqr()==0)return parts;
         List<BodyBox> result=new ArrayList<>(parts.size());

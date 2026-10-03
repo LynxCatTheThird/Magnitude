@@ -120,7 +120,7 @@
   "gui.magnitude.protectionHint": "方块保护与材料强度仍可能阻止局部作用。",
   "gui.magnitude.serverMs": "服务器平均刻耗时：%s ms",
   "gui.magnitude.moveMs": "移动查询平均／最大：%s ms",
-  "gui.magnitude.denied": "最近移动拒绝：%s / %s",
+  "gui.magnitude.denied": "最近计时求解拒绝：%s / %s",
   "gui.magnitude.pending": "待处理脚印：%s",
   "gui.magnitude.failure": "最近查询失败：%s",
   "gui.magnitude.reason": "最近接触原因：%s",
@@ -272,5 +272,6 @@
   "gui.magnitude.visualPreset.balanced": "均衡（2048）",
   "gui.magnitude.visualPreset.extended": "扩展（4096）",
   "gui.magnitude.visualPreset.custom": "自定义",
-  "gui.magnitude.visualPresetHint": "仅修改本地脚印缓存。点击应用后保存；保留开关、距离和镜头设置，不改变服务器物理。缓存越大可保留更多顶面，未保证提高帧率。"
+  "gui.magnitude.visualPresetHint": "仅修改本地脚印缓存。点击应用后保存；保留开关、距离和镜头设置，不改变服务器物理。缓存越大可保留更多顶面，未保证提高帧率。",
+  "gui.magnitude.rejectionEvents": "当前接触状态累计拒绝事件：%s"
 }

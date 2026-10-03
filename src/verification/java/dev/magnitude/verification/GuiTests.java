@@ -29,7 +29,7 @@ public final class GuiTests implements ClientModInitializer {
     private ConfigView fixture(boolean admin){
         var settings=new dev.magnitude.core.Settings();var values=new java.util.LinkedHashMap<String,Double>();
         for(var field:ConfigField.values())values.put(field.id,field.read(settings));
-        return new ConfigView(1,1,admin,values,Map.of("terrain",1d,"pressure",1d,"resize",0d,"carry",0d),"ready","",50,false,false,"serverOff","serverOff",12.3,.2,.8,1,128,2,"budget exhausted","footprint waiting for foot release",new dev.magnitude.physics.TimingWindow(1).summary(),new dev.magnitude.physics.TimingWindow(1).summary(),0,0,0,0);
+        return new ConfigView(1,1,admin,values,Map.of("terrain",1d,"pressure",1d,"resize",0d,"carry",0d),"ready","",50,false,false,"serverOff","serverOff",12.3,.2,.8,1,128,2,"budget exhausted","footprint waiting for foot release",new dev.magnitude.physics.TimingWindow(1).summary(),new dev.magnitude.physics.TimingWindow(1).summary(),0,0,0,0,2);
     }
     private void screenshot(Minecraft client,String name){
         net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{

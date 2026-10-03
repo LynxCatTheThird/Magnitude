@@ -72,7 +72,12 @@ public final class BodyPhysicsTests {
             require(!level.hasChunkAt(net.minecraft.core.BlockPos.containing(actor.position())),"position acknowledgement fixture starts in an unloaded chunk",passed);
             int cellsBefore=PhysicsWork.cellsRemaining(),pairsBefore=PhysicsWork.pairsRemaining();
             require(!BodyCollision.newCollision(actor,actor.position(),actor.position())&&cellsBefore==PhysicsWork.cellsRemaining()&&pairsBefore==PhysicsWork.pairsRemaining(),"unchanged position acknowledgement accepts unknown terrain without a world query",passed);
+            long rejected=EntityState.of(actor).contacts.diagnostics.rejectionEvents;
             require(BodyCollision.newCollision(actor,actor.position(),actor.position().add(.001,0,0)),"actual movement from an unloaded destination remains rejected",passed);
+            require(EntityState.of(actor).contacts.diagnostics.rejectionEvents==rejected+1,"position rejection is counted even when no movement solver runs",passed);
+            require(!BodyCollision.permitted(actor,new Vec3(0,0,.001))&&EntityState.of(actor).contacts.diagnostics.rejectionEvents==rejected+2,"preflight rejection contributes its own event without a timed movement query",passed);
+            BodyCollision.solve(actor,Vec3.ZERO);
+            require(!EntityState.of(actor).movementDenied&&EntityState.of(actor).contacts.diagnostics.rejectionEvents==rejected+2,"later successful solve cannot erase earlier rejection event evidence",passed);
             actor.setPos(loadedRoot);ready(actor);
             level.setBlock(ROOT.offset(1,0,0),Blocks.STONE_SLAB.defaultBlockState(),2);level.setBlock(ROOT.offset(1,1,0),Blocks.AIR.defaultBlockState(),2);
             ready(actor);actor.move(MoverType.SELF,new Vec3(1,0,0));

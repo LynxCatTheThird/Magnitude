@@ -120,7 +120,7 @@
   "gui.magnitude.protectionHint": "Block protection and material strength can still prevent effects.",
   "gui.magnitude.serverMs": "Average server tick: %s ms",
   "gui.magnitude.moveMs": "Movement query average / maximum: %s ms",
-  "gui.magnitude.denied": "Recent movement denials: %s / %s",
+  "gui.magnitude.denied": "Recent timed solver rejections: %s / %s",
   "gui.magnitude.pending": "Pending footprints: %s",
   "gui.magnitude.failure": "Last query failure: %s",
   "gui.magnitude.reason": "Last contact reason: %s",
@@ -272,5 +272,6 @@
   "gui.magnitude.visualPreset.balanced": "Balanced (2048)",
   "gui.magnitude.visualPreset.extended": "Extended (4096)",
   "gui.magnitude.visualPreset.custom": "Custom",
-  "gui.magnitude.visualPresetHint": "Changes only the local footprint cache after Apply. Preserves visibility, distance and camera settings; server physics is unchanged. Larger caches retain more surfaces; no frame rate guarantee."
+  "gui.magnitude.visualPresetHint": "Changes only the local footprint cache after Apply. Preserves visibility, distance and camera settings; server physics is unchanged. Larger caches retain more surfaces; no frame rate guarantee.",
+  "gui.magnitude.rejectionEvents": "Rejection events in current contact state: %s"
 }

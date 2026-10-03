@@ -8,4 +8,4 @@ public record ConfigView(long revision,long personalRevision,boolean administrat
                          boolean terrainEffective,boolean pressureEffective,String terrainReason,String pressureReason,
                          double serverTickMs,double moveAvgMs,double moveMaxMs,int denied,int samples,
                          int pending,String lastFailure,String reason,dev.magnitude.physics.TimingWindow.Summary tickTimings,
-                         dev.magnitude.physics.TimingWindow.Summary moveTimings,int cellsUsed,int pairsUsed,int materialChecks,int blockWrites) {}
+                         dev.magnitude.physics.TimingWindow.Summary moveTimings,int cellsUsed,int pairsUsed,int materialChecks,int blockWrites,long rejectionEvents) {}

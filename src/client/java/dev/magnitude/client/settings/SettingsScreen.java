@@ -85,7 +85,7 @@ public final class SettingsScreen extends Screen {
             lines.add(tr("work", view.cellsUsed(),view.pairsUsed(),view.materialChecks(),view.blockWrites()));
             lines.add(tr("serverMs",String.format(java.util.Locale.ROOT,"%.2f",view.serverTickMs())));
             lines.add(tr("moveMs",String.format(java.util.Locale.ROOT,"%.2f / %.2f",view.moveAvgMs(),view.moveMaxMs())));
-            lines.add(tr("denied",view.denied(),view.samples()));lines.add(tr("pending",view.pending()));
+            lines.add(tr("denied",view.denied(),view.samples()));lines.add(tr("rejectionEvents",view.rejectionEvents()));lines.add(tr("pending",view.pending()));
             lines.add(tr("failure",view.lastFailure()));lines.add(tr("reason",view.reason()));lines.add(tr("diagnosticHint"));
         }
         return lines;
