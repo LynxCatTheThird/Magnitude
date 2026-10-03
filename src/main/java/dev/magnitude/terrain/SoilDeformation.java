@@ -55,7 +55,9 @@ public final class SoilDeformation {
                 ||Math.abs(work.size-dev.magnitude.core.Dimensions.snapshot(actor).base())>Math.max(1e-9,work.size*1e-6)) {continue;}
             if(!actor.level().hasChunkAt(entry.getKey())){changes.put(entry.getKey(),work);if(++unknown>=changes.size())break;continue;}
             unknown=0;
-            if(Impact.compactSoil(actor,entry.getKey(),work.before,work.after))writes++;
+            var result=Impact.compactSoil(actor,entry.getKey(),work.before,work.after,Magnitude.settings.blocksPerImpact-writes);
+            writes+=result.writes();
+            if(result.retry()){changes.putIfAbsent(entry.getKey(),work);break;}
         }
         if(writes>0) {
             state.contacts.reason="soil reached bounded equilibrium";

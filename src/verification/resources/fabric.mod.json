@@ -10,7 +10,8 @@
     ],
     "client": [
       "dev.magnitude.verification.GuiTests",
-      "dev.magnitude.verification.GuiNetworkTests"
+      "dev.magnitude.verification.GuiNetworkTests",
+      "dev.magnitude.verification.DualClientTerrainTests"
     ]
   },
   "depends": {

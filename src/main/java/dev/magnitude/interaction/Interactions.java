@@ -93,7 +93,11 @@ public final class Interactions {
         dev.magnitude.physics.ContactEvents.sample(player);
     }
     public static void tick(MinecraftServer server) {
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+        var players=java.util.List.copyOf(server.getPlayerList().getPlayers());
+        // Rotate service order so a large footprint cannot always exhaust the shared budget first.
+        int first=players.isEmpty()?0:(int)Math.floorMod(server.overworld().getGameTime(),players.size());
+        for (int index=0;index<players.size();index++) {
+            ServerPlayer player=players.get((first+index)%players.size());
             if (!player.isAlive() || player.isSpectator()) { release(player, false); continue; }
             EntityState state = EntityState.of(player);
             dev.magnitude.physics.LocalProxy.update(player);

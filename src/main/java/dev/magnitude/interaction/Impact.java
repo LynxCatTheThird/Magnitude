@@ -122,23 +122,48 @@ public final class Impact {
         return changed;
     }
     /** Shared protected mutation path for non-destructive soil state changes. */
+    public record SoilResult(int writes,boolean retry){}
+    private static final SoilResult SOIL_REJECTED=new SoilResult(0,false),SOIL_DEFERRED=new SoilResult(0,true);
     public static boolean compactSoil(ServerPlayer actor,BlockPos pos,net.minecraft.world.level.block.state.BlockState expected,
-                                       net.minecraft.world.level.block.state.BlockState replacement) {
-        if(!Magnitude.settings.shallowDeformation||!allowed(actor)||!CHECKS.take())return false;
-        var level=actor.level();
-        if(!level.hasChunkAt(pos)||!level.getWorldBorder().isWithinBounds(pos)||!actor.mayInteract(level,pos))return false;
-        // Initial backend does not remove attached plants or supporting structures by neighbor updates.
-        if(!level.getBlockState(pos.above()).isAir())return false;
+                                      net.minecraft.world.level.block.state.BlockState replacement) {
+        var result=compactSoil(actor,pos,expected,replacement,Magnitude.settings.blocksPerImpact);
+        return result.writes()>0&&actor.level().getBlockState(pos)==replacement;
+    }
+    /** A supported plant is separately authorized; both writes fit the same finite batch. */
+    public static SoilResult compactSoil(ServerPlayer actor,BlockPos pos,net.minecraft.world.level.block.state.BlockState expected,
+                                        net.minecraft.world.level.block.state.BlockState replacement,int batchRemaining) {
+        if(!Magnitude.settings.shallowDeformation||!allowed(actor))return SOIL_REJECTED;
+        if(!CHECKS.take())return SOIL_DEFERRED;
+        var level=actor.level();var above=pos.above();
+        if(!level.hasChunkAt(pos)||!level.hasChunkAt(above)||!level.getWorldBorder().isWithinBounds(pos)||!actor.mayInteract(level,pos))return SOIL_REJECTED;
+        var plant=level.getBlockState(above);
+        boolean attached=plant.is(net.minecraft.world.level.block.Blocks.SHORT_GRASS)||plant.is(net.minecraft.world.level.block.Blocks.FERN);
+        if(!plant.isAir()&&!attached)return SOIL_REJECTED;
+        int cost=attached?2:1;
+        if(BLOCKS.remaining()<cost||batchRemaining<cost||attached&&CHECKS.remaining()==0)return SOIL_DEFERRED;
         var current=level.getBlockState(pos);
         if(!replacement.getFluidState().isEmpty()||replacement.hasBlockEntity()||replacement.getBlock()!=dev.magnitude.terrain.SoilMaterials.compacted(current)
-            ||dev.magnitude.terrain.SoilMaterials.height(replacement)>=dev.magnitude.terrain.SoilMaterials.height(current))return false;
+            ||dev.magnitude.terrain.SoilMaterials.height(replacement)>=dev.magnitude.terrain.SoilMaterials.height(current))return SOIL_REJECTED;
         if(current!=expected||current.hasBlockEntity()||current.is(PROTECTED)||!current.getFluidState().isEmpty()
-            ||current.getDestroySpeed(level,pos)<0)return false;
-        if(!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level,actor,pos,current,null))return false;
-        // Re-read after protection callbacks; they may have changed the world.
-        if(!Magnitude.settings.shallowDeformation||!allowed(actor)||!actor.mayInteract(level,pos)
-            ||level.getBlockState(pos)!=expected||!level.getBlockState(pos.above()).isAir()||!BLOCKS.take())return false;
-        return level.setBlock(pos,replacement,Block.UPDATE_ALL);
+            ||current.getDestroySpeed(level,pos)<0)return SOIL_REJECTED;
+        if(attached&&(!CHECKS.take()||plant.hasBlockEntity()||plant.is(PROTECTED)||!plant.getFluidState().isEmpty()
+            ||!level.getWorldBorder().isWithinBounds(above)||!actor.mayInteract(level,above)))return SOIL_REJECTED;
+        if(!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level,actor,pos,current,null))return SOIL_REJECTED;
+        if(attached&&!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level,actor,above,plant,null))return SOIL_REJECTED;
+        // External callbacks can revoke permissions, consume budgets, or mutate either cell.
+        if(!Magnitude.settings.shallowDeformation||!allowed(actor)||!actor.mayInteract(level,pos)||attached&&!actor.mayInteract(level,above)
+            ||level.getBlockState(pos)!=expected||level.getBlockState(above)!=plant)return SOIL_REJECTED;
+        if(BLOCKS.remaining()<cost)return SOIL_DEFERRED;
+        for(int i=0;i<cost;i++)BLOCKS.take();
+        int writes=0;
+        if(attached) {
+            // Avoid neighbor callbacks until the soil state is committed. AFTER observers see both results.
+            if(!level.setBlock(above,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),Block.UPDATE_CLIENTS|Block.UPDATE_KNOWN_SHAPE))return SOIL_REJECTED;
+            writes++;
+        }
+        if(level.setBlock(pos,replacement,Block.UPDATE_ALL))writes++;
+        if(attached)PlayerBlockBreakEvents.AFTER.invoker().afterBlockBreak(level,actor,above,plant,null);
+        return new SoilResult(writes,false);
     }
     private static boolean breakBlock(ServerPlayer actor, BlockPos pos, float maximumHardness) {
         if (!CHECKS.take()) return false;

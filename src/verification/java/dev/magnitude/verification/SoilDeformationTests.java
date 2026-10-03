@@ -76,8 +76,8 @@ public final class SoilDeformationTests {
                 "full-height soil cannot accept water without a depression",passed);
             var water=surface.setValue(CompactedSoilBlock.WATERLOGGED,true);level.setBlock(protectedPos,water,2);ready(p);
             check(!Impact.compactSoil(p,protectedPos,water,surface)&&!level.getBlockState(protectedPos).getFluidState().isEmpty(),"waterlogged depression retains water and forbids compaction writes",passed);
-            level.setBlock(protectedPos,Blocks.DIRT.defaultBlockState(),2);level.setBlock(protectedPos.above(),Blocks.SHORT_GRASS.defaultBlockState(),2);ready(p);
-            check(!Impact.compactSoil(p,protectedPos,Blocks.DIRT.defaultBlockState(),surface)&&level.getBlockState(protectedPos.above()).is(Blocks.SHORT_GRASS),
+            level.setBlock(protectedPos,Blocks.DIRT.defaultBlockState(),2);level.setBlock(protectedPos.above(),Blocks.DANDELION.defaultBlockState(),2);ready(p);
+            check(!Impact.compactSoil(p,protectedPos,Blocks.DIRT.defaultBlockState(),surface)&&level.getBlockState(protectedPos.above()).is(Blocks.DANDELION),
                 "soil compaction cannot indirectly remove attached plants by neighbor updates",passed);
             level.setBlock(protectedPos.above(),Blocks.AIR.defaultBlockState(),2);ready(p);
             check(!Impact.compactSoil(p,protectedPos,Blocks.DIRT.defaultBlockState(),water),"soil mutation cannot manufacture water through replacement state",passed);
