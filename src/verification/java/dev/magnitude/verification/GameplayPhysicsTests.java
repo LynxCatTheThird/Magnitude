@@ -286,8 +286,22 @@ public final class GameplayPhysicsTests {
                 require(!EntityState.of(player).terrainEnabled && !EntityState.of(player).pressureEnabled,
                     "canonical personal opt-out disables both terrain modes",passed);
             } catch(com.mojang.brigadier.exceptions.CommandSyntaxException error) {throw new AssertionError(error);}
+            // A continuous giant step must clear obstacles taller than the old fixed cap.
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-16,0,-12),ROOT.offset(16,12,22)))
+                level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-16,0,5),ROOT.offset(16,5,22)))
+                level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
+            for(double size:new double[]{48.625,49.875,50.125}){
+                Dimensions.set(player,size,0);ready(player);
+                var climb=BodyCollision.solve(player,new Vec3(0,0,2));
+                require(!climb.denied()&&climb.movement().z>1.99&&Math.abs(climb.movement().y-6)<1e-5,
+                    "continuous giant reach clears a six-block platform at "+size,passed);
+                require(EntityState.of(player).physicsCells<=LocalProxy.CELLS_PER_TICK&&PhysicsWork.cellsRemaining()>=0,
+                    "tall step preserves traversal budgets at "+size,passed);
+            }
             Dimensions.set(player,ScaleSafety.MAXIMUM,0);ready(player);
-            require(StepPolicy.height(player)<=4.8,"extreme visual size cannot create unbounded automatic steps",passed);
+            var extreme=BodyCollision.solve(player,new Vec3(1,0,0));
+            require(extreme.denied()&&extreme.movement().equals(Vec3.ZERO),"extreme anatomical step reach cannot bypass traversal budgets or grant unverified movement",passed);
         } finally {Magnitude.settings=original;PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();}
     }
 }

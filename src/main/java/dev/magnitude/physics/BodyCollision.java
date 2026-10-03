@@ -40,7 +40,7 @@ public final class BodyCollision {
         if(!Double.isFinite(wanted.lengthSqr())) {fallback(player);return false;}
         if(wanted.lengthSqr()==0)return true;
         var parts=PlayerBody.parts(player,player.position());
-        if(!WorldObstacles.loaded(player,WorldObstacles.regions(parts,wanted,StepPolicy.height(player)))) {
+        if(!WorldObstacles.loaded(player,WorldObstacles.regions(parts,wanted,0))) {
             EntityState.of(player).contacts.diagnostics.failure="query envelope budget or unloaded chunks";
             fallback(player);return false;
         }
@@ -82,19 +82,40 @@ public final class BodyCollision {
         if(!Double.isFinite(wanted.lengthSqr()))return fallback(player,wanted);
         if(wanted.lengthSqr()==0)return Vec3.ZERO;
         List<BodyBox> parts=PlayerBody.parts(player,player.position());
-        double step=StepPolicy.height(player);
-        var query=WorldObstacles.query(player,WorldObstacles.regions(parts,wanted,step),true);
+        double step=wanted.horizontalDistanceSqr()>0?StepPolicy.height(player):0;
+        var regions=WorldObstacles.regions(parts,wanted,0);
+        var query=WorldObstacles.query(player,regions,true);
         if(!query.complete())return fallback(player,wanted);
         List<AABB> obstacles=query.boxes();
         if(obstacles.isEmpty())return wanted;
+        long preliminaryBroad=(long)parts.size()*obstacles.size();
+        if(state.physicsPairs+preliminaryBroad>LocalProxy.PAIRS_PER_TICK||!PhysicsWork.pairs(preliminaryBroad))return fallback(player,wanted);
+        state.physicsPairs+=(int)preliminaryBroad;
+        var directCandidates=candidates(parts,obstacles,wanted,0);
+        long preliminary=0;for(var nearby:directCandidates)preliminary+=(long)nearby.size()*3;
+        if(state.physicsPairs+preliminary>LocalProxy.PAIRS_PER_TICK||!PhysicsWork.pairs(preliminary))return fallback(player,wanted);
+        state.physicsPairs+=(int)preliminary;
+        var ordinary=clip(parts,directCandidates,wanted);
+        if(step>0&&(player.onGround()||wanted.y<0&&ordinary.y!=wanted.y)&&(ordinary.x!=wanted.x||ordinary.z!=wanted.z)){
+            step=StepPolicy.height(player,parts,wanted);
+            if(step==0)return ordinary;
+            var extra=new ArrayList<AABB>();
+            for(var region:regions)extra.add(new AABB(region.minX,region.maxY,region.minZ,region.maxX,region.maxY+step,region.maxZ));
+            var above=WorldObstacles.query(player,extra,true);
+            if(!above.complete())return ordinary;
+            var combined=new java.util.LinkedHashSet<AABB>(obstacles);combined.addAll(above.boxes());
+            if(combined.size()>1024){state.contacts.diagnostics.failure="combined obstacle count budget";return ordinary;}
+            obstacles=new ArrayList<>(combined);
+        }else return ordinary;
+
         // Charge the bounded broad phase, then SAT only for reachable part/obstacle pairs.
         long broad=(long)obstacles.size()*parts.size();
-        if(state.physicsPairs+broad>LocalProxy.PAIRS_PER_TICK||!PhysicsWork.pairs(broad))return fallback(player,wanted);
+        if(state.physicsPairs+broad>LocalProxy.PAIRS_PER_TICK||!PhysicsWork.pairs(broad))return ordinary;
         state.physicsPairs+=(int)broad;
         var candidates=candidates(parts,obstacles,wanted,step);
         long pairs=0;for(var nearby:candidates)pairs+=(long)nearby.size()*12;
         if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs)) {
-            state.contacts.diagnostics.failure="collision pair budget";return fallback(player,wanted);
+            state.contacts.diagnostics.failure="collision pair budget";return ordinary;
         }
         state.physicsPairs+=(int)pairs;
         Vec3 result=clip(parts,candidates,wanted);

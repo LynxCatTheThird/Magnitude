@@ -25,7 +25,7 @@ public final class NaturalTerrainTests implements ModInitializer {
     private double low,high;
     @Override public void onInitialize(){
         if(!Boolean.getBoolean("magnitude.naturalTerrainVerification"))return;
-        ServerTickEvents.START_SERVER_TICK.register(server->{start=System.nanoTime();WorldQueryTrace.ROWS.clear();});
+        ServerTickEvents.START_SERVER_TICK.register(server->{start=System.nanoTime();WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();});
         ServerTickEvents.END_SERVER_TICK.register(server->{
             var p=server.getPlayerList().getPlayerByName("NaturalWalker");if(p==null||phase>=SIZES.length)return;
             try{
@@ -54,6 +54,7 @@ public final class NaturalTerrainTests implements ModInitializer {
                     low=Math.min(low,p.getY());high=Math.max(high,p.getY());
                 }
                 if(WorldQueryTrace.ROWS.stream().anyMatch(r->!Boolean.TRUE.equals(((Map<?,?>)r).get("complete"))))Files.writeString(Path.of("natural-server-denied-trace.json"),json.toJson(WorldQueryTrace.ROWS));
+                if(tick%20==0&&!WorldQueryTrace.MOVES.isEmpty())Files.writeString(Path.of("natural-server-movement-trace.json"),json.toJson(WorldQueryTrace.MOVES));
                 previous=p.position();
                 if(phase==1&&tick%20==0)Files.writeString(Path.of("natural-query-trace.json"),json.toJson(WorldQueryTrace.ROWS));
                 if(tick%20==0)Files.writeString(Path.of("natural-live.json"),json.toJson(Map.of("phase",phase,"tick",tick,"position",p.position().toString(),"denied",denied,"stalled",stalled,"reason",EntityState.of(p).contacts.diagnostics.failure)));
