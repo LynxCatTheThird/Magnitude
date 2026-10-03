@@ -108,7 +108,7 @@ public final class ScaleImpactTests {
             Dimensions.set(actor,ScaleSafety.MINIMUM,0);Dimensions.set(actor,256,20);
             for(int i=0;i<25;i++)ScaleTypes.BASE.getScaleData(actor).tick();
             require(Dimensions.size(actor)==256&&actor.getBbHeight()<=14.401,"micro-to-giant transition completes with bounded collision",passed);
-            actor.createCommandSourceStack().getServer().getCommands().getDispatcher().execute("magnitude random 0.000001 256 20",actor.createCommandSourceStack());
+            actor.createCommandSourceStack().getServer().getCommands().getDispatcher().execute("magnitude random start 0.000001 256 20",actor.createCommandSourceStack());
             require(EntityState.of(actor).randomLow==0.000001&&EntityState.of(actor).randomHigh==256,"random command accepts configured extreme range",passed);
             var randomOut=TagValueOutput.createWithContext(ProblemReporter.DISCARDING,level.registryAccess());actor.saveWithoutId(randomOut);
             restored.load(TagValueInput.create(ProblemReporter.DISCARDING,level.registryAccess(),randomOut.buildResult()));

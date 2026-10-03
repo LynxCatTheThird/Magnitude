@@ -77,3 +77,7 @@ Accessible Step 2.4.1+26.3 与当前客户端共同启动到资源图集加载�
 `GuiNetworkTests`由`-Dmagnitude.guiNetworkVerification=true`启用，连接`-Dmagnitude.testServer=127.0.0.1:<port>`。分别使用普通玩家和管理员（后者设置`-Dmagnitude.guiAdmin=true`）验证真实GUI请求/确认、权限伪造拒绝、命令/GUI一致性和过期编辑。专服隔离目录设置offline模式及本地监听，并为测试管理员配置ops.json。该运行需禁用自动专服夹具（设置`-Dmagnitude.guiVerification=true`）；结果写入network-results.json。
 
 这些检查不证明复杂模组包中的全部菜单布局兼容或长期FPS/MSPT。生产JAR应排除全部验证入口和类。
+
+## 0.1.4-alpha8 唯一CLI
+
+命令树根集合必须恰好为scale/config/action/carry/tool/random/diagnostics/menu。回归逐项确认旧根命令、旧物理/管理分组、嵌套reset、数字工具模式、隐式随机启动与旧携带位置语法不能完整解析，并验证命名工具操作、食物标识符与管理员目标命令。当前服务端断言386项，规则300012项。旧命令委托测试已替换为唯一入口和旧语法拒绝测试。

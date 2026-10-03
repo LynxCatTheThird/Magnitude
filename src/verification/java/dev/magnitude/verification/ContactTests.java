@@ -94,9 +94,8 @@ public final class ContactTests {
             require(!packet.newerThan(7) && !packet.newerThan(8) && packet.newerThan(6), "duplicate and reordered physics revisions cannot replay interpolation", passed);
             var dispatcher=server.getCommands().getDispatcher();
             var source=player.createCommandSourceStack();
-            for(String name:new String[]{"pressure","damage","walkDamage","landingDamage","pressureHardness","impactScale","server","reload"})
-                require(!dispatcher.getRoot().getChild("magnitude").getChild("physics").getChild(name).canUse(source),"global physics command requires administrator: "+name,passed);
-            require(dispatcher.getRoot().getChild("magnitude").getChild("physics").getChild("status").canUse(source),"physical diagnosis is available to ordinary players",passed);
+            require(!dispatcher.getRoot().getChild("magnitude").getChild("config").getChild("server").canUse(source),"server configuration requires administrator",passed);
+            require(dispatcher.getRoot().getChild("magnitude").getChild("diagnostics").getChild("physics").canUse(source),"physical diagnosis is available to ordinary players",passed);
             state.pressureEnabled=false;
             var output=net.minecraft.world.level.storage.TagValueOutput.createWithContext(net.minecraft.util.ProblemReporter.DISCARDING,level.registryAccess());
             state.save(output,player);

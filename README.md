@@ -5,7 +5,7 @@
 ## 安装
 
 1. 安装 Minecraft Java Edition 26.3、Fabric Loader 0.19.5 或更新版本，以及对应的 Fabric API。
-2. 将 `magnitude-0.1.4-alpha7+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
+2. 将 `magnitude-0.1.4-alpha8+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
 3. 首次启动后可编辑世界或服务端目录下的 `config/magnitude.json`，修改后使用 `/magnitude config reload`。
 
 客户端和服务端必须使用同一版本。单人游戏也会同时运行服务端逻辑。
@@ -14,26 +14,26 @@
 
 游戏内按 **F8** 或执行 `/magnitude menu` 打开设置；暂停菜单和“选项”页面也有入口。界面区分本地视角、个人许可与服务器规则，显示未生效原因；修改后点击“应用”，服务器确认后才生效。完整说明见 [设置界面与命令](docs/SETTINGS.md)。
 
-命令根节点是 `/magnitude`。推荐使用 `scale`、`config` 和 `action` 分组；旧入口继续兼容。常用旧命令如下：
+命令根节点是 `/magnitude`，每项功能只有一个领域入口：
 
-| 命令                                      | 作用                               |
-| ----------------------------------------- | ---------------------------------- |
-| `/magnitude get`                          | 查看当前尺寸、目标尺寸和碰撞箱高度 |
-| `/magnitude set <倍数> [ticks]`           | 设置目标尺寸                       |
-| `/magnitude multiply <倍数> [ticks]`      | 按当前目标尺寸相乘                 |
-| `/magnitude add <倍数> [ticks]`           | 在当前目标尺寸上加值               |
-| `/magnitude height <方块高度> [ticks]`    | 按标准玩家高度换算尺寸             |
-| `/magnitude reset`                        | 恢复为 1 倍                        |
-| `/magnitude consent resize true/false`    | 允许或拒绝其他玩家改变自己的尺寸   |
-| `/magnitude consent carry true/false`     | 允许或拒绝被其他玩家携带           |
-| `/magnitude terrain true/false`           | 开关自己的落地冲击地形破坏         |
-| `/magnitude pickup`                       | 拾取准星指向且同意被携带的实体     |
-| `/magnitude release` / `/magnitude throw` | 释放或投掷携带的实体               |
-| `/magnitude ride`                         | 骑乘准星指向的实体                 |
-| `/magnitude blow` / `/magnitude stomp`    | 施放推力或落地冲击                 |
-| `/magnitude ability`                      | 使用当前坐骑的能力                 |
+| 命令 | 作用 |
+| --- | --- |
+| `/magnitude scale get` | 查看尺寸 |
+| `/magnitude scale set <倍数> [ticks]` | 设置自身尺寸 |
+| `/magnitude scale multiply <倍数> [ticks]` | 按目标尺寸相乘 |
+| `/magnitude scale add <数值> [ticks]` | 在目标尺寸上加值 |
+| `/magnitude scale height <方块高度> [ticks]` | 按标准玩家高度换算 |
+| `/magnitude scale reset` | 恢复1倍 |
+| `/magnitude config player resize on/off` | 他人改变尺寸许可 |
+| `/magnitude config player carry on/off` | 被携带许可 |
+| `/magnitude config player terrain on/off` | 个人地形许可 |
+| `/magnitude config player pressure on/off` | 个人压力许可 |
+| `/magnitude config server terrainDamage true/false` | 管理员地形总开关 |
+| `/magnitude config show` | 有效状态与未生效原因 |
+| `/magnitude action pickup/release/throw/ride/blow/stomp/ability` | 动作请求，各名称分别执行 |
+| `/magnitude diagnostics physics` | 详细物理诊断 |
 
-管理员命令位于 `/magnitude admin`，包括对实体选择器批量设置、读取、重置、配置重载、全局地形破坏和食物尺寸系数。管理员命令需要游戏管理员权限。
+管理员实体操作位于 `scale targets get/set/reset`；食物系数位于 `config food <item> <factor>`，重读配置使用 `config reload`。GUI与CLI明确区分个人和服务器范围，没有隐式同时修改两个范围的快捷命令。
 
 ## 客户端按键
 
@@ -57,13 +57,13 @@
 
 | 配置命令                           | 含义                                                           |
 | ---------------------------------- | -------------------------------------------------------------- |
-| `/magnitude tool value <数值>`     | 设置参数，范围 -2³²..2³²                                       |
-| `/magnitude tool mode 0`           | 当前尺寸乘以参数，负参数按 0 处理后限幅                        |
-| `/magnitude tool mode 1`           | 当前尺寸加参数                                                 |
-| `/magnitude tool mode 2`           | 目标尺寸设为参数                                               |
-| `/magnitude tool mode 3`           | 与绑定目标交换尺寸，需要双方尺寸已经稳定                       |
-| `/magnitude tool mode 4`           | 从绑定目标抽取可转移尺寸的指定比例给自己，比例限于 0..1        |
-| `/magnitude tool duration <ticks>` | 设置模式 0..2 的渐变时间，范围 0..1200；交换/转移使用 20 ticks |
+| `/magnitude tool set value <数值>`     | 设置参数，范围 -2³²..2³²                                       |
+| `/magnitude tool set mode multiply`           | 当前尺寸乘以参数，负参数按 0 处理后限幅                        |
+| `/magnitude tool set mode add`           | 当前尺寸加参数                                                 |
+| `/magnitude tool set mode set`           | 目标尺寸设为参数                                               |
+| `/magnitude tool set mode swap`           | 与绑定目标交换尺寸，需要双方尺寸已经稳定                       |
+| `/magnitude tool set mode transfer`           | 从绑定目标抽取可转移尺寸的指定比例给自己，比例限于 0..1        |
+| `/magnitude tool set duration <ticks>` | 设置模式 0..2 的渐变时间，范围 0..1200；交换/转移使用 20 ticks |
 
 右键空的储存器会抽取目标超过最小尺寸部分的一半；带有存量时注入目标，超过上限的存量留在工具中。右键空中操作自身，右键实体操作目标。工具需要目标尺寸稳定，并受许可、距离、视线和共享冷却限制。收紧配置后，若现有尺寸暂时超过新范围，存取/交换/转移会拒绝操作，以免限幅丢失存量；先重置或直接设置到新范围内再操作。
 
@@ -71,13 +71,13 @@
 
 ### 携带、骑乘与随机尺寸
 
-携带者至少是目标的 2 倍，拾取射线最长 16 方块；每人只容纳一名乘客，不允许叠加携带链。被携带的玩家需要 `/magnitude consent carry true`。携带装具右键实体拾取，右键空中释放，潜行右键空中抛出。
+携带者至少是目标的 2 倍，拾取射线最长 16 方块；每人只容纳一名乘客，不允许叠加携带链。被携带的玩家需要 `/magnitude config player carry on`。携带装具右键实体拾取，右键空中释放，潜行右键空中抛出。
 
-`/magnitude carry shoulder`、`hand`、`custom` 选择位置；`/magnitude carry offset <forward> <side> <up>` 设置相对偏移，前/侧范围 -2..2、高度 0..2，偏移随携带者的物理碰撞尺寸缩放，因子最多为 8。释放会尝试寻找无方块碰撞且位于世界边界内的位置；抛出速度最多为 2。死亡、断连、卸载、传送和重置会解除临时携带关系，重启后不自动重新携带。
+`/magnitude carry position shoulder`、`position hand`、`position custom` 选择位置；`/magnitude carry offset <forward> <side> <up>` 设置相对偏移，前/侧范围 -2..2、高度 0..2，偏移随携带者的物理碰撞尺寸缩放，因子最多为 8。释放会尝试寻找无方块碰撞且位于世界边界内的位置；抛出速度最多为 2。死亡、断连、卸载、传送和重置会解除临时携带关系，重启后不自动重新携带。
 
 骑乘需要坐骑至少为自身的 4 倍。骑乘其他玩家时，由大玩家开启 carry 许可；小玩家主动骑乘不需要再开启被携带许可。许可撤回或尺寸比不再满足要求时自动下车。骑骷髅时能力发射箭，骑狼时能力冲跃，其他站在地面的生物提供普通跳跃。
 
-`/magnitude random <low> <high> <period>` 启用定期随机尺寸，low/high 在服务器配置范围内且 high 不小于 low，period 为 20..72000 ticks；`/magnitude random stop` 停止。随机范围、剩余倒计时和普通动作冷却会保存。自身变化被关闭时随机规则暂停；`reset` 和平衡食物仍可恢复尺寸。
+`/magnitude random start <low> <high> <period>` 启用定期随机尺寸，low/high 在服务器配置范围内且 high 不小于 low，period 为 20..72000 ticks；`/magnitude random stop` 停止。随机范围、剩余倒计时和普通动作冷却会保存。自身变化被关闭时随机规则暂停；`reset` 和平衡食物仍可恢复尺寸。
 
 ### 红石、装备与休息
 
@@ -103,13 +103,13 @@
 
 当前版本按真实模型尺寸接入头、躯干、双臂与双腿的定向盒碰撞，覆盖站立/蹲伏移动、台阶、工具射线与服务端位置校验。脚印和承重按服务端支撑脚结算，普通起跳交替单脚；客户端插值显示规范腿部姿态。代理按已加载区块与体积预算调整，可超过原来的固定 8 倍限制，预算不足时停止未经验证的移动。任意视觉资源包需配套服务端适配器；游泳、滑翔、骑乘、原版攻击命中和窒息仍使用原版代理规则。
 
-攻击、跳跃高度、移动和碰撞等基础倍率现在都从 BASE 继承，并在命令写入后立即刷新依赖缓存；攻击和承重伤害按尺寸与配置倍率计算，普通单层脚印在卸载接触面后结算，承重时整片地面保留。命令保留 `/magnitude scale ...` 分组别名和 `/magnitude physics pressure|damage|walkDamage|landingDamage|pressureHardness|impactScale ...` 调整入口。
+攻击、跳跃高度、移动和碰撞等基础倍率现在都从 BASE 继承，并在命令写入后立即刷新依赖缓存；攻击和承重伤害按尺寸与配置倍率计算，普通单层脚印在卸载接触面后结算，承重时整片地面保留。配置统一使用 `config server` 字段，尺寸统一使用 `scale`。
 
 完整结构倒塌尚未实现。配置、动画适配 API 与实现边界见 [尺寸与物理说明](docs/PHYSICS.md)；真实客户端的极端观感仍需世界内验收。
 
 ## 验证
 
-验证环境为 Java 25、Fabric Loader 0.19.5、Fabric API 0.160.7+26.3 和 Minecraft 26.3。本轮规则测试通过 300012 条断言，其中大部分是随机转移数学性质；真实服务端回归通过 363 项，覆盖注册、碰撞箱、尺寸渐变、实体存档、药水许可、携带/骑乘/抛出、真实死亡与跨维度释放、状态复制、流体、红石、冲击保护和请求/查询预算；另验证骨骼扫掠、玻璃板、半砖台阶、单脚起跳、非法适配器、动态代理、未加载边界、共享预算耗尽、微型落地与协议往返。
+验证环境为 Java 25、Fabric Loader 0.19.5、Fabric API 0.160.7+26.3 和 Minecraft 26.3。本轮规则测试通过 300012 条断言，其中大部分是随机转移数学性质；真实服务端回归通过 386 项，覆盖注册、碰撞箱、尺寸渐变、实体存档、药水许可、携带/骑乘/抛出、真实死亡与跨维度释放、状态复制、流体、红石、冲击保护和请求/查询预算；另验证骨骼扫掠、玻璃板、半砖台阶、单脚起跳、非法适配器、动态代理、未加载边界、共享预算耗尽、微型落地与协议往返。
 
 构建与复现方法见 [测试说明](docs/TESTING.md)，功能范围、设计变更和未实现项见 [功能覆盖](docs/FEATURES.md)。客户端启动检查与世界中视角/按键、多客户端同步测试是不同的验证范围；目前没有声称后两项已完成。
 
@@ -121,7 +121,7 @@
 
 尺寸输入统一为不可变快照；起跳、空中、落地、尺寸变化、步幅、支撑变化和障碍接触通过服务端事件入口结算。运动求解不直接修改方块，障碍作用后重新验证移动。预算不足与未加载区域禁止未经验证的向上通行；正常跳跃仍进行骨骼扫掠。挤压攻击去掉已经继承 BASE 的攻击系数上的重复尺寸乘法。
 
-`/magnitude physics status` 查看双开关、尺寸版本、姿态、支撑、最近事件、跳过原因和剩余预算。`physics player terrain|pressure on|off` 调整个人许可；`physics server terrain|pressure on|off` 与 `physics reload` 需要管理员权限，旧全局物理参数命令也受相同限制。个人压力许可默认开启并保存。
+`/magnitude diagnostics physics` 查看详细物理状态，`config show`查看生效原因；个人和服务器配置分别使用`config player`与`config server`，重载使用`config reload`。个人压力许可默认开启并保存。
 
 连续尺寸的跨越与破坏是后续移动/材料阶段的目标；该版本保留半格台阶和有界障碍探针，后续 alpha2 已替换为连续步高和腿部扫掠。完整结构倒塌、真实双客户端、第三方动画与长期世界性能尚待验收。
 
@@ -131,7 +131,7 @@
 
 行走撞击按双腿实际扫掠到的方块结算，包含跨越平台时的接触，不再扫描前方中心球。可破坏硬度随尺寸与水平位移连续增加，保留容器、保护、流体、不可破坏块和共享预算限制。脚印也按材料强度结算，去掉原来四倍/八倍的生效门槛；静止压力保留脚掌接触点附近的支撑，减少在脚印中央掉落。身体和脚掌保留实际模型尺寸；脚印按固定内存游标分批处理，权限与保护在每次写入前重验。落地按真实脚掌、下降速度和落差结算，最多破坏四层。整栋建筑结构倒塌尚未实现。
 
-两侧的跳跃限速补偿运动系数，初始世界竖直位移最高 4.2 格/刻。`/magnitude physics enable` 开启个人地形与压力许可，管理员执行同时开启服务器两项开关；`disable` 关闭，`status` 查看状态和待处理脚印。
+两侧的跳跃限速补偿运动系数，初始世界竖直位移最高4.2格/刻。配置采用明确的个人和服务器作用域，不隐式联动两者。
 
 缩放运行时以嵌套 JAR 打包，其模组 ID 仍为 `pehkui`。安装 Magnitude 无需另外安装 Pehkui。依赖声明保证加载器选择兼容运行时，不能声明与同一个 ID 互斥，否则内置运行时也会冲突；建议移除单独安装的副本。外部版本不兼容时加载器可回退到内置兼容版本；没有可用兼容版本时才拒绝启动。
 
@@ -155,4 +155,8 @@
 
 ## 0.1.4-alpha7 设置界面与命令整理
 
-新增五页设置界面、本地视角存档、服务端配置确认与生效原因。GUI、配置命令与旧参数入口共用校验和权限逻辑；批量设置保存成功后才发布，过期编辑不会覆盖新的设置。修正 `scale reset` 层级，新增 `config` 和 `action` 推荐分组，保留旧语法。地面作用仍是alpha6行为，新的形变和视觉质量档位将在后续阶段实现。
+新增五页设置界面、本地视角存档、服务端配置确认与生效原因。GUI与配置命令共用校验和权限逻辑；批量设置保存成功后才发布，过期编辑不会覆盖新的设置。修正 `scale reset` 层级，新增 `config` 和 `action` 推荐分组，alpha8已移除旧语法。地面作用仍是alpha6行为，新的形变和视觉质量档位将在后续阶段实现。
+
+## 0.1.4-alpha8 统一CLI
+
+删除旧根命令、旧物理配置及旧管理员分组。工具模式使用multiply/add/set/swap/transfer名称，携带位置用carry position，随机启动用random start。唯一语法与完整字段见[设置与命令](docs/SETTINGS.md)。

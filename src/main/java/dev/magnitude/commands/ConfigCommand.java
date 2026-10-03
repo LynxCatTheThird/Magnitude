@@ -12,7 +12,7 @@ import static net.minecraft.commands.Commands.*;
 import static com.mojang.brigadier.arguments.DoubleArgumentType.*;
 import static com.mojang.brigadier.arguments.BoolArgumentType.*;
 
-/** Canonical configuration tree. Legacy commands delegate to this same service. */
+/** Canonical configuration tree; no aliases with different scope semantics. */
 public final class ConfigCommand {
     private ConfigCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
@@ -27,6 +27,9 @@ public final class ConfigCommand {
             server.then(node);
         }
         config.then(server);
+        config.then(literal("food").requires(ConfigService::administrator).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())
+            .then(argument("factor",doubleArg(.015625,4)).executes(c->reply(c,ConfigService.INSTANCE.food(c.getSource(),net.minecraft.commands.arguments.IdentifierArgument.getId(c,"item").toString(),getDouble(c,"factor")))))));
+
         var player=literal("player");
         for(String field:new String[]{"terrain","pressure","resize","carry"}) {
             var node=literal(field);

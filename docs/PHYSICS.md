@@ -30,7 +30,7 @@ Magnitude 提供服务端尺寸、姿态与接触能力，供玩法模组扩展�
 
 空空间也计入预算。碰撞查询不足或区块未知时停止未经验证的移动，不缩小实际身体。极大尺寸或密集场景可能停顿，现有方案没有消除所有规模限制；脚印可分批处理不代表任意巨型身体都能流畅移动。长期世界性能与多人延迟仍需实测。
 
-`/magnitude physics enable` 开启个人地形和压力许可；管理员执行时也开启服务器两项开关。`disable` 对应关闭。`status` 显示双开关、步高、姿态、最近接触、待处理脚印和剩余预算。精细控制用 `physics player terrain|pressure on|off`、管理员 `physics server terrain|pressure on|off`；管理员 `physics reload` 重读配置。
+`/magnitude config show`显示有效状态与双开关原因；`diagnostics physics`显示详细物理查询状态。个人许可用`config player terrain|pressure on|off`，管理员总开关用`config server terrainDamage|standingPressure true|false`；`config reload`重读配置。各作用域分别修改，旧CLI不再注册。
 
 默认尺寸范围为 1/64..32，服务器可在 `config/magnitude.json` 将 minimum/maximum 扩大到 2⁻²⁰..2³²。尺寸存量按运行时可表示的浮点差结算，无法守恒的转移会拒绝。
 
@@ -48,4 +48,4 @@ Magnitude 提供服务端尺寸、姿态与接触能力，供玩法模组扩展�
 
 静止压力目前是有界材料印记，不是质量/接触面积决定的连续土壤压缩；其外观在卸载后显现。受保护、硬度不够或后续变更的块可导致局部保留，这是材料/保护规则，不能为追求统一深度绕过它们。旧印记已成为真实地形，再次走进时仍可能上下坡；本轮避免的是在当前承重脚下实时制造台阶。
 
-设置界面可通过F8、暂停/选项菜单或`/magnitude menu`打开；推荐配置入口为`config player`、`config server`和`config reload`，旧物理命令保持兼容。页面说明与配置持久化边界见[设置与命令](SETTINGS.md)。本版GUI不改变脚印或支撑算法。
+设置界面可通过F8、暂停/选项菜单或`/magnitude menu`打开；推荐配置入口为`config player`、`config server`和`config reload`，旧物理命令已移除。页面说明与配置持久化边界见[设置与命令](SETTINGS.md)。本版GUI不改变脚印或支撑算法。

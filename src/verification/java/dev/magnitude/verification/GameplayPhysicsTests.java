@@ -276,13 +276,15 @@ public final class GameplayPhysicsTests {
                 "same-position self-created fall cannot bootstrap deeper static pressure",passed);
             Magnitude.settings.terrainDamage=false;Magnitude.settings.standingPressure=false;
             try {
-                server.getCommands().getDispatcher().execute("magnitude physics enable",player.createCommandSourceStack());
+                server.getCommands().getDispatcher().execute("magnitude config player terrain on",player.createCommandSourceStack());
+                server.getCommands().getDispatcher().execute("magnitude config player pressure on",player.createCommandSourceStack());
                 require(EntityState.of(player).terrainEnabled && EntityState.of(player).pressureEnabled
                     && !Magnitude.settings.terrainDamage && !Magnitude.settings.standingPressure,
-                    "ordinary one-command opt-in cannot change server permissions",passed);
-                server.getCommands().getDispatcher().execute("magnitude physics disable",player.createCommandSourceStack());
+                    "personal configuration cannot change server permissions",passed);
+                server.getCommands().getDispatcher().execute("magnitude config player terrain off",player.createCommandSourceStack());
+                server.getCommands().getDispatcher().execute("magnitude config player pressure off",player.createCommandSourceStack());
                 require(!EntityState.of(player).terrainEnabled && !EntityState.of(player).pressureEnabled,
-                    "one-command opt-out disables both personal terrain modes",passed);
+                    "canonical personal opt-out disables both terrain modes",passed);
             } catch(com.mojang.brigadier.exceptions.CommandSyntaxException error) {throw new AssertionError(error);}
             Dimensions.set(player,ScaleSafety.MAXIMUM,0);ready(player);
             require(StepPolicy.height(player)<=4.8,"extreme visual size cannot create unbounded automatic steps",passed);
