@@ -16,6 +16,7 @@ public final class Settings {
     public double maximum = 32;
     public boolean allowSelfChange = true;
     public boolean terrainDamage = false;
+    public boolean shallowDeformation = false;
     public boolean standingPressure = true;
     public boolean bodyDamage = true;
     public double walkDamageFactor = 2;

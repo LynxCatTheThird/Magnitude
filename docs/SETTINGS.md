@@ -22,7 +22,7 @@
 
 服务端作用需服务器规则与个人许可同时允许，建造权限和当前玩家状态也可能阻止作用。显示“已允许”不保证每块材料一定破坏：保护、容器、流体、强度和预算仍逐次检查。
 
-当前地面仍使用单层脚印卸载后分批挖掘。浅层形变、效果质量预设及体积模拟尚未提供，界面不显示这些功能的可用开关。
+默认地面后端使用单层脚印卸载后分批挖掘；alpha13可选浅层土壤压实。效果质量预设及体积模拟尚未提供，界面不显示这些功能的可用开关。
 
 ## 唯一命令结构
 
@@ -41,7 +41,7 @@
 | config food | `/magnitude config food minecraft:apple 2` | 管理员食物尺寸系数 |
 | diagnostics physics | `/magnitude diagnostics physics` | 详细物理诊断 |
 
-服务器布尔字段用 true/false；个人许可用 on/off。服务器字段与 GUI 一致：minimum、maximum、allowSelfChange、terrainDamage、standingPressure、bodyDamage、keepSizeAfterDeath、walkDamageFactor、landingDamageFactor、pressureHardnessFactor、impactScaleFactor、blocksPerTick、checksPerTick、blocksPerImpact、impactRadius。自动补全提供字段与合法值范围；整数配额拒绝小数。
+服务器布尔字段用 true/false；个人许可用 on/off。服务器字段与 GUI 一致：minimum、maximum、allowSelfChange、terrainDamage、shallowDeformation、standingPressure、bodyDamage、keepSizeAfterDeath、walkDamageFactor、landingDamageFactor、pressureHardnessFactor、impactScaleFactor、blocksPerTick、checksPerTick、blocksPerImpact、impactRadius。自动补全提供字段与合法值范围；整数配额拒绝小数。
 
 本版已删除旧别名和旧分组；旧命令会被拒绝，不做隐式跳转。尺寸使用scale、许可/规则使用config、动作使用action，诊断使用diagnostics physics。
 
@@ -66,3 +66,13 @@
 每刻最多256次候选/复验访问，最多16个待处理印记；大脚印按预算渐进补齐，超出缓存时淘汰旧单元，不保证任意尺寸整片一次完成。覆盖最多存在600刻，接近过期时淡出。方块改变时移除覆盖，避免实际坑洞上悬浮印记；连接/维度变化清理缓存。关闭会清理本地工作并停止订阅，网络中的已在途消息由客户端丢弃。
 
 诊断页显示缓存、队列、上刻访问与绘制量。视觉预算与真实碰撞分开，降低画面设置不会改变世界支撑。
+
+## 浅层土壤后端
+
+管理员通过服务器页的“浅层土壤形变”，或`/magnitude config server shallowDeformation true`开启。它还要求`terrainDamage=true`及个人`terrain on`；静止承重另需服务器`standingPressure=true`和个人`pressure on`。这些作用范围独立，不自动互相开启。
+
+启用后，脚部接触改为明确支持的泥土/草地压实，不再同时执行旧整层脚印挖掘；水平障碍破坏保持原规则。深度按连续体型量化到1/16格，最多半格，稳定材料不会因重复站立继续挖穿。目标深度一致，已有更深凹陷不回填。
+
+已经形成的高度存入原生方块状态。关闭后端不恢复地面，也不改变已有凹陷碰撞；水可进入浅凹，但含水材料不再压实。普通采掘保留原材料掉落。容器、未知材料、受保护方块及上方有植物/结构的土壤暂不压实，以避免邻居更新绕过保护。
+
+每玩家待处理队列最多1024单元、寿命100刻，沿用共享检查/写入和单次写入预算；提交前重验状态、许可、保护和区块。超出预算或过期时可能留下部分结果，尚未宣称任意巨型整片一次完成。复杂世界、多人客户端和质量预设仍需后续集成测试。

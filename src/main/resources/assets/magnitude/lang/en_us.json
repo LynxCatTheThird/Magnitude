@@ -206,5 +206,9 @@
   "config.magnitude.hint.footprintDistance": "16–256 blocks; display culling only.",
   "config.magnitude.field.footprintCache": "Footprint surface cache limit",
   "config.magnitude.hint.footprintCache": "Integer 128–4096 surface cells; oldest marks are evicted.",
-  "gui.magnitude.visualWork": "Visual cached/queued/checked/drawn: %s/%s/%s/%s"
+  "gui.magnitude.visualWork": "Visual cached/queued/checked/drawn: %s/%s/%s/%s",
+  "config.magnitude.field.shallowDeformation": "Shallow soil deformation",
+  "config.magnitude.hint.shallowDeformation": "Server backend for dirt and grass compaction; requires terrain permission and never restores existing depressions.",
+  "block.magnitude.compacted_dirt": "Compacted Dirt",
+  "block.magnitude.compacted_grass": "Compacted Grass"
 }

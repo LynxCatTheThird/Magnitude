@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "magnitude:compacted_dirt",
+    "magnitude:compacted_grass"
+  ]
+}

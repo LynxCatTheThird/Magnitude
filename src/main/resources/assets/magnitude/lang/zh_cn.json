@@ -206,5 +206,9 @@
   "config.magnitude.hint.footprintDistance": "16～256格；仅影响显示裁剪。",
   "config.magnitude.field.footprintCache": "脚印表面缓存上限",
   "config.magnitude.hint.footprintCache": "整数128～4096个表面单元；更大时淘汰旧印记。",
-  "gui.magnitude.visualWork": "视觉 缓存/待处理/检查/绘制：%s/%s/%s/%s"
+  "gui.magnitude.visualWork": "视觉 缓存/待处理/检查/绘制：%s/%s/%s/%s",
+  "config.magnitude.field.shallowDeformation": "浅层土壤形变",
+  "config.magnitude.hint.shallowDeformation": "服务器实验后端：泥土与草方块压实；需地形规则及个人许可，不回填旧凹陷。",
+  "block.magnitude.compacted_dirt": "压实泥土",
+  "block.magnitude.compacted_grass": "压实草地"
 }

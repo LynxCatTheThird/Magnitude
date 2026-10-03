@@ -34,7 +34,7 @@ public final class DiagnosticCommand {
                 + "; support=" + (state.contacts.support==null?"none":
                     "left{"+state.contacts.support.leftContact().summary()+"} right{"+state.contacts.support.rightContact().summary()+"}")
                 + "; event=" + (event == null ? "none" : event.type() + "#" + event.sequence())
-                + "; pendingFootprints="+state.contacts.footprints.size()
+                + "; pendingFootprints="+state.contacts.footprints.size()+" pendingSoil="+state.contacts.soil.size()
                 + "; reason=" + state.contacts.reason + " writes=" + state.contacts.changedBlocks
                 + "; blocks=" + Impact.remaining() + " checks=" + Impact.checksRemaining()
                 + " cells=" + PhysicsWork.cellsRemaining() + " pairs=" + PhysicsWork.pairsRemaining()

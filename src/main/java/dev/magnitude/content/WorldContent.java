@@ -14,6 +14,7 @@ import java.util.function.Function;
 public final class WorldContent {
     public static FlowingFluid AMBER_SOURCE, AMBER_FLOW, AZURE_SOURCE, AZURE_FLOW;
     public static Block AMBER_POOL, AZURE_POOL, AMBER_BASIN, AZURE_BASIN, FIELD, GENERATOR;
+    public static Block COMPACTED_DIRT, COMPACTED_GRASS;
     public static Item AMBER_BUCKET, AZURE_BUCKET;
     private WorldContent() {}
     private static Block block(String name, Block template, Function<BlockBehaviour.Properties, Block> factory, boolean item) {
@@ -22,6 +23,8 @@ public final class WorldContent {
         return block;
     }
     public static void register() {
+        COMPACTED_DIRT=block("compacted_dirt",Blocks.DIRT,p->new CompactedSoilBlock(p.noOcclusion()),false);
+        COMPACTED_GRASS=block("compacted_grass",Blocks.GRASS_BLOCK,p->new CompactedSoilBlock(p.noOcclusion()),false);
         AMBER_SOURCE = Registry.register(BuiltInRegistries.FLUID, Magnitude.id("amber_source"), new EssenceFluid(true, true));
         AMBER_FLOW = Registry.register(BuiltInRegistries.FLUID, Magnitude.id("amber_flow"), new EssenceFluid(false, true));
         AZURE_SOURCE = Registry.register(BuiltInRegistries.FLUID, Magnitude.id("azure_source"), new EssenceFluid(true, false));

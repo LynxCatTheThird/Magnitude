@@ -121,6 +121,25 @@ public final class Impact {
         }
         return changed;
     }
+    /** Shared protected mutation path for non-destructive soil state changes. */
+    public static boolean compactSoil(ServerPlayer actor,BlockPos pos,net.minecraft.world.level.block.state.BlockState expected,
+                                       net.minecraft.world.level.block.state.BlockState replacement) {
+        if(!Magnitude.settings.shallowDeformation||!allowed(actor)||!CHECKS.take())return false;
+        var level=actor.level();
+        if(!level.hasChunkAt(pos)||!level.getWorldBorder().isWithinBounds(pos)||!actor.mayInteract(level,pos))return false;
+        // Initial backend does not remove attached plants or supporting structures by neighbor updates.
+        if(!level.getBlockState(pos.above()).isAir())return false;
+        var current=level.getBlockState(pos);
+        if(!replacement.getFluidState().isEmpty()||replacement.hasBlockEntity()||replacement.getBlock()!=dev.magnitude.terrain.SoilMaterials.compacted(current)
+            ||dev.magnitude.terrain.SoilMaterials.height(replacement)>=dev.magnitude.terrain.SoilMaterials.height(current))return false;
+        if(current!=expected||current.hasBlockEntity()||current.is(PROTECTED)||!current.getFluidState().isEmpty()
+            ||current.getDestroySpeed(level,pos)<0)return false;
+        if(!PlayerBlockBreakEvents.BEFORE.invoker().beforeBlockBreak(level,actor,pos,current,null))return false;
+        // Re-read after protection callbacks; they may have changed the world.
+        if(!Magnitude.settings.shallowDeformation||!allowed(actor)||!actor.mayInteract(level,pos)
+            ||level.getBlockState(pos)!=expected||!level.getBlockState(pos.above()).isAir()||!BLOCKS.take())return false;
+        return level.setBlock(pos,replacement,Block.UPDATE_ALL);
+    }
     private static boolean breakBlock(ServerPlayer actor, BlockPos pos, float maximumHardness) {
         if (!CHECKS.take()) return false;
         return breakBlockChecked(actor,pos,maximumHardness);

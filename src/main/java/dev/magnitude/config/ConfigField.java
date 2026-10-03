@@ -10,6 +10,7 @@ public enum ConfigField {
     MAXIMUM("maximum",false,false,1,dev.magnitude.core.ScaleSafety.MAXIMUM,s->s.maximum,(s,v)->s.maximum=v),
     SELF_CHANGE("allowSelfChange",true,false,0,1,s->s.allowSelfChange?1:0,(s,v)->s.allowSelfChange=v==1),
     TERRAIN("terrainDamage",true,false,0,1,s->s.terrainDamage?1:0,(s,v)->s.terrainDamage=v==1),
+    SHALLOW("shallowDeformation",true,false,0,1,s->s.shallowDeformation?1:0,(s,v)->s.shallowDeformation=v==1),
     PRESSURE("standingPressure",true,false,0,1,s->s.standingPressure?1:0,(s,v)->s.standingPressure=v==1),
     BODY_DAMAGE("bodyDamage",true,false,0,1,s->s.bodyDamage?1:0,(s,v)->s.bodyDamage=v==1),
     KEEP_SIZE("keepSizeAfterDeath",true,false,0,1,s->s.keepSizeAfterDeath?1:0,(s,v)->s.keepSizeAfterDeath=v==1),

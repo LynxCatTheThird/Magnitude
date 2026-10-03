@@ -84,6 +84,7 @@ public final class MagnitudeClient implements ClientModInitializer {
             state.previousPose=state.pose;state.physicsRevision=payload.revision();state.posePhase=payload.pose().phase();state.pose=payload.pose();state.proxyFallback=payload.fallback();
             if(Math.abs(state.proxyLimit-payload.limit())>0.001)dev.magnitude.physics.LocalProxy.apply(player,payload.limit());
         });
+        net.fabricmc.fabric.api.client.rendering.v1.BlockColorRegistry.register(java.util.List.of(BlockTintSources.grassBlock()),WorldContent.COMPACTED_GRASS);
         FluidRenderingRegistry.register(WorldContent.AMBER_SOURCE,WorldContent.AMBER_FLOW,fluid(0xE8B54A));
         FluidRenderingRegistry.register(WorldContent.AZURE_SOURCE,WorldContent.AZURE_FLOW,fluid(0x4AB8DC));
         FluidRenderingRegistry.setBlockTransparency(WorldContent.AMBER_POOL,true);

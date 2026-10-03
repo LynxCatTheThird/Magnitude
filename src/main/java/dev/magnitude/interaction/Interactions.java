@@ -111,6 +111,7 @@ public final class Interactions {
                     || (state.riderInitiated ? !state.acceptCarry : passenger instanceof Player && !EntityState.of(passenger).acceptCarry)) release(player,false);
             }
             Impact.continueFeet(player);
+            dev.magnitude.terrain.SoilDeformation.continueWork(player);
             groundContact(player);
             Messages.syncPhysics(player);
             if (player.tickCount % 10 == 0) {

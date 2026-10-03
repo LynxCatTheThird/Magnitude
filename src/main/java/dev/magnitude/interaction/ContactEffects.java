@@ -11,16 +11,16 @@ public final class ContactEffects {
         var player = event.player();
         var state = EntityState.of(player);
         switch (event.type()) {
-            case TAKEOFF -> state.contacts.changedBlocks = Impact.feet(player, 0, false);
+            case TAKEOFF -> state.contacts.changedBlocks = Magnitude.settings.shallowDeformation?dev.magnitude.terrain.SoilDeformation.apply(event):Impact.feet(player, 0, false);
             case WALKING_STRIDE -> {
-                state.contacts.changedBlocks = Impact.feet(player, event.pose().support()==1 ? -1 : 1, false);
+                state.contacts.changedBlocks = Magnitude.settings.shallowDeformation?dev.magnitude.terrain.SoilDeformation.apply(event):Impact.feet(player, event.pose().support()==1 ? -1 : 1, false);
                 if (Magnitude.settings.bodyDamage)
                     Interactions.damageSmall(player, player.getBoundingBox().inflate(0.1, 0.25, 0.1),
                         Interactions.scaledImpactDamage(player, Magnitude.settings.walkDamageFactor));
             }
             case SUPPORT_CHANGED -> {
                 if (event.movement().horizontalDistanceSqr()>1e-6) state.contacts.reason="moving load follows footfalls";
-                else if (Magnitude.settings.standingPressure && state.pressureEnabled) state.contacts.changedBlocks = Impact.feet(player, 0, true);
+                else if (Magnitude.settings.standingPressure && state.pressureEnabled) state.contacts.changedBlocks = Magnitude.settings.shallowDeformation?dev.magnitude.terrain.SoilDeformation.apply(event):Impact.feet(player, 0, true);
                 else state.contacts.reason = "pressure disabled";
             }
             case SIZE_CHANGED -> {
@@ -33,7 +33,7 @@ public final class ContactEffects {
                 // The contact transition, captured descent and actual fall establish an impact.
                 // A remembered jump-key flag is neither required nor sufficient.
                 if (event.scale().base() > 1 && (event.velocity().y < -0.1 || event.fallHeight() > 0.05)) {
-                    state.contacts.changedBlocks=Impact.landing(player,-event.velocity().y,event.fallHeight());
+                    state.contacts.changedBlocks=Magnitude.settings.shallowDeformation?dev.magnitude.terrain.SoilDeformation.apply(event):Impact.landing(player,-event.velocity().y,event.fallHeight());
                     Interactions.shock(player, Math.min(Magnitude.settings.impactRadius,
                         event.scale().base() * Magnitude.settings.impactScaleFactor), true);
                 }

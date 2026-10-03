@@ -1,0 +1,58 @@
+{
+  "variants": {
+    "height=8,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_8"
+    },
+    "height=8,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_8"
+    },
+    "height=9,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_9"
+    },
+    "height=9,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_9"
+    },
+    "height=10,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_10"
+    },
+    "height=10,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_10"
+    },
+    "height=11,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_11"
+    },
+    "height=11,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_11"
+    },
+    "height=12,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_12"
+    },
+    "height=12,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_12"
+    },
+    "height=13,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_13"
+    },
+    "height=13,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_13"
+    },
+    "height=14,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_14"
+    },
+    "height=14,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_14"
+    },
+    "height=15,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_15"
+    },
+    "height=15,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_15"
+    },
+    "height=16,waterlogged=false": {
+      "model": "magnitude:block/compacted_dirt_16"
+    },
+    "height=16,waterlogged=true": {
+      "model": "magnitude:block/compacted_dirt_16"
+    }
+  }
+}

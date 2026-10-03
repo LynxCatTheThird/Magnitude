@@ -22,6 +22,13 @@ public final class FootContacts {
         return query(player,sole,scale.bootHalfWidth(),scale.bootHalfLength(),Math.toRadians(player.getYRot()),.0625,.0625);
     }
     public static FootContact query(Player player,Vec3 sole,double width,double length,double yaw,double below,double above){
+        return query(player,sole,width,length,yaw,below,above,true);
+    }
+    public static FootContact surfaceLayers(Player player,int side){
+        var scale=Dimensions.snapshot(player);
+        return query(player,PlayerBody.foot(player,side).add(0,.01,0),scale.bootHalfWidth(),scale.bootHalfLength(),Math.toRadians(player.getYRot()),.5,.0625,false);
+    }
+    private static FootContact query(Player player,Vec3 sole,double width,double length,double yaw,double below,double above,boolean highestOnly){
         var level=player.level();var found=new ArrayList<FootContact.Patch>();
         double highest=Double.NaN,area=0;long revision=1;String reason="complete";
         boolean complete=true;
@@ -48,10 +55,10 @@ public final class FootContacts {
                 if(boxes.size()>BOXES_PER_CELL){complete=false;reason="surface shape budget";break outer;}
                 for(var box:boxes) {
                     double height=y+box.maxY;
-                    if(height<sole.y-below-1e-7||height>sole.y+above+1e-7||Double.isFinite(highest)&&height<highest-1e-7)continue;
+                    if(height<sole.y-below-1e-7||height>sole.y+above+1e-7||highestOnly&&Double.isFinite(highest)&&height<highest-1e-7)continue;
                     var polygon=SoleGeometry.clipRectangle(sole.x-x,sole.z-z,width,length,yaw,box.minX,box.minZ,box.maxX,box.maxZ);
                     double covered=SoleGeometry.area(polygon);if(covered<=0)continue;
-                    if(!Double.isFinite(highest)||height>highest+1e-7){highest=height;area=0;found.clear();}
+                    if(!Double.isFinite(highest)||height>highest+1e-7){highest=height;if(highestOnly){area=0;found.clear();}}
                     if(found.size()>=PATCHES_PER_QUERY){complete=false;reason="surface patch budget";break outer;}
                     // VoxelShape.toAabbs partitions occupied voxels; equal-height top faces do not overlap.
                     found.add(new FootContact.Patch(pos,id,height,covered,polygon));area+=covered;

@@ -125,6 +125,23 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         if(dev.magnitude.client.visual.SegmentedLegMesh.renderCalls==0)return;
                         check(true,"actual avatar renderer draws segmented knee and boot mesh");
                         net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("articulated-support.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
+                        client.gui.hud.toggle();client.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+                        client.player.connection.sendCommand("fill 90 199 90 110 199 110 minecraft:grass_block");
+                        client.player.connection.sendCommand("magnitude config server shallowDeformation true");
+                        client.player.connection.sendCommand("magnitude config player pressure on");
+                        client.player.connection.sendCommand("magnitude config player terrain on");
+                        client.player.connection.sendCommand("tp @s 100.25 200 100.5 0 75");
+                    }
+                    case 15 -> {
+                        var surface=client.level.getBlockState(net.minecraft.core.BlockPos.containing(99.5,199,100.5));
+                        if(!surface.is(dev.magnitude.content.WorldContent.COMPACTED_GRASS))return;
+                        if(Math.abs(client.player.getY()-199.875)>1e-5)return;
+                        check(surface.getValue(dev.magnitude.content.CompactedSoilBlock.HEIGHT)==14,"actual client receives saved partial-height grass state");
+                        check(true,"client collision settles onto server deformation height");
+                        client.gui.setScreen(null);client.gui.hud.toggle();client.player.setXRot(75);
+                    }
+                    case 16 -> {
+                        net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("shallow-soil.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
                         finish(client);
                     }
                     default -> {return;}
