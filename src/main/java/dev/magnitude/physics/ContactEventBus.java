@@ -14,6 +14,7 @@ public final class ContactEventBus {
         state.counts[event.type().ordinal()]++;
         state.reason = "observed";
         state.changedBlocks = 0;
+        dev.magnitude.visual.FootprintVisuals.contact(event);
         ContactEffects.apply(event);
         return true;
     }

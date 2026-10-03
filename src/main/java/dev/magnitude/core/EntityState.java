@@ -5,6 +5,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.entity.Entity;
 
 public final class EntityState {
+    public boolean visualFootprints;
+    public long nextVisualRequest;
     public long configRevision;
     public long nextConfigRequest;
     public long nextConfigReply;

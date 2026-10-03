@@ -25,12 +25,16 @@ public final class GuiNetworkTests implements ClientModInitializer {
         var b=screen.children().stream().filter(x->x instanceof Button button&&button.getMessage().getString().equals(Component.translatable(key).getString())).map(x->(Button)x).findFirst().orElseThrow();
         check(b.active,"network widget enabled "+key);b.onPress(null);
     }
+    private void finish(net.minecraft.client.Minecraft client)throws Exception {
+        Files.writeString(Path.of("network-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();
+    }
     @Override public void onInitializeClient(){
         if(!Boolean.getBoolean("magnitude.guiNetworkVerification"))return;
         boolean admin=Boolean.getBoolean("magnitude.guiAdmin");
         ClientTickEvents.END_CLIENT_TICK.register(client->{
             if(++frame%20!=0)return;
             try {
+                if(stage>=9&&client.player!=null)Files.writeString(Path.of("visual-progress.json"),new com.google.gson.Gson().toJson(Map.of("stage",stage,"position",client.player.position().toString(),"cache",dev.magnitude.client.visual.FootprintRenderer.cached(),"queue",dev.magnitude.client.visual.FootprintRenderer.queued(),"drawn",dev.magnitude.client.visual.FootprintRenderer.lastDrawn,"leftState",client.level.getBlockState(net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0))).toString(),"leftCached",dev.magnitude.client.visual.FootprintRenderer.hasSurface(net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0))))));
                 switch(stage){
                     case 0 -> {
                         if(!(client.gui.screen() instanceof TitleScreen)||client.gui.overlay()!=null)return;
@@ -73,7 +77,39 @@ public final class GuiNetworkTests implements ClientModInitializer {
                     case 8 -> {
                         if(SettingsConnection.busy())return;
                         check(SettingsConnection.result.equals("conflict")&&SettingsConnection.view.personal().get("carry")==0,"real stale patch cannot overwrite newer command state");
-                        Files.writeString(Path.of("network-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();
+                        if(admin) {
+                            client.player.connection.sendCommand("forceload add 90 90 110 110");
+                            client.player.connection.sendCommand("fill 90 199 90 110 199 110 minecraft:grass_block");
+                            client.player.connection.sendCommand("tp @s 100 200 100 0 75");
+                            client.player.connection.sendCommand("magnitude scale set 5 0");
+                            client.gui.setScreen(null);
+                        }else {finish(client);return;}
+                    }
+                    case 9 -> {
+                        if(client.player.position().distanceToSqr(new net.minecraft.world.phys.Vec3(100.5,200,100.5))>4)return;
+                        if(!dev.magnitude.client.visual.FootprintRenderer.hasSurface(net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0))))return;
+                        check(dev.magnitude.client.visual.FootprintRenderer.cached()>0,"actual authoritative contact builds immediate visual surface cache with terrain disabled");
+                        client.player.setXRot(75);
+                    }
+                    case 10 -> {
+                        if(dev.magnitude.client.visual.FootprintRenderer.lastDrawn==0)return;
+                        check(true,"actual world renderer submits contact overlay geometry");
+                        var below=client.player.blockPosition().below();
+                        check(client.level.getBlockState(below).is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK),"visual overlay leaves terrain block and collision unchanged");
+                        net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("footprint-overlay.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
+                        var payload=new dev.magnitude.network.FootprintPayload(client.player.getUUID(),999999,-1,client.level.dimension().identifier(),client.player.position().add(-.75,-.01,0),.45,.45,0);
+                        check(dev.magnitude.client.visual.FootprintRenderer.accept(payload)&&!dev.magnitude.client.visual.FootprintRenderer.accept(payload),"client visual duplicate contact is ignored");
+                    }
+                    case 11 -> {
+                        var pos=net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0));
+                        int before=dev.magnitude.client.visual.FootprintRenderer.cached();
+                        client.level.setBlock(pos,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
+                        check(dev.magnitude.client.visual.FootprintRenderer.cached()<before,"block change invalidates cached surface decoration");
+                        dev.magnitude.client.visual.FootprintRenderer.enabled=false;
+                    }
+                    case 12 -> {
+                        check(dev.magnitude.client.visual.FootprintRenderer.cached()==0&&dev.magnitude.client.visual.FootprintRenderer.queued()==0&&dev.magnitude.client.visual.FootprintRenderer.lastDrawn==0,"disabling visual footprints clears pending and cached work");
+                        finish(client);
                     }
                     default -> {return;}
                 }

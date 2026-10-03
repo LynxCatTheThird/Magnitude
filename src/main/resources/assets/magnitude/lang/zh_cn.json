@@ -98,12 +98,12 @@
   "gui.magnitude.title": "Magnitude 设置",
   "key.magnitude.settings": "打开 Magnitude 设置",
   "gui.magnitude.tab.overview": "概览",
-  "gui.magnitude.tab.client": "视角",
+  "gui.magnitude.tab.client": "视觉",
   "gui.magnitude.tab.player": "个人",
   "gui.magnitude.tab.server": "服务器",
   "gui.magnitude.tab.diagnostics": "诊断",
   "gui.magnitude.scope.overview": "当前世界的确认状态",
-  "gui.magnitude.scope.client": "仅影响你的客户端；应用后保存",
+  "gui.magnitude.scope.client": "仅影响你的客户端；不会改变碰撞",
   "gui.magnitude.scope.player": "个人许可；服务器确认后生效",
   "gui.magnitude.scope.server": "作用于此服务器；修改需要管理员权限",
   "gui.magnitude.scope.diagnostics": "服务器耗时与本地帧间隔分别采样",
@@ -199,5 +199,12 @@
   "gui.magnitude.movement": "移动查询",
   "gui.magnitude.frame": "世界帧间隔",
   "gui.magnitude.noSamples": "尚无采样",
-  "gui.magnitude.work": "上刻 单元/碰撞对/材料检查/写入：%s/%s/%s/%s"
+  "gui.magnitude.work": "上刻 单元/碰撞对/材料检查/写入：%s/%s/%s/%s",
+  "config.magnitude.field.footprints": "即时脚印覆盖",
+  "config.magnitude.hint.footprints": "只显示表面印记，不改变碰撞；关闭清理缓存并停止订阅。",
+  "config.magnitude.field.footprintDistance": "脚印显示距离",
+  "config.magnitude.hint.footprintDistance": "16～256格；仅影响显示裁剪。",
+  "config.magnitude.field.footprintCache": "脚印表面缓存上限",
+  "config.magnitude.hint.footprintCache": "整数128～4096个表面单元；更大时淘汰旧印记。",
+  "gui.magnitude.visualWork": "视觉 缓存/待处理/检查/绘制：%s/%s/%s/%s"
 }

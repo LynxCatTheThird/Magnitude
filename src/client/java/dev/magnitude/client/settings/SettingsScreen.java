@@ -32,7 +32,7 @@ public final class SettingsScreen extends Screen {
     private String draftKey(String id){return tab+":"+id;}
     private List<Row> fields(){
         var list=new ArrayList<Row>();
-        if(local())ClientPreferences.values().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e->list.add(new Row(e.getKey(),e.getKey().equals("smoothing")||e.getKey().equals("hiddenNames"),e.getValue())));
+        if(local())ClientPreferences.values().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(e->list.add(new Row(e.getKey(),e.getKey().equals("smoothing")||e.getKey().equals("hiddenNames")||e.getKey().equals("footprints"),e.getValue())));
         else if(SettingsConnection.view!=null) {
             if(tab==2)for(String id:new String[]{"terrain","pressure","resize","carry"})list.add(new Row(id,true,SettingsConnection.view.personal().get(id)));
             if(tab==3)for(var field:ConfigField.values())list.add(new Row(field.id,field.bool,SettingsConnection.view.server().get(field.id)));
@@ -51,6 +51,7 @@ public final class SettingsScreen extends Screen {
             lines.add(tr("percentiles", "MSPT", format(view.tickTimings())));
             lines.add(tr("percentiles", tr("movement"), format(view.moveTimings())));
             lines.add(tr("percentiles", tr("frame"), format(frameSummary)));
+            lines.add(tr("visualWork",dev.magnitude.client.visual.FootprintRenderer.cached(),dev.magnitude.client.visual.FootprintRenderer.queued(),dev.magnitude.client.visual.FootprintRenderer.lastChecks,dev.magnitude.client.visual.FootprintRenderer.lastDrawn));
             lines.add(tr("work", view.cellsUsed(),view.pairsUsed(),view.materialChecks(),view.blockWrites()));
             lines.add(tr("serverMs",String.format(java.util.Locale.ROOT,"%.2f",view.serverTickMs())));
             lines.add(tr("moveMs",String.format(java.util.Locale.ROOT,"%.2f / %.2f",view.moveAvgMs(),view.moveMaxMs())));

@@ -98,12 +98,12 @@
   "gui.magnitude.title": "Magnitude Settings",
   "key.magnitude.settings": "Open Magnitude settings",
   "gui.magnitude.tab.overview": "Overview",
-  "gui.magnitude.tab.client": "View",
+  "gui.magnitude.tab.client": "Visual",
   "gui.magnitude.tab.player": "Personal",
   "gui.magnitude.tab.server": "Server",
   "gui.magnitude.tab.diagnostics": "Diagnostics",
   "gui.magnitude.scope.overview": "Confirmed state in this world",
-  "gui.magnitude.scope.client": "Local view settings; Apply saves them",
+  "gui.magnitude.scope.client": "Local visual settings; no collision changes",
   "gui.magnitude.scope.player": "Personal permissions; confirmed by the server",
   "gui.magnitude.scope.server": "Server-wide rules; administrator permission required",
   "gui.magnitude.scope.diagnostics": "Server costs and local frame intervals are sampled separately",
@@ -199,5 +199,12 @@
   "gui.magnitude.movement": "Movement queries",
   "gui.magnitude.frame": "World frame intervals",
   "gui.magnitude.noSamples": "No samples yet",
-  "gui.magnitude.work": "Last tick cells/pairs/material checks/writes: %s/%s/%s/%s"
+  "gui.magnitude.work": "Last tick cells/pairs/material checks/writes: %s/%s/%s/%s",
+  "config.magnitude.field.footprints": "Immediate footprint overlay",
+  "config.magnitude.hint.footprints": "Surface decoration only. Disabling clears the cache and stops subscription.",
+  "config.magnitude.field.footprintDistance": "Footprint render distance",
+  "config.magnitude.hint.footprintDistance": "16–256 blocks; display culling only.",
+  "config.magnitude.field.footprintCache": "Footprint surface cache limit",
+  "config.magnitude.hint.footprintCache": "Integer 128–4096 surface cells; oldest marks are evicted.",
+  "gui.magnitude.visualWork": "Visual cached/queued/checked/drawn: %s/%s/%s/%s"
 }

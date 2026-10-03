@@ -2,6 +2,16 @@
   "required": true,
   "package": "dev.magnitude.client.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": ["ObservationMixin", "PrecisionMixin", "NameMixin", "BodyRenderStateMixin", "BodyPoseExtractionMixin", "BodyAnimationMixin"],
-  "injectors": {"defaultRequire": 1}
+  "client": [
+    "ObservationMixin",
+    "PrecisionMixin",
+    "NameMixin",
+    "BodyRenderStateMixin",
+    "BodyPoseExtractionMixin",
+    "BodyAnimationMixin",
+    "FootprintSurfaceMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

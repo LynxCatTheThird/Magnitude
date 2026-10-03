@@ -25,6 +25,18 @@ public final class ConfigTests {
         var admin=server.createCommandSourceStack();var dispatcher=server.getCommands().getDispatcher();
         Path temp=Files.createTempDirectory("magnitude-config-test-");
         try {
+            var full=dev.magnitude.visual.SoleGeometry.clip(.5,.5,3,3,Math.PI/4);
+            double area=0;for(int i=0;i<full.size();i++){var a=full.get(i);var b=full.get((i+1)%full.size());area+=a.x()*b.z()-b.x()*a.z();}
+            check(Math.abs(Math.abs(area)/2-1)<1e-8,"rotated large sole clips to full unit surface without center gaps",passed);
+            var narrow=dev.magnitude.visual.SoleGeometry.clip(.5,.5,.1,.2,0);
+            area=0;for(int i=0;i<narrow.size();i++){var a=narrow.get(i);var b=narrow.get((i+1)%narrow.size());area+=a.x()*b.z()-b.x()*a.z();}
+            check(Math.abs(Math.abs(area)/2-.08)<1e-8,"small sole preserves true rectangular contact area",passed);
+            check(dev.magnitude.visual.SoleGeometry.clip(10,10,.1,.1,0).isEmpty(),"noncontact cell produces no visual polygon",passed);
+            var cursor=new dev.magnitude.visual.SoleGeometry.Cursor(.1,.1);var visited=new java.util.HashSet<String>();
+            while(!cursor.complete()){var offset=cursor.next();check(visited.add(offset[0]+":"+offset[1]),"bounded sole cursor does not revisit cell",passed);}
+            var visual=new FootprintPayload(java.util.UUID.randomUUID(),1,-1,server.overworld().dimension().identifier(),new net.minecraft.world.phys.Vec3(1,200,1),.5,.5,0);
+            check(visual.valid(),"visual contact accepts finite real geometry",passed);
+            check(!new FootprintPayload(visual.actor(),1,-1,visual.dimension(),visual.center(),Double.NaN,.5,0).valid(),"visual contact rejects nonfinite dimensions",passed);
             var timing=new dev.magnitude.physics.TimingWindow(4);
             check(timing.summary().samples()==0,"empty timing window has no fabricated samples",passed);
             for(long ms:new long[]{1,2,3,4,5})timing.add(ms*1_000_000);
