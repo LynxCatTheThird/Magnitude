@@ -252,5 +252,17 @@
   "gui.magnitude.preset.low": "低写入峰值",
   "gui.magnitude.preset.standard": "标准配额",
   "gui.magnitude.preset.custom": "自定义",
-  "gui.magnitude.workPresetHint": "点击切换低写入峰值/标准配额，应用后由服务器确认。只修改检查和写入配额；不改变几何、材料规则或开启地形作用。低配额可能延迟或遗漏过期效果，不能保证提高帧率。"
+  "gui.magnitude.workPresetHint": "点击切换低写入峰值/标准配额，应用后由服务器确认。只修改检查和写入配额；不改变几何、材料规则或开启地形作用。低配额可能延迟或遗漏过期效果，不能保证提高帧率。",
+  "gui.magnitude.command.sizeHeight": "20刻内变为10格高（示例）",
+  "gui.magnitude.command.pickup": "拾起目标",
+  "gui.magnitude.command.release": "释放携带目标",
+  "gui.magnitude.command.toolDuration": "手持工具：20刻过渡（示例）",
+  "gui.magnitude.command.presetLow": "管理员：低写入峰值配额",
+  "gui.magnitude.command.presetStandard": "管理员：标准工作配额",
+  "gui.magnitude.command.reload": "管理员：重读服务器配置",
+  "message.magnitude.usage.preset": "工作配额：/magnitude config preset low|standard；仅修改工作配额，不开启地形作用。",
+  "gui.magnitude.commandGroup.common": "状态与个人许可",
+  "gui.magnitude.commandGroup.size": "尺寸与随机规则",
+  "gui.magnitude.commandGroup.actions": "动作、携带与工具",
+  "gui.magnitude.commandGroup.server": "管理员：服务器规则"
 }

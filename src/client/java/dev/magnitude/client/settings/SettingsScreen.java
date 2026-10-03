@@ -17,20 +17,26 @@ public final class SettingsScreen extends Screen {
     private static final String[] TABS={"overview","client","player","server","diagnostics","commands"};
     private final Screen parent;
     private final Map<String,String> drafts=new LinkedHashMap<>();
-    private int tab,page,rows,submitted=-1,clientGroup,serverGroup;
+    private int tab,page,rows,submitted=-1,clientGroup,serverGroup,commandGroup;
     private String invalidField;
     private static final String[][] CLIENT_GROUPS={{"magnification","sensitivity","smoothing","hiddenNames"},{"footprints","footprintDistance","footprintCache"}};
     private static final String[] CLIENT_NAMES={"camera","footprints"},SERVER_NAMES={"rules","response","size","budget"};
-    private static final String[][] COMMANDS={
-        {"status","/magnitude config show"},{"menu","/magnitude menu"},
-        {"sizeGet","/magnitude scale get"},{"sizeSet","/magnitude scale set 5 20"},
-        {"sizeReset","/magnitude scale reset"},{"terrain","/magnitude config player terrain on"},
-        {"pressure","/magnitude config player pressure on"},{"serverTerrain","/magnitude config server terrainDamage true"},
-        {"serverPressure","/magnitude config server standingPressure true"},{"soil","/magnitude config server shallowDeformation true"},
-        {"rules","/magnitude config server"},{"diagnostics","/magnitude diagnostics physics"},
-        {"action","/magnitude action stomp"},{"carry","/magnitude carry position hand"},
-        {"toolValue","/magnitude tool set value 2"},{"toolMode","/magnitude tool set mode multiply"},
-        {"randomStart","/magnitude random start 1 5 200"},{"randomStop","/magnitude random stop"}};
+    private static final String[] COMMAND_NAMES={"common","size","actions","server"};
+    private static final String[][][] COMMAND_GROUPS={
+        {{"status","/magnitude config show"},{"menu","/magnitude menu"},
+         {"terrain","/magnitude config player terrain on"},{"pressure","/magnitude config player pressure on"},
+         {"diagnostics","/magnitude diagnostics physics"}},
+        {{"sizeGet","/magnitude scale get"},{"sizeSet","/magnitude scale set 5 20"},
+         {"sizeHeight","/magnitude scale height 10 20"},{"sizeReset","/magnitude scale reset"},
+         {"randomStart","/magnitude random start 1 5 200"},{"randomStop","/magnitude random stop"}},
+        {{"action","/magnitude action stomp"},{"pickup","/magnitude action pickup"},{"release","/magnitude action release"},
+         {"carry","/magnitude carry position hand"},{"toolValue","/magnitude tool set value 2"},
+         {"toolMode","/magnitude tool set mode multiply"},{"toolDuration","/magnitude tool set duration 20"}},
+        {{"serverTerrain","/magnitude config server terrainDamage true"},{"serverPressure","/magnitude config server standingPressure true"},
+         {"soil","/magnitude config server shallowDeformation true"},{"rules","/magnitude config server"},
+         {"presetLow","/magnitude config preset low"},{"presetStandard","/magnitude config preset standard"},
+         {"reload","/magnitude config reload"}}};
+    private String[][] commands(){return COMMAND_GROUPS[commandGroup];}
     private String localResult="ready";
     private boolean wasBusy;
     private long connectionEpoch=SettingsConnection.epoch;
@@ -88,8 +94,8 @@ public final class SettingsScreen extends Screen {
         rows=Math.max(1,(height-(tab==3&&serverGroup==3?184:158))/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
         int tabW=w/TABS.length;
         for(int i=0;i<TABS.length;i++){final int target=i;var b=button(tr("tab."+TABS[i]),left+i*tabW,30,tabW-2,ignored->{tab=target;page=0;localResult="ready";invalidField=null;rebuildWidgets();});b.active=tab!=i;}
-        if(tab==1||tab==3){String[] names=local()?CLIENT_NAMES:SERVER_NAMES;int selected=local()?clientGroup:serverGroup;
-            button(tr("group."+names[selected]),left+w-150,54,150,b->{if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr("groupHint")));}
+        if(tab==1||tab==3||tab==5){String[] names=tab==5?COMMAND_NAMES:local()?CLIENT_NAMES:SERVER_NAMES;int selected=tab==5?commandGroup:local()?clientGroup:serverGroup;
+            button(tr((tab==5?"commandGroup.":"group.")+names[selected]),left+w-150,54,150,b->{if(tab==5)commandGroup=(commandGroup+1)%COMMAND_NAMES.length;else if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr("groupHint")));}
         if(tab==3&&serverGroup==3&&SettingsConnection.view!=null){
             var values=new LinkedHashMap<>(SettingsConnection.view.server());
             for(var row:fields())try{values.put(row.id,Double.parseDouble(drafts.getOrDefault(draftKey(row.id),Double.toString(row.value))));}catch(NumberFormatException ignored){}
@@ -100,11 +106,11 @@ public final class SettingsScreen extends Screen {
                 rebuildWidgets();
             });preset.active=editable()&&!SettingsConnection.busy();preset.setTooltip(Tooltip.create(tr("workPresetHint")));
         }
-        var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?COMMANDS.length:tab==0||tab==4?details.size():fields.size();int pages=Math.max(1,(total+rows-1)/rows);page=Math.clamp(page,0,pages-1);
+        var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?commands().length:tab==0||tab==4?details.size():fields.size();int pages=Math.max(1,(total+rows-1)/rows);page=Math.clamp(page,0,pages-1);
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
             int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
             if(tab==0||tab==4)continue;
-            if(tab==5){final String command=COMMANDS[index][1];var copy=button(tr("copy"),left+w-100,y,100,b->{minecraft.keyboardHandler.setClipboard(command);localResult="copied";});copy.setTooltip(Tooltip.create(Component.literal(command)));continue;}
+            if(tab==5){final String command=commands()[index][1];var copy=button(tr("copy"),left+w-100,y,100,b->{minecraft.keyboardHandler.setClipboard(command);localResult="copied";});copy.setTooltip(Tooltip.create(Component.literal(command)));continue;}
             Row row=fields.get(index);String key=draftKey(row.id);String value=drafts.getOrDefault(key,Double.toString(row.value));
             Component label=Component.translatable("config.magnitude.field."+row.id);
             Component hint=Component.translatable("config.magnitude.hint."+row.id);
@@ -164,14 +170,14 @@ public final class SettingsScreen extends Screen {
     @Override public void extractRenderState(GuiGraphicsExtractor g,int mouseX,int mouseY,float delta){
         g.centeredText(font,title,width/2,10,0xffffffff);
         int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
-        g.text(font,font.plainSubstrByWidth(tr("scope."+TABS[tab]).getString(),tab==1||tab==3?w-155:w),left,58,0xffbbbbbb);
-        var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?COMMANDS.length:tab==0||tab==4?details.size():fields.size();
+        g.text(font,font.plainSubstrByWidth(tr("scope."+TABS[tab]).getString(),tab==1||tab==3||tab==5?w-155:w),left,58,0xffbbbbbb);
+        var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?commands().length:tab==0||tab==4?details.size():fields.size();
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
             int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
             if(tab==5){
-                Component description=tr("command."+COMMANDS[index][0]);
+                Component description=tr("command."+commands()[index][0]);
                 g.text(font,font.plainSubstrByWidth(description.getString(),w-110),left,y+5,0xffeeeeee);
-                if(mouseX>=left&&mouseX<left+w-105&&mouseY>=y&&mouseY<y+26)g.setComponentTooltipForNextFrame(font,List.of(description,Component.literal(COMMANDS[index][1])),mouseX,mouseY);
+                if(mouseX>=left&&mouseX<left+w-105&&mouseY>=y&&mouseY<y+26)g.setComponentTooltipForNextFrame(font,List.of(description,Component.literal(commands()[index][1])),mouseX,mouseY);
             }else if(tab==0||tab==4) {
                 var wrapped=font.split(details.get(index),w);
                 for(int line=0;line<Math.min(2,wrapped.size());line++)g.text(font,wrapped.get(line),left,y+2+line*10,0xffeeeeee);

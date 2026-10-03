@@ -28,7 +28,7 @@ public final class ConfigCommand {
             server.then(node);
         }
         config.then(server);
-        var preset=literal("preset").requires(ConfigService::administrator);
+        var preset=literal("preset").requires(ConfigService::administrator).executes(c->CommandReply.message(c,"usage.preset"));
         for(var option:dev.magnitude.config.WorkPreset.values())preset.then(literal(option.id).executes(c->reply(c,ConfigService.INSTANCE.server(c.getSource(),-1,option.patch()))));
         config.then(preset);
         config.then(literal("food").requires(ConfigService::administrator).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())

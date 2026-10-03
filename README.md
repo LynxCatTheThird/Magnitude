@@ -5,7 +5,7 @@
 ## 安装
 
 1. 安装 Minecraft Java Edition 26.3、Fabric Loader 0.19.5 或更新版本，以及对应的 Fabric API。
-2. 将 `magnitude-0.1.4-alpha17+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
+2. 将 `magnitude-0.1.4-alpha18+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
 3. 首次启动后可编辑世界或服务端目录下的 `config/magnitude.json`，修改后使用 `/magnitude config reload`。
 
 客户端和服务端必须使用同一版本。单人游戏也会同时运行服务端逻辑。
@@ -196,3 +196,7 @@
 ## 0.1.4-alpha17 受控成本与工作配额
 
 接触查询跳过空形状列表构造，受控50倍场景的线程分配约减半，耗时不承诺一致改善。服务器高级预算提供低写入峰值/标准配额，或通过`/magnitude config preset low|standard`原子提交；配额不改变材料、几何或开启地形作用。完整视觉质量预设仍需客户端测量。
+
+## 0.1.4-alpha18 命令入口整理
+
+设置中的命令页按用途分为四组，独立展示个人许可与管理员规则；支持复制示例，不执行命令。补齐高度、拾取/释放、工具过渡和预算预设示例；单独输入`/magnitude config preset`可以查看说明。服务器设置仍由统一配置服务确认。

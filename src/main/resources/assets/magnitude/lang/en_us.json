@@ -252,5 +252,17 @@
   "gui.magnitude.preset.low": "Low write peaks",
   "gui.magnitude.preset.standard": "Standard",
   "gui.magnitude.preset.custom": "Custom",
-  "gui.magnitude.workPresetHint": "Cycle low write peaks / standard, then Apply for server confirmation. Changes only checks and writes, not geometry, materials, or terrain permissions. Low limits may delay effects or expire work; higher FPS is not guaranteed."
+  "gui.magnitude.workPresetHint": "Cycle low write peaks / standard, then Apply for server confirmation. Changes only checks and writes, not geometry, materials, or terrain permissions. Low limits may delay effects or expire work; higher FPS is not guaranteed.",
+  "gui.magnitude.command.sizeHeight": "Become 10 blocks tall over 20 ticks (example)",
+  "gui.magnitude.command.pickup": "Pick up a target",
+  "gui.magnitude.command.release": "Release a carried target",
+  "gui.magnitude.command.toolDuration": "Held tool: 20-tick transition (example)",
+  "gui.magnitude.command.presetLow": "Admin: low write peak limits",
+  "gui.magnitude.command.presetStandard": "Admin: standard work limits",
+  "gui.magnitude.command.reload": "Admin: reload server settings",
+  "message.magnitude.usage.preset": "Work limits: /magnitude config preset low|standard; changes limits without enabling terrain effects.",
+  "gui.magnitude.commandGroup.common": "Status and personal permissions",
+  "gui.magnitude.commandGroup.size": "Size and random rules",
+  "gui.magnitude.commandGroup.actions": "Actions, carrying and tools",
+  "gui.magnitude.commandGroup.server": "Admin: server rules"
 }

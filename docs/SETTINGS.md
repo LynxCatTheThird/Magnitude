@@ -1,6 +1,6 @@
 # 设置界面与命令
 
-适用版本：0.1.4-alpha17+26.3。客户端与服务器使用同一版本。
+适用版本：0.1.4-alpha18+26.3。客户端与服务器使用同一版本。
 
 ## 打开界面
 
@@ -18,7 +18,7 @@
 
 视觉页按镜头/即时脚印分组；服务器页按世界规则、接触与破坏、尺寸与死亡、高级工作预算分组。点击分组按钮切换，应用会提交当前页面所有分组的草稿。服务器控件提示显示合法范围和对应命令。概览根据服务器确认配置显示当前地面后端。
 
-命令页提供常用操作及复制按钮，复制不会执行；示例参数可在聊天栏修改，管理员命令仍由服务器检查权限。完整命令结构见下表。
+命令页按状态与个人许可、尺寸与随机规则、动作/携带/工具、管理员服务器规则分组，切换分组会回到第一页。每组提供常用操作及复制按钮，复制不会执行；示例参数可在聊天栏修改，管理员命令仍由服务器检查权限。完整命令结构见下表。
 
 修改先保留为草稿，点击“应用”才保存或提交。关闭未应用的草稿会询问是否放弃；已提交的服务器请求不会因关页而取消。服务器修改须收到确认；保存失败保留原生效设置。其他操作修改了同一配置版本时，服务器拒绝过期提交并返回最新状态，核对草稿后可重新应用。
 
@@ -38,6 +38,7 @@
 | config server | `/magnitude config server terrainDamage true` | 管理员修改服务器规则 |
 | config server | `/magnitude config server maximum 64` | 设置尺寸上限；读取单字段时省略值 |
 | config server | `/magnitude config server` | 管理员列出服务器字段和值 |
+| config preset | `/magnitude config preset low`、`config preset standard` | 管理员原子应用工作配额；不自动开启地形 |
 | config reload | `/magnitude config reload` | 管理员重读服务器配置 |
 | action | `/magnitude action pickup`、`action release`、`action stomp` | 动作请求 |
 | carry / tool / random | `/magnitude carry position hand`、`tool set value 2`、`random stop` | 携带、工具和随机规则 |

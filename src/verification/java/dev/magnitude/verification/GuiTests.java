@@ -83,8 +83,18 @@ public final class GuiTests implements ClientModInitializer {
                         boolean overlap=false;for(int i=0;i<widgets.size();i++)for(int j=i+1;j<widgets.size();j++){var a=widgets.get(i);var b=widgets.get(j);overlap|=a.getX()<b.getRight()&&a.getRight()>b.getX()&&a.getY()<b.getBottom()&&a.getBottom()>b.getY();}
                         check(!overlap,"small scaled preset screen has no overlapping interactive controls");
                     }
-                    case 11 -> {screenshot(client,"work-presets");}
-                    case 12 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
+                    case 11 -> {
+                        screenshot(client,"work-presets");click("gui.magnitude.tab.commands");
+                        for(String group:new String[]{"common","size","actions"})click("gui.magnitude.commandGroup."+group);
+                        var copy=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(Component.translatable("gui.magnitude.copy").getString())).map(x->(Button)x).findFirst().orElseThrow();copy.onPress(null);
+                        check(client.keyboardHandler.getClipboard().equals("/magnitude config server terrainDamage true"),"server command group copies explicit administrator scope");
+                        screen.init(320,240);check(screen.children().stream().filter(x->x instanceof net.minecraft.client.gui.components.AbstractWidget).allMatch(x->{var w=(net.minecraft.client.gui.components.AbstractWidget)x;return w.getX()>=0&&w.getY()>=0&&w.getRight()<=320&&w.getBottom()<=240;}),"grouped command controls fit small scaled screen");
+                        clickLiteral(">");click("gui.magnitude.commandGroup.server");
+                        copy=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(Component.translatable("gui.magnitude.copy").getString())).map(x->(Button)x).findFirst().orElseThrow();copy.onPress(null);
+                        check(client.keyboardHandler.getClipboard().equals("/magnitude config show"),"changing command group resets pagination to first page");
+                    }
+                    case 12 -> {screenshot(client,"grouped-commands");}
+                    case 13 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
                     default -> {return;}
                 }
                 stage++;
