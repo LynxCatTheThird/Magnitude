@@ -31,6 +31,7 @@ public final class SoilDeformation {
             int target=SoilMaterials.equilibrium(event.scale().base(),1,impulse);
             for(var patch:contact.patches()) {
                 if(changes.size()>=1024)break;
+                if(!PhysicsWork.cells(1))break;
                 var pos=patch.position();var before=actor.level().getBlockState(pos);
                 if(net.minecraft.world.level.block.Block.getId(before)!=patch.state())continue;
                 var backend=SoilMaterials.compacted(before);if(backend==null)continue;
@@ -53,6 +54,7 @@ public final class SoilDeformation {
             changes.remove(entry.getKey());
             if(work.pressure&&(!Magnitude.settings.standingPressure||!state.pressureEnabled)||!work.dimension.equals(actor.level().dimension())||work.expires<actor.level().getGameTime()
                 ||Math.abs(work.size-dev.magnitude.core.Dimensions.snapshot(actor).base())>Math.max(1e-9,work.size*1e-6)) {continue;}
+            if(!PhysicsWork.cells(1)){changes.putIfAbsent(entry.getKey(),work);break;}
             if(!actor.level().hasChunkAt(entry.getKey())){changes.put(entry.getKey(),work);if(++unknown>=changes.size())break;continue;}
             unknown=0;
             var result=Impact.compactSoil(actor,entry.getKey(),work.before,work.after,Magnitude.settings.blocksPerImpact-writes);
@@ -63,7 +65,7 @@ public final class SoilDeformation {
             state.contacts.reason="soil reached bounded equilibrium";
             state.contacts.feet.clear("soil changed");
             if(state.pose.action()!=2)state.pose=BodyPoses.update(actor,0,false);
-        }else state.contacts.reason="soil unchanged or protected";
+        }else state.contacts.reason=changes.isEmpty()?"soil unchanged or protected":"soil waiting for budget or loaded surface";
         return writes;
     }
 }
