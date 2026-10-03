@@ -84,23 +84,37 @@ public final class BodyCollision {
         if(!query.complete())return fallback(player,wanted);
         List<AABB> obstacles=query.boxes();
         if(obstacles.isEmpty())return wanted;
-        // Charge all SAT pairs including empty/failed contacts, before doing any work.
-        long pairs=(long)obstacles.size()*parts.size()*12;
+        // Charge the bounded broad phase, then SAT only for reachable part/obstacle pairs.
+        long broad=(long)obstacles.size()*parts.size();
+        if(state.physicsPairs+broad>LocalProxy.PAIRS_PER_TICK||!PhysicsWork.pairs(broad))return fallback(player,wanted);
+        state.physicsPairs+=(int)broad;
+        var candidates=candidates(parts,obstacles,wanted,step);
+        long pairs=0;for(var nearby:candidates)pairs+=(long)nearby.size()*12;
         if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs)) {
             state.contacts.diagnostics.failure="collision pair budget";return fallback(player,wanted);
         }
         state.physicsPairs+=(int)pairs;
-        Vec3 result=clip(parts,obstacles,wanted);
+        Vec3 result=clip(parts,candidates,wanted);
         if(step>0 && (player.onGround() || wanted.y<0 && result.y!=wanted.y)
             && (result.x!=wanted.x || result.z!=wanted.z)) {
-            Vec3 up=clip(parts,obstacles,new Vec3(0,step,0));
+            Vec3 up=clip(parts,candidates,new Vec3(0,step,0));
             List<BodyBox> raised=shift(parts,up);
-            Vec3 across=clip(raised,obstacles,new Vec3(wanted.x,0,wanted.z));
-            Vec3 down=clip(shift(raised,across),obstacles,new Vec3(0,wanted.y-up.y,0));
+            Vec3 across=clip(raised,candidates,new Vec3(wanted.x,0,wanted.z));
+            Vec3 down=clip(shift(raised,across),candidates,new Vec3(0,wanted.y-up.y,0));
             Vec3 candidate=up.add(across).add(down);
             if(candidate.horizontalDistanceSqr()>result.horizontalDistanceSqr())result=candidate;
         }
         return result;
+    }
+    private static List<List<AABB>> candidates(List<BodyBox> parts,List<AABB> obstacles,Vec3 wanted,double step){
+        var candidates=new ArrayList<List<AABB>>(parts.size());
+        for(var part:parts){
+            var envelope=part.bounds().expandTowards(wanted).expandTowards(0,step,0).inflate(1e-7);
+            var nearby=new ArrayList<AABB>();
+            for(var obstacle:obstacles)if(envelope.intersects(obstacle))nearby.add(obstacle);
+            candidates.add(nearby);
+        }
+        return candidates;
     }
     private static Vec3 fallback(Player player, Vec3 wanted) {
         var state=EntityState.of(player);state.proxyFallback=true;
@@ -115,7 +129,7 @@ public final class BodyCollision {
         for(BodyBox part:parts)result.add(part.move(delta));
         return result;
     }
-    private static Vec3 clip(List<BodyBox> parts,List<AABB> obstacles,Vec3 wanted) {
+    private static Vec3 clip(List<BodyBox> parts,List<List<AABB>> obstacles,Vec3 wanted) {
         double y=axis(parts,obstacles,new Vec3(0,wanted.y,0));
         Vec3 result=new Vec3(0,wanted.y*y,0);
         boolean zFirst=Math.abs(wanted.x)<Math.abs(wanted.z);
@@ -124,11 +138,11 @@ public final class BodyCollision {
         Vec3 second=zFirst ? new Vec3(wanted.x,0,0) : new Vec3(0,0,wanted.z);
         return result.add(second.scale(axis(shift(parts,result),obstacles,second)));
     }
-    private static double axis(List<BodyBox> parts,List<AABB> obstacles,Vec3 movement) {
+    private static double axis(List<BodyBox> parts,List<List<AABB>> obstacles,Vec3 movement) {
         if(movement.lengthSqr()==0)return 1;
         double fraction=1;
-        for(BodyBox part:parts)for(AABB obstacle:obstacles) {
-            fraction=Math.min(fraction,part.sweep(obstacle,movement));
+        for(int i=0;i<parts.size();i++)for(AABB obstacle:obstacles.get(i)) {
+            fraction=Math.min(fraction,parts.get(i).sweep(obstacle,movement));
             if(fraction==0)return 0;
         }
         return fraction;

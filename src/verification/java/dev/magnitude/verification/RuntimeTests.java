@@ -47,7 +47,17 @@ public final class RuntimeTests implements ModInitializer {
         server.halt(false);
     }
     @Override public void onInitialize() {
-        if (Boolean.getBoolean("magnitude.guiVerification")) return;
+        if (Boolean.getBoolean("magnitude.guiVerification")) {
+            if(Boolean.getBoolean("magnitude.dualTerrainServer"))ServerTickEvents.END_SERVER_TICK.register(server->{
+                if(server.overworld().getGameTime()%5!=0)return;
+                var values=new java.util.LinkedHashMap<String,Object>();
+                for(var p:server.getPlayerList().getPlayers()){
+                    var state=EntityState.of(p);values.put(p.getGameProfile().name(),java.util.Map.of("position",p.position().toString(),"velocity",p.getDeltaMovement().toString(),"grounded",p.onGround(),"pose",state.pose.toString(),"reason",state.contacts.reason,"anchors",state.contacts.feet.reason,"failure",state.contacts.diagnostics.failure));
+                }
+                try{Files.writeString(Path.of("dual-server-progress.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(values));}catch(Exception error){throw new RuntimeException(error);}
+            });
+            return;
+        }
         ServerLifecycleEvents.SERVER_STARTED.register(server -> countdown=5);
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if(countdown<0||--countdown>0)return;

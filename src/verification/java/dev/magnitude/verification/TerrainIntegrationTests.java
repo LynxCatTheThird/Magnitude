@@ -58,6 +58,7 @@ public final class TerrainIntegrationTests {
             check(SoilDeformation.continueWork(p)==2&&state.contacts.soil.isEmpty()&&level.getBlockState(plantCell).isAir()&&level.getBlockState(soilCell)==target&&after[0]==1,"authorized plant and soil share two writes and notify only after the soil is committed",passed);
             Magnitude.settings.blocksPerTick=256;Magnitude.settings.blocksPerImpact=64;
             for(double size:new double[]{5,50,4.75,16.125,49.875}){
+                reset(p,root,size);
                 for(var pos:BlockPos.betweenClosed(root.offset(-16,-2,-8),root.offset(16,-2,100)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
                 for(var pos:BlockPos.betweenClosed(root.offset(-16,-1,-8),root.offset(16,-1,100))){level.setBlock(pos,Blocks.GRASS_BLOCK.defaultBlockState(),2);level.setBlock(pos.above(),Blocks.SHORT_GRASS.defaultBlockState(),2);}
                 state.contacts=new ContactState();state.pose=BodyPose.IDLE;state.posePhase=state.strideDistance=0;state.initialized=false;state.terrainEnabled=true;
@@ -74,11 +75,71 @@ public final class TerrainIntegrationTests {
                 System.out.println("TERRAIN INTEGRATION scale="+size+" y="+low+".."+high+" forward="+forward+" denied="+denied+" writes="+writes+" ms="+(System.nanoTime()-started)/1e6);
                 check(denied==0&&forward>55&&low>=199.5-1e-5&&high<=200+1e-5,"natural grass walking makes forward progress within shallow depth without denied movement at "+size,passed);
                 check(writes>0,"supported natural vegetation no longer suppresses walking compaction at "+size,passed);
-                p.setOnGround(true);ready(p);ContactEvents.sample(p);for(int i=0;i<30;i++){ready(p);SoilDeformation.continueWork(p);ContactEvents.sample(p);}
+                p.setOnGround(true);ready(p);ContactEvents.sample(p);for(int i=0;i<30;i++){ready(p);p.move(MoverType.SELF,new Vec3(0,-.08/Dimensions.snapshot(p).motionFactor(),0));SoilDeformation.continueWork(p);ContactEvents.sample(p);}
                 double settled=p.getY();int atRest=0;
                 for(int i=0;i<60;i++){ready(p);p.move(MoverType.SELF,new Vec3(0,-.08/Dimensions.snapshot(p).motionFactor(),0));SoilDeformation.continueWork(p);ContactEvents.sample(p);atRest+=Magnitude.settings.blocksPerTick-Impact.remaining();}
+                System.out.println("REST scale="+size+" y="+settled+"->"+p.getY()+" writes="+atRest+" pose="+state.pose+" anchors="+state.contacts.feet.reason);
                 check(Math.abs(p.getY()-settled)<1e-6&&atRest==0,"walking-to-standing freezes settled soil without a new excavation loop at "+size,passed);
             }
+            scenes(p,root,passed);
         }finally{veto[0]=mutate[0]=false;Magnitude.settings=old;p.remove(net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);PhysicsWork.beginTick();Impact.beginTick();}
     }
+    private static void reset(ServerPlayer p,BlockPos root,double size){
+        var level=p.level();
+        for(var pos:BlockPos.betweenClosed(root.offset(-16,0,-8),root.offset(16,12,100)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+        for(var pos:BlockPos.betweenClosed(root.offset(-16,-3,-8),root.offset(16,-2,100)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
+        for(var pos:BlockPos.betweenClosed(root.offset(-16,-1,-8),root.offset(16,-1,100)))level.setBlock(pos,Blocks.GRASS_BLOCK.defaultBlockState(),2);
+        p.setPos(root.getX()+.5,root.getY(),root.getZ()+.5);p.setYRot(0);p.setOnGround(true);Dimensions.set(p,size,0);
+        var state=EntityState.of(p);state.contacts=new ContactState();state.pose=BodyPose.IDLE;state.posePhase=state.strideDistance=0;
+        state.initialized=false;state.terrainEnabled=true;state.pressureEnabled=true;
+    }
+    private static void walk(ServerPlayer p,int ticks){
+        for(int i=0;i<ticks;i++){
+            ready(p);double factor=Dimensions.snapshot(p).motionFactor();
+            p.move(MoverType.SELF,new Vec3(0,-.08/factor,.5/factor));
+            SoilDeformation.continueWork(p);ContactEvents.sample(p);
+            if(EntityState.of(p).movementDenied)throw new AssertionError("scene movement denied at "+p.position()+" failure="+EntityState.of(p).contacts.diagnostics.failure+" cells="+EntityState.of(p).physicsCells+" pairs="+EntityState.of(p).physicsPairs+" pose="+EntityState.of(p).pose);
+        }
+    }
+    private static void scenes(ServerPlayer p,BlockPos root,Consumer<String> passed){
+        var level=p.level();
+        for(double size:new double[]{5,50}){
+            reset(p,root,size);
+            for(int z=12;z<=75;z++)for(int x=-16;x<=16;x++){
+                int rise=z/12;
+                for(int y=0;y<rise-1;y++)level.setBlock(root.offset(x,y,z),Blocks.STONE.defaultBlockState(),2);
+                level.setBlock(root.offset(x,rise-1,z),Blocks.GRASS_BLOCK.defaultBlockState(),2);
+            }
+            walk(p,120);
+            System.out.println("SLOPE scale="+size+" position="+p.position()+" pose="+EntityState.of(p).pose+" reason="+EntityState.of(p).contacts.reason);
+            check(p.getZ()>root.getZ()+55&&p.getY()>root.getY()+3&&p.getY()<=root.getY()+6,"shallow terrain and foot anchors climb a repeated natural slope at "+size,passed);
+            reset(p,root,size);
+            // A thin loaded roof over a cave: unsupported soil must remain a real surface, not a hidden floor.
+            for(var pos:BlockPos.betweenClosed(root.offset(-16,-5,10),root.offset(16,-2,40)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            walk(p,90);
+            check(p.getZ()>root.getZ()+40&&p.getY()>=root.getY()-.5,"finite soil compaction preserves a thin cave roof during walking at "+size,passed);
+            var left=BlockPos.containing(PlayerBody.foot(p,-1));var right=BlockPos.containing(PlayerBody.foot(p,1));
+            for(var pos:BlockPos.betweenClosed(root.offset(-16,-6,40),root.offset(16,-1,55)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            ready(p);p.move(MoverType.SELF,new Vec3(0,-1/Dimensions.snapshot(p).motionFactor(),0));
+            check(p.getY()<root.getY()-.7&&!p.onGround(),"external removal of a cave roof causes real falling without anchor floor at "+size,passed);
+        }
+        reset(p,root,50);
+        for(int y=0;y<7;y++){level.setBlock(root.offset(7,y,3),Blocks.OAK_LOG.defaultBlockState(),2);level.setBlock(root.offset(0,y,3),Blocks.OAK_LOG.defaultBlockState(),2);}
+        for(var pos:BlockPos.betweenClosed(root.offset(5,4,2),root.offset(9,7,4)))level.setBlock(pos,Blocks.OAK_LEAVES.defaultBlockState(),2);
+        walk(p,18);
+        check(level.getBlockState(root.offset(7,0,3)).isAir()&&level.getBlockState(root.offset(7,5,3)).isAir(),"shallow walking clears several tree layers through the real boot volume",passed);
+        check(level.getBlockState(root.offset(0,0,3)).is(Blocks.OAK_LOG)&&level.getBlockState(root.offset(0,5,3)).is(Blocks.OAK_LOG),"tree in the leg gap survives integrated soil response",passed);
+        reset(p,root,50);
+        for(var pos:BlockPos.betweenClosed(root.offset(5,0,5),root.offset(9,5,9)))level.setBlock(pos,Blocks.OAK_PLANKS.defaultBlockState(),2);
+        level.setBlock(root.offset(7,0,7),Blocks.CHEST.defaultBlockState(),2);
+        walk(p,30);
+        check(p.getZ()>root.getZ()+12&&level.getBlockState(root.offset(7,4,5)).isAir(),"small village-like structure is contacted and broken during shallow walking",passed);
+        check(level.getBlockState(root.offset(7,0,7)).is(Blocks.CHEST),"village container remains protected through integrated boot and soil effects",passed);
+        reset(p,root,5);var random=new java.util.Random(20261004);
+        for(int i=0;i<24;i++){
+            double scale=3+random.nextDouble()*50;Dimensions.set(p,scale,0);ready(p);ContactEvents.sample(p);
+            walk(p,2);check(EntityState.of(p).pose.valid()&&p.getY()>=root.getY()-.5,"seeded fractional resize retains valid pose and finite soil depth iteration "+i,passed);
+        }
+    }
+
 }

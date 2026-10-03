@@ -61,6 +61,13 @@ public final class Impact {
         int changed=0;
         for(var pos:contacts) {
             if(changed>=Magnitude.settings.blocksPerImpact || BLOCKS.remaining()==0 || CHECKS.remaining()==0)break;
+            // Supported soil belongs to the shallow surface response, not horizontal excavation.
+            // Preserve a reachable slope so ordinary stepping can establish its next contact.
+            if(!CHECKS.take())break;
+            if(!actor.level().hasChunkAt(pos))continue;
+            var material=actor.level().getBlockState(pos);
+            if(Magnitude.settings.shallowDeformation&&dev.magnitude.terrain.SoilMaterials.compacted(material)!=null
+                &&pos.getY()+dev.magnitude.terrain.SoilMaterials.height(material)/16d<=actor.getY()+dev.magnitude.physics.StepPolicy.height(actor)+1e-7)continue;
             if(breakBlock(actor,pos,strength))changed++;
         }
         return changed;
