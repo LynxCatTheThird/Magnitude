@@ -67,3 +67,13 @@ Accessible Step 2.4.1+26.3 与当前客户端共同启动到资源图集加载�
 `FootprintCycleTests`耦合真实Entity.move、运动倍率、重力、服务端姿态/接触和队列写入：5/17.25/50倍各120次移动，平地前进60格，高度保持200、台阶抬升0、移动拒绝0。另验证整片承重地面不挖掘、卸载后脚印中心及周边统一一格深且下一层保留。该夹具证实这一场景的行为，不能证明自然村庄FPS/MSPT已恢复。
 
 旧材料/保护用例现在通过测试专用`FootprintRelease`明确抬离接触面，再断言写入；该辅助类不进入生产包。站立和连续运动回归继续调用生产队列，不使用模拟抬脚。
+
+## 0.1.4-alpha7 配置与GUI验证
+
+`ConfigTests`加入共享配置服务的权限检查、批量输入校验、过期版本、实际文件写入失败、备份、旧命令委托、错误重载，以及设置请求/回执编码边界。真实服务端总断言363项；规则断言仍300012项。
+
+独立客户端验证入口`GuiTests`由`-Dmagnitude.guiVerification=true`启用，只在验证模组中存在。它在实际客户端检查离线页面、编辑保存、非管理员只读控件、分页、320×240缩放布局、非法数字与关闭草稿，并输出截图和gui-results.json；验证时使用隔离运行目录，不能加载用户存档。
+
+`GuiNetworkTests`由`-Dmagnitude.guiNetworkVerification=true`启用，连接`-Dmagnitude.testServer=127.0.0.1:<port>`。分别使用普通玩家和管理员（后者设置`-Dmagnitude.guiAdmin=true`）验证真实GUI请求/确认、权限伪造拒绝、命令/GUI一致性和过期编辑。专服隔离目录设置offline模式及本地监听，并为测试管理员配置ops.json。该运行需禁用自动专服夹具（设置`-Dmagnitude.guiVerification=true`）；结果写入network-results.json。
+
+这些检查不证明复杂模组包中的全部菜单布局兼容或长期FPS/MSPT。生产JAR应排除全部验证入口和类。
