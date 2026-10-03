@@ -47,6 +47,9 @@ public final class BodyCollision {
         return true;
     }
     public static boolean newCollision(Player player,Vec3 oldRoot,Vec3 target) {
+        // An unchanged position cannot add penetration. Accepting teleport acknowledgements
+        // lets vanilla update chunk tracking before any actual movement into unknown space.
+        if(Double.isFinite(oldRoot.lengthSqr())&&oldRoot.equals(target))return false;
         var before=PlayerBody.parts(player,oldRoot);var after=PlayerBody.parts(player,target);
         var obstacles=WorldObstacles.query(player,WorldObstacles.regions(after,Vec3.ZERO,0),false);
         if(!obstacles.complete()) {fallback(player);return true;}

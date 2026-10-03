@@ -68,6 +68,12 @@ public final class BodyPhysicsTests {
             actor.setPos(6000.5,220,6000.5);ready(actor);
             level.setBlock(ROOT.offset(1,0,0),Blocks.STONE.defaultBlockState(),2);level.setBlock(ROOT.offset(1,1,0),Blocks.STONE.defaultBlockState(),2);
             require(BodyCollision.newCollision(actor,actor.position(),actor.position().add(1,0,0)),"server position validation rejects new body penetration",passed);
+            var loadedRoot=actor.position();actor.setPos(310000.5,220,310000.5);ready(actor);
+            require(!level.hasChunkAt(net.minecraft.core.BlockPos.containing(actor.position())),"position acknowledgement fixture starts in an unloaded chunk",passed);
+            int cellsBefore=PhysicsWork.cellsRemaining(),pairsBefore=PhysicsWork.pairsRemaining();
+            require(!BodyCollision.newCollision(actor,actor.position(),actor.position())&&cellsBefore==PhysicsWork.cellsRemaining()&&pairsBefore==PhysicsWork.pairsRemaining(),"unchanged position acknowledgement accepts unknown terrain without a world query",passed);
+            require(BodyCollision.newCollision(actor,actor.position(),actor.position().add(.001,0,0)),"actual movement from an unloaded destination remains rejected",passed);
+            actor.setPos(loadedRoot);ready(actor);
             level.setBlock(ROOT.offset(1,0,0),Blocks.STONE_SLAB.defaultBlockState(),2);level.setBlock(ROOT.offset(1,1,0),Blocks.AIR.defaultBlockState(),2);
             ready(actor);actor.move(MoverType.SELF,new Vec3(1,0,0));
             require(actor.getX()>6001.4 && Math.abs(actor.getY()-220.5)<1e-5,"skeletal movement steps onto half slab",passed);
