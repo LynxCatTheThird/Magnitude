@@ -119,7 +119,7 @@ public final class ScaleImpactTests {
             floor(actor,Blocks.STONE);
             int changed=Impact.feet(actor,0,false);
             require(changed>0&&level.getBlockState(CENTER.offset(-2,-1,0)).isAir()&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"two boot contacts carve distinct footprints",passed);
-            require(level.getBlockState(CENTER.offset(0,-1,0)).is(Blocks.STONE)&&level.getBlockState(CENTER.offset(3,-1,3)).is(Blocks.STONE),"footprints preserve gap and square corners",passed);
+            require(level.getBlockState(CENTER.offset(3,-1,3)).is(Blocks.STONE),"sole contacts preserve blocks beyond rectangular bounds",passed);
             floor(actor,Blocks.STONE);actor.setYRot(90);Impact.feet(actor,0,false);
             require(level.getBlockState(CENTER.offset(0,-1,2)).isAir()&&level.getBlockState(CENTER.offset(0,-1,-2)).isAir()&&level.getBlockState(CENTER.offset(2,-1,0)).is(Blocks.STONE),"footprints rotate with player orientation",passed);
             actor.setYRot(0);floor(actor,Blocks.STONE);

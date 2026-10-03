@@ -2,7 +2,6 @@ package dev.magnitude.interaction;
 
 import dev.magnitude.core.Dimensions;
 import dev.magnitude.core.EntityState;
-import dev.magnitude.core.Rules;
 import dev.magnitude.physics.PlayerBody;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,7 +59,12 @@ public final class FootprintWork {
         var pos=BlockPos.containing(center).offset(x,-layer,z);
         if(foot>=feet.length) {foot=0;layer++;}
         double dx=pos.getX()+.5-center.x,dz=pos.getZ()+.5-center.z;
-        if(!Rules.insideFootprint(dx,dz,yaw,width,length))return null;
+        double c=Math.cos(yaw),s=Math.sin(yaw);
+        // Four separating axes for a rotated rectangular sole and a unit block.
+        double padding=.5*(Math.abs(c)+Math.abs(s));
+        if(Math.abs(dx*c+dz*s)>=width+padding || Math.abs(-dx*s+dz*c)>=length+padding
+            || Math.abs(dx)>=Math.abs(c)*width+Math.abs(s)*length+.5
+            || Math.abs(dz)>=Math.abs(s)*width+Math.abs(c)*length+.5)return null;
         double rx=pos.getX()+.5-root.x,rz=pos.getZ()+.5-root.z;
         if(pressure && (rx*rx+rz*rz<.75*.75 || dx*dx+dz*dz<.55*.55))return null;
         return pos;

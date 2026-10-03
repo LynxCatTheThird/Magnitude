@@ -5,7 +5,7 @@ public record ScaleSnapshot(long revision, double base, double width, double hei
                             double modelWidth, double modelHeight, double motionFactor,
                             double jumpFactor, double attackFactor, double reachFactor,
                             double proxyLimit, double footprintScale, double jumpVelocityLimit) {
-    public double stride() { return Math.max(0.4, Math.min(8, footprintScale) * 0.4); }
-    public double bootHalfWidth() { return modelWidth * 0.09 + 0.35; }
-    public double bootHalfLength() { return modelWidth * 0.22 + 0.35; }
+    public double stride() { return Math.max(0.4, modelHeight * 0.72 * Math.sin(0.65)); }
+    public double bootHalfWidth() { return modelWidth * 0.09; }
+    public double bootHalfLength() { return modelWidth * 0.09; }
 }

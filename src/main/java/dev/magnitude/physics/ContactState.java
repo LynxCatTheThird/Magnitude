@@ -12,6 +12,7 @@ public final class ContactState {
     public final long[] counts = new long[ContactEvent.Type.values().length];
     public SupportSnapshot support;
     public double loadSize = -1, loadX = Double.NaN, loadZ = Double.NaN, peakY = Double.NaN;
+    public boolean walking;
     public boolean pressureActive;
     public boolean terrainActive;
 }

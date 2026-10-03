@@ -13,13 +13,14 @@ public final class ContactEffects {
         switch (event.type()) {
             case TAKEOFF -> state.contacts.changedBlocks = Impact.feet(player, 0, false);
             case WALKING_STRIDE -> {
-                state.contacts.changedBlocks = Impact.feet(player, 0, false);
+                state.contacts.changedBlocks = Impact.feet(player, event.pose().support()==1 ? -1 : 1, false);
                 if (Magnitude.settings.bodyDamage)
                     Interactions.damageSmall(player, player.getBoundingBox().inflate(0.1, 0.25, 0.1),
                         Interactions.scaledImpactDamage(player, Magnitude.settings.walkDamageFactor));
             }
             case SUPPORT_CHANGED -> {
-                if (Magnitude.settings.standingPressure && state.pressureEnabled) state.contacts.changedBlocks = Impact.feet(player, 0, true);
+                if (event.movement().horizontalDistanceSqr()>1e-6) state.contacts.reason="moving load follows footfalls";
+                else if (Magnitude.settings.standingPressure && state.pressureEnabled) state.contacts.changedBlocks = Impact.feet(player, 0, true);
                 else state.contacts.reason = "pressure disabled";
             }
             case SIZE_CHANGED -> {

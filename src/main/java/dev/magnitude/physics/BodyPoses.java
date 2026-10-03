@@ -25,7 +25,7 @@ public final class BodyPoses {
         long now = player.level().getGameTime();
         boolean grounded = player.onGround() && !player.isPassenger() && !player.getAbilities().flying && !player.isNoGravity();
         takeoff &= grounded;
-        if (distance > 0.001 && distance <= 16) state.posePhase = (state.posePhase + distance / Math.max(0.4,player.getBbWidth()*0.67) * Math.PI) % (Math.PI*2);
+        if (distance > 0.001 && distance <= 16) state.posePhase = (state.posePhase + distance / dev.magnitude.core.Dimensions.snapshot(player).stride() * Math.PI) % (Math.PI*2);
         int support = grounded ? distance > 0.001 ? state.posePhase < Math.PI ? 1 : 2 : 3 : 0;
         int action = grounded ? distance > 0.001 ? 1 : 0 : 3;
         if (takeoff) { action=2;support=(state.jumpSequence++ & 1)==0 ? 2 : 1;state.posePhase=support==1 ? 0 : Math.PI; }

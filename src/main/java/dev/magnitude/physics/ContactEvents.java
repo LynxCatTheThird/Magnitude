@@ -59,7 +59,7 @@ public final class ContactEvents {
             double size = Dimensions.snapshot(player).base();
             boolean pressure = Magnitude.settings.standingPressure && state.pressureEnabled;
             boolean terrain = Magnitude.settings.terrainDamage && state.terrainEnabled;
-            boolean newLoad = contact.support == null || !support.equals(contact.support)
+            boolean newLoad = (contact.walking && distance<=0.001) || contact.support == null || !support.equals(contact.support)
                 || Math.abs(contact.loadSize - size) > 0.05
                 || Math.hypot(player.getX() - contact.loadX, player.getZ() - contact.loadZ) > 0.5
                 || pressure != contact.pressureActive || terrain != contact.terrainActive;
@@ -74,6 +74,7 @@ public final class ContactEvents {
             contact.peakY = Double.NaN;
             state.jumpImpact = false;
         }
+        contact.walking=grounded && distance>0.001;
         state.previousPosition = player.position();
         state.initialized = true;
         state.grounded = grounded;

@@ -112,7 +112,7 @@ public final class GameplayPhysicsTests {
             for(int i=0;i<40 && !EntityState.of(player).contacts.footprints.isEmpty();i++) {
                 Impact.beginTick();Impact.continueFeet(player);
             }
-            require(level.getBlockState(ROOT.offset(7,-1,8)).isAir(),
+            require(level.getBlockState(ROOT.offset(10,-1,2)).isAir(),
                 "fractional giant sole deforms ground beyond old fixed radius",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,-4,-12),ROOT.offset(12,-1,12)))
                 level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
@@ -126,7 +126,7 @@ public final class GameplayPhysicsTests {
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,-1,-12),ROOT.offset(12,-1,12)))
                 level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
             ready(player);Impact.feet(player,0,false);
-            var protectedLater=ROOT.offset(7,-1,8);
+            var protectedLater=ROOT.offset(10,-1,2);
             level.setBlock(protectedLater,Blocks.CHEST.defaultBlockState(),2);
             for(int i=0;i<40 && !EntityState.of(player).contacts.footprints.isEmpty();i++) {
                 Impact.beginTick();Impact.continueFeet(player);
@@ -145,6 +145,80 @@ public final class GameplayPhysicsTests {
             ready(player);PhysicsWork.cells(PhysicsWork.cellsRemaining());
             var missing=ObstacleContacts.capture(player,new Vec3(2,0,0));
             require(!missing.complete() && missing.blocks().isEmpty(),"truncated leg scan never supplies partial destructive candidates",passed);
+            // Actual ground-to-swing behavior must remain discrete across a long walk.
+            for(int x=-1;x<=1;x++)for(int z=-1;z<=7;z++)level.getChunk(ROOT.offset(x*16,0,z*16));
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-1,-10),ROOT.offset(14,0,110)))
+                level.setBlock(pos,pos.getY()<200?Blocks.DIRT.defaultBlockState():Blocks.AIR.defaultBlockState(),2);
+            for(double size:new double[]{5,17.25,50}) {
+                Dimensions.set(player,size,0);ready(player);
+                var gait=EntityState.of(player);gait.initialized=true;gait.previousSize=size;
+                gait.previousPosition=player.position();gait.grounded=true;gait.strideDistance=0;gait.posePhase=0;
+                gait.contacts.support=null;gait.contacts.walking=false;
+                Magnitude.settings.standingPressure=true;
+                long beforeSteps=gait.contacts.counts[ContactEvent.Type.WALKING_STRIDE.ordinal()];
+                double stride=Dimensions.snapshot(player).stride();
+                for(int step=1;step<=100;step++) {
+                    player.setPos(8000.5,200,8000.5+step);
+                    gait.contacts.sampleTick=Long.MIN_VALUE;gait.physicsTick=Long.MIN_VALUE;
+                    PhysicsWork.beginTick();EntityQueries.beginTick();Impact.beginTick();
+                    ContactEvents.sample(player);
+                    require(!gait.contacts.reason.equals("pressure disabled") && gait.contacts.last.type()!=ContactEvent.Type.LANDING,
+                        "walking contact stays grounded at "+size+" sample "+step,ignored->{});
+                    Impact.continueFeet(player);
+                }
+                long footfalls=gait.contacts.counts[ContactEvent.Type.WALKING_STRIDE.ordinal()]-beforeSteps;
+                require(footfalls==(long)Math.floor(100/stride),"long walk footfalls follow full-size stride at "+size,passed);
+                require(gait.contacts.reason.equals("moving load follows footfalls"),
+                    "moving support does not smear static pressure between footfalls at "+size,passed);
+            }
+            require(level.getBlockState(ROOT.offset(7,-1,32)).is(Blocks.DIRT),
+                "giant footfalls leave intact ground between same-foot impressions",passed);
+            Dimensions.set(player,50,0);ready(player);
+            // Repeated contact must clear all touched layers rather than stop after one.
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(5,0,1),ROOT.offset(10,8,6)))
+                level.setBlock(pos,Blocks.OAK_LEAVES.defaultBlockState(),2);
+            for(int y=0;y<9;y++)level.setBlock(ROOT.offset(7,y,2),Blocks.OAK_LOG.defaultBlockState(),2);
+            int broken=0;
+            for(int pass=0;pass<12;pass++) {
+                player.setOnGround(pass==0);EntityState.of(player).physicsTick=Long.MIN_VALUE;
+                EntityState.of(player).contacts.obstacleTick=Long.MIN_VALUE;
+                PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
+                BodyCollision.move(player,new Vec3(0,-.05,.2));
+                broken+=EntityState.of(player).contacts.changedBlocks;
+            }
+            require(level.getBlockState(ROOT.offset(7,0,2)).isAir() && level.getBlockState(ROOT.offset(7,5,2)).isAir(),
+                "ground walking followed by a short fall clears multiple tree layers",passed);
+            require(broken>64 && level.getBlockState(ROOT.offset(7,4,1)).isAir(),
+                "dense canopy contact continues across mutation batches",passed);
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-12,0,-8),ROOT.offset(12,10,8)))
+                level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-1,-10),ROOT.offset(14,-1,10)))
+                level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
+            ready(player);BodyCollision.move(player,new Vec3(0,-.08,.2));
+            require(level.getBlockState(ROOT.offset(7,-1,0)).is(Blocks.DIRT),
+                "grounded gravity motion does not turn obstacle sweeps into continuous terrain trenches",passed);
+            // A house wall spans many more contacts than the per-impact write quota.
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(4,0,2),ROOT.offset(11,10,3)))
+                level.setBlock(pos,Blocks.OAK_PLANKS.defaultBlockState(),2);
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(4,6,0),ROOT.offset(11,6,6)))
+                level.setBlock(pos,Blocks.OAK_PLANKS.defaultBlockState(),2);
+            ready(player);Vec3 houseMove=Vec3.ZERO;int mutations=0;
+            for(int pass=0;pass<12;pass++) {
+                EntityState.of(player).physicsTick=Long.MIN_VALUE;
+                EntityState.of(player).contacts.obstacleTick=Long.MIN_VALUE;
+                PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
+                houseMove=BodyCollision.move(player,new Vec3(0,0,1));
+                mutations+=EntityState.of(player).contacts.changedBlocks;
+            }
+            require(mutations>64 && houseMove.z>.99
+                && level.getBlockState(ROOT.offset(7,6,2)).isAir(),
+                "bounded giant contact clears house wall and roof before allowing forward movement",passed);
+            require(level.getBlockState(ROOT.offset(11,6,6)).is(Blocks.OAK_PLANKS),
+                "house parts outside the actual leg contact are preserved",passed);
+            level.setBlock(ROOT.offset(7,2,1),Blocks.COBWEB.defaultBlockState(),2);
+            ready(player);BodyCollision.move(player,new Vec3(0,0,.2));
+            require(level.getBlockState(ROOT.offset(7,2,1)).isAir(),
+                "nonblocking cobweb outline still registers actual leg contact",passed);
             Magnitude.settings.terrainDamage=false;Magnitude.settings.standingPressure=false;
             try {
                 server.getCommands().getDispatcher().execute("magnitude physics enable",player.createCommandSourceStack());

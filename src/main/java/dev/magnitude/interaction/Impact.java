@@ -53,10 +53,10 @@ public final class Impact {
     }
     /** Continuous material strength response; bounds work without a visual-size radius. */
     public static int obstacles(ServerPlayer actor, List<BlockPos> contacts, Vec3 movement) {
-        if (!allowed(actor) || !actor.onGround() || movement.horizontalDistanceSqr()<1e-8) return 0;
+        if (!allowed(actor) || (!actor.onGround() && movement.y>=0) || movement.lengthSqr()<1e-8) return 0;
         double size=dev.magnitude.core.Dimensions.snapshot(actor).base();
         float strength=(float)Math.min(128,Math.max(0,size-1)*0.75
-            * (0.75+Math.min(1,movement.horizontalDistance())*0.25));
+            * (0.75+Math.min(1,Math.max(movement.horizontalDistance(),Math.max(0,-movement.y)))*0.25));
         if(strength<=0)return 0;
         int changed=0;
         for(var pos:contacts) {
