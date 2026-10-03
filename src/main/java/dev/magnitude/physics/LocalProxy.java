@@ -9,8 +9,8 @@ import virtuoel.pehkui.api.ScaleTypes;
 
 /** Adaptive root proxy bounded by loaded chunks and a voxel traversal budget, not a fixed scale. */
 public final class LocalProxy {
-    public static final int CELLS_PER_MOVE=8192;
-    public static final int CELLS_PER_TICK=32768;
+    public static final int CELLS_PER_MOVE=131072;
+    public static final int CELLS_PER_TICK=262144;
     public static final int PAIRS_PER_TICK=65536;
     private LocalProxy() {}
     public static long cells(AABB box) {
@@ -37,7 +37,7 @@ public final class LocalProxy {
         double low=0,high=32;
         for(int i=0;i<12;i++) {
             double middle=(low+high)/2;
-            AABB box=box(player,middle).inflate(1).expandTowards(0,Math.min(4.8,player.maxUpStep()),0);
+            AABB box=box(player,middle).inflate(1).expandTowards(0,StepPolicy.height(player),0);
             if(cells(box)<=CELLS_PER_MOVE/2 && loaded(player.level(),box))low=middle;else high=middle;
         }
         double next=Math.max(1,low);

@@ -11,10 +11,13 @@ public final class MotionContacts {
     public static Vec3 move(Player player, Vec3 wanted) {
         var result = BodyCollision.solve(player, wanted);
         var contacts = EntityState.of(player).contacts;
-        if (result.obstacle() && player instanceof ServerPlayer server
+        if (!result.denied() && player.onGround() && wanted.horizontalDistanceSqr()>1e-8
+            && player instanceof ServerPlayer server
             && contacts.obstacleTick != player.level().getGameTime()) {
+            var hit = ObstacleContacts.capture(server,wanted);
+            if (hit.blocks().isEmpty()) return result.movement();
             contacts.obstacleTick = player.level().getGameTime();
-            var event = ContactEvents.emit(server, ContactEvent.Type.OBSTACLE, wanted, 0, null);
+            var event = ContactEvents.emit(server, ContactEvent.Type.OBSTACLE, wanted, 0, null, hit.blocks());
             if (EntityState.of(player).contacts.changedBlocks > 0) {
                 // A fresh query is charged to the same per-player and global budgets.
                 result = BodyCollision.solve(player, wanted);

@@ -2,6 +2,6 @@
   "required": true,
   "package": "dev.magnitude.mixin",
   "compatibilityLevel": "JAVA_25",
-  "mixins": ["EntityStateMixin", "PassengerMixin", "FoodMixin", "PlayerVehicleMixin", "SizeEffectPermissionMixin", "LevelEntitiesMixin", "PlayerTransferMixin", "PlayerJumpMixin", "PlayerCollisionMixin", "PlayerPositionCheckMixin"],
+  "mixins": ["EntityStateMixin", "PassengerMixin", "FoodMixin", "PlayerVehicleMixin", "SizeEffectPermissionMixin", "LevelEntitiesMixin", "PlayerTransferMixin", "PlayerJumpMixin", "PlayerLaunchMixin", "PlayerCollisionMixin", "PlayerPositionCheckMixin"],
   "injectors": {"defaultRequire": 1}
 }

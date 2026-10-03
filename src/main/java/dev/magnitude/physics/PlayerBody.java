@@ -11,7 +11,9 @@ public final class PlayerBody {
     private PlayerBody() {}
     public static List<BodyBox> parts(Player player, Vec3 root) {
         var scale = Dimensions.snapshot(player);
-        return parts(player,root,scale.width()/0.6,scale.height()/1.8);
+        // Model coefficients already include vanilla scale; only apply the stance ratio.
+        double poseHeight=player.getPose()==net.minecraft.world.entity.Pose.CROUCHING ? 1.5/1.8 : 1;
+        return parts(player,root,scale.modelWidth(),scale.modelHeight()*poseHeight);
     }
     /** The implicit full body is available without visiting its world-sized bounding volume. */
     public static List<BodyBox> actualParts(Player player) {
@@ -32,16 +34,17 @@ public final class PlayerBody {
     }
     private static BodyBox box(Player p,Vec3 root,double cx,double cy,double cz,double hx,double hy,double hz,double w,double h,double pitch) {
         double yaw=Math.toRadians(p.getYRot()),c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-        // Apply nonuniform proxy dimensions before rotation; the local limbs remain orthogonal.
+        // Apply nonuniform model dimensions before rotation; the local limbs remain orthogonal.
         return new BodyBox(root.add((cx*c-cz*s)*w,cy*h,(cx*s+cz*c)*w),new Vec3(hx*w,hy*h,hz*w),
             new Vec3(c,0,s),new Vec3(-s*sp,cp,c*sp),new Vec3(-s*cp,-sp,c*cp));
     }
     public static Vec3 foot(Player player,int side) {
-        double scale=Dimensions.snapshot(player).footprintScale();
+        var snapshot=Dimensions.snapshot(player);
+        double scale=snapshot.modelWidth(), height=snapshot.modelHeight();
         double yaw=Math.toRadians(player.getYRot());
         double pitch=side<0 ? EntityState.of(player).pose.leftLeg() : EntityState.of(player).pose.rightLeg();
-        return player.position().add(Math.cos(yaw)*side*scale*.15 + Math.sin(yaw)*Math.sin(pitch)*scale*.72,
-            -0.01, Math.sin(yaw)*side*scale*.15 - Math.cos(yaw)*Math.sin(pitch)*scale*.72);
+        return player.position().add(Math.cos(yaw)*side*scale*.15 + Math.sin(yaw)*Math.sin(pitch)*height*.72,
+            -0.01, Math.sin(yaw)*side*scale*.15 - Math.cos(yaw)*Math.sin(pitch)*height*.72);
     }
     public static int support(Player player) { return EntityState.of(player).pose.support(); }
 }

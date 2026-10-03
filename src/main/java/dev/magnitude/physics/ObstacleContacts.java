@@ -1,0 +1,52 @@
+package dev.magnitude.physics;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Loaded, budgeted leg sweep; candidates are actual voxel-shape contacts, never a center sphere. */
+public final class ObstacleContacts {
+    public record Result(List<BlockPos> blocks, boolean complete) {}
+    private ObstacleContacts() {}
+    public static Result capture(ServerPlayer player, Vec3 movement) {
+        if (!Double.isFinite(movement.lengthSqr()) || movement.horizontalDistanceSqr()<1e-8)
+            return new Result(List.of(),true);
+        var parts = PlayerBody.parts(player,player.position());
+        var legs = List.of(parts.get(2),parts.get(3));
+        Vec3 horizontal = new Vec3(movement.x,0,movement.z);
+        var regions=WorldObstacles.regions(legs,horizontal,0);
+        long cells=0;for(var region:regions)cells+=LocalProxy.cells(region);
+        var state=dev.magnitude.core.EntityState.of(player);
+        if (!WorldObstacles.loaded(player,regions)
+            || state.physicsCells+cells>LocalProxy.CELLS_PER_TICK || !PhysicsWork.cells(cells))
+            return new Result(List.of(),false);
+        state.physicsCells+=(int)cells;
+        var result=new java.util.LinkedHashSet<BlockPos>();
+        var context=CollisionContext.of(player);
+        for(var region:regions)for(var pos:BlockPos.betweenClosed(BlockPos.containing(region.minX,region.minY,region.minZ),
+            BlockPos.containing(region.maxX,region.maxY,region.maxZ))) {
+            if(pos.getY()<Math.floor(player.getY()))continue;
+            var shape=player.level().getBlockState(pos).getCollisionShape(player.level(),pos,context);
+            boolean hit=false;
+            for(var box:shape.toAabbs()) {
+                if(state.physicsPairs+2>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(2))return ordered(result,player,false);
+                state.physicsPairs+=2;
+                var world=box.move(pos.getX(),pos.getY(),pos.getZ());
+                for(var leg:legs)hit|=leg.intersects(world) || leg.sweep(world,horizontal)<1-1e-8;
+            }
+            if(hit) {
+                if(result.size()==256)return ordered(result,player,false);
+                result.add(pos.immutable());
+            }
+        }
+        return ordered(result,player,true);
+    }
+    private static Result ordered(java.util.Collection<BlockPos> result,ServerPlayer player,boolean complete) {
+        var sorted=new ArrayList<>(result);
+        sorted.sort(java.util.Comparator.comparingDouble(pos->Vec3.atCenterOf(pos).distanceToSqr(player.position())));
+        return new Result(List.copyOf(sorted),complete);
+    }
+}

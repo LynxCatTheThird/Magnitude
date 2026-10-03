@@ -30,12 +30,14 @@ public final class ContactEffects {
             case LANDING -> {
                 // The contact transition, captured descent and actual fall establish an impact.
                 // A remembered jump-key flag is neither required nor sufficient.
-                if (event.scale().base() >= 4 && (event.velocity().y < -0.1 || event.fallHeight() > 0.05))
+                if (event.scale().base() > 1 && (event.velocity().y < -0.1 || event.fallHeight() > 0.05)) {
+                    state.contacts.changedBlocks=Impact.landing(player,-event.velocity().y,event.fallHeight());
                     Interactions.shock(player, Math.min(Magnitude.settings.impactRadius,
                         event.scale().base() * Magnitude.settings.impactScaleFactor), true);
+                }
                 else state.contacts.reason = "no falling impact";
             }
-            case OBSTACLE -> state.contacts.changedBlocks = Impact.kick(player, event.movement());
+            case OBSTACLE -> state.contacts.changedBlocks = Impact.obstacles(player, event.obstacles(), event.movement());
             default -> { }
         }
     }

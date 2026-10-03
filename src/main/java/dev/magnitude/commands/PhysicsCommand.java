@@ -25,9 +25,11 @@ public final class PhysicsCommand {
             String status = "terrain server=" + Magnitude.settings.terrainDamage + " player=" + state.terrainEnabled
                 + "; pressure server=" + Magnitude.settings.standingPressure + " player=" + state.pressureEnabled
                 + "; scale=" + scale.base() + " revision=" + scale.revision() + " proxy=" + scale.proxyLimit()
+                + "; step=" + dev.magnitude.physics.StepPolicy.height(player)
                 + "; pose=" + state.pose.action() + " feet=" + state.pose.support()
                 + "; support=" + state.contacts.support
                 + "; event=" + (event == null ? "none" : event.type() + "#" + event.sequence())
+                + "; pendingFootprints="+state.contacts.footprints.size()
                 + "; reason=" + state.contacts.reason + " writes=" + state.contacts.changedBlocks
                 + "; blocks=" + Impact.remaining() + " checks=" + Impact.checksRemaining()
                 + " cells=" + PhysicsWork.cellsRemaining() + " pairs=" + PhysicsWork.pairsRemaining()
@@ -35,6 +37,20 @@ public final class PhysicsCommand {
             c.getSource().sendSuccess(() -> Component.literal(status), false);
             return 1;
         }));
+        for (boolean enabled : new boolean[]{true,false}) {
+            physics.then(literal(enabled ? "enable" : "disable").executes(c -> {
+                var actor=c.getSource().getPlayerOrException();
+                var state=EntityState.of(actor);
+                state.terrainEnabled=enabled;state.pressureEnabled=enabled;
+                if (dev.magnitude.core.Dimensions.operator(actor)) {
+                    Magnitude.settings.terrainDamage=enabled;
+                    Magnitude.settings.standingPressure=enabled;
+                    Magnitude.settings.save();
+                }
+                return reply(c, "player terrain/pressure="+enabled+"; server terrain="+Magnitude.settings.terrainDamage
+                    +(enabled && !Magnitude.settings.terrainDamage ? "; administrator must enable server terrain" : ""));
+            }));
+        }
         var server = literal("server").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER));
         var player = literal("player");
         for (String field : new String[]{"terrain", "pressure"}) {

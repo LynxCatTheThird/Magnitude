@@ -110,6 +110,7 @@ public final class Interactions {
                 if (!passenger.isAlive() || passenger.isSpectator() || !Rules.ratio(size,Dimensions.snapshot(passenger).base(),2)
                     || (state.riderInitiated ? !state.acceptCarry : passenger instanceof Player && !EntityState.of(passenger).acceptCarry)) release(player,false);
             }
+            Impact.continueFeet(player);
             groundContact(player);
             Messages.syncPhysics(player);
             if (player.tickCount % 10 == 0) {
@@ -221,7 +222,7 @@ public final class Interactions {
         double speed = landing ? Math.clamp(Math.max(0, -EntityState.of(player).downward) / 0.42, 0.25, 4) : 1;
         double impactRadius = Math.clamp(radius * (0.5 + speed * 0.5), 0.5, Magnitude.settings.impactRadius);
         if (Magnitude.settings.bodyDamage) damageSmall(player, player.getBoundingBox().inflate(impactRadius,0.75,impactRadius), scaledImpactDamage(player,(landing ? Magnitude.settings.landingDamageFactor : Magnitude.settings.walkDamageFactor) * speed));
-        Impact.breakAround(player,player.position().add(0,-0.5,0),impactRadius,1.5 * Math.clamp(speed,0.5,2));
+        if(!landing)Impact.breakAround(player,player.position().add(0,-0.5,0),impactRadius,1.5 * Math.clamp(speed,0.5,2));
         player.level().sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,player.getX(),player.getY()+0.1,player.getZ(),12,radius/2,0.1,radius/2,0.03);
         return true;
     }
@@ -230,7 +231,7 @@ public final class Interactions {
     }
     /** Pehkui's jump modifier is multiplicative; cap the resulting launch velocity to a
      * physically useful envelope so an extreme visual scale cannot launch hundreds of blocks. */
-    public static void limitJumpVelocity(ServerPlayer player) {
+    public static void limitJumpVelocity(Player player) {
         Vec3 velocity = player.getDeltaMovement();
         if (velocity.y <= 0 || player.getAbilities().flying || player.isNoGravity()) return;
         double maximum = Dimensions.snapshot(player).jumpVelocityLimit();

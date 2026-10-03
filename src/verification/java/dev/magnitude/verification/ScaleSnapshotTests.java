@@ -55,6 +55,15 @@ public final class ScaleSnapshotTests {
             after = Dimensions.snapshot(player);
             require(after.height() < before.height() && after.revision() > before.revision(), "pose change refreshes world-unit dimensions", passed);
             player.setPose(Pose.STANDING);
+            var attribute=player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.SCALE);
+            attribute.setBaseValue(2);Dimensions.set(player,3,0);
+            double full=Dimensions.snapshot(player).modelHeight();
+            require(Math.abs(dev.magnitude.physics.PlayerBody.parts(player,player.position()).get(0).bounds().maxY
+                -player.getY()-1.8*full)<1e-5,"full body does not multiply vanilla size attribute twice",passed);
+            player.setPose(Pose.CROUCHING);
+            require(Math.abs(dev.magnitude.physics.PlayerBody.parts(player,player.position()).get(0).bounds().maxY
+                -player.getY()-1.5*full)<1e-5,"full body applies crouching stance once",passed);
+            player.setPose(Pose.STANDING);attribute.setBaseValue(1);
             Dimensions.set(player, 1, 0);
             Dimensions.set(player, 5, 10);
             before = Dimensions.snapshot(player);

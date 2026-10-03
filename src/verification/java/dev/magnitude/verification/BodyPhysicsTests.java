@@ -44,9 +44,9 @@ public final class BodyPhysicsTests {
         boolean attached=false;
         try {
             PhysicsWork.beginTick();LocalProxy.update(actor);
-            require(PhysicsWork.cells(131072),"ordinary player proxy update spends no collision traversal budget",passed);
+            require(PhysicsWork.cells(PhysicsWork.cellsRemaining()),"ordinary player proxy update spends no collision traversal budget",passed);
             PhysicsWork.beginTick();
-            require(BodyCollision.move(actor,Vec3.ZERO).equals(Vec3.ZERO) && PhysicsWork.cells(131072),"zero displacement skips body collision traversal",passed);
+            require(BodyCollision.move(actor,Vec3.ZERO).equals(Vec3.ZERO) && PhysicsWork.cells(PhysicsWork.cellsRemaining()),"zero displacement skips body collision traversal",passed);
             PhysicsWork.beginTick();
             require(PlayerBody.parts(actor,actor.position()).size()==6,"body geometry uses six internal parts",passed);
             var head=PlayerBody.parts(actor,actor.position()).getFirst();
@@ -123,7 +123,7 @@ public final class BodyPhysicsTests {
             actor.setPos(6000.5,220,6000.5);Dimensions.set(actor,1,0);ready(actor);
             actor.move(MoverType.SELF,new Vec3(1e8,0,0));
             require(actor.getX()==6000.5 && EntityState.of(actor).physicsCells==0,"oversized sweep rejected before empty voxel traversal",passed);
-            ready(actor);PhysicsWork.cells(131072);actor.move(MoverType.SELF,new Vec3(.1,0,0));
+            ready(actor);PhysicsWork.cells(PhysicsWork.cellsRemaining());actor.move(MoverType.SELF,new Vec3(.1,0,0));
             require(actor.getX()==6000.5 && EntityState.of(actor).proxyFallback,"shared collision quota exhaustion blocks unknown movement",passed);
             ready(actor);for(int i=0;i<128;i++)EntityQueries.query(level,actor.getBoundingBox(),actor,1);
             actor.move(MoverType.SELF,new Vec3(.1,0,0));

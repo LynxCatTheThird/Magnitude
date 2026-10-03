@@ -82,11 +82,15 @@ public final class ContactEvents {
     }
     public static ContactEvent emit(ServerPlayer player, ContactEvent.Type type, Vec3 movement,
                                     double fall, SupportSnapshot support) {
+        return emit(player,type,movement,fall,support,java.util.List.of());
+    }
+    public static ContactEvent emit(ServerPlayer player, ContactEvent.Type type, Vec3 movement,
+                                    double fall, SupportSnapshot support, java.util.List<net.minecraft.core.BlockPos> obstacles) {
         var state = EntityState.of(player);
         Vec3 velocity = player.getDeltaMovement();
-        if (type == ContactEvent.Type.LANDING) velocity = new Vec3(velocity.x, Math.min(velocity.y, state.downward), velocity.z);
+        if (type == ContactEvent.Type.LANDING) velocity = new Vec3(velocity.x, Math.min(movement.y, Math.min(velocity.y, state.downward) * Dimensions.snapshot(player).motionFactor()), velocity.z);
         var event = new ContactEvent(++state.contacts.sequence, type, player, player.level().getGameTime(),
-            player.position(), velocity, movement, fall, Dimensions.snapshot(player), state.pose, support);
+            player.position(), velocity, movement, fall, Dimensions.snapshot(player), state.pose, support, java.util.List.copyOf(obstacles));
         ContactEventBus.publish(event);
         return event;
     }

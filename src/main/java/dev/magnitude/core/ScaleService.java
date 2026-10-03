@@ -24,13 +24,13 @@ public final class ScaleService {
         // Runtime coefficients already include inheritance and safety modifiers.
         double vanilla = entity instanceof LivingEntity living
             && !virtuoel.pehkui.api.PehkuiConfig.COMMON.applyVanillaScale.get() ? living.getScale() : 1;
-        double footprint = Math.min(base, state.proxyLimit);
+        double footprint = base;
         ScaleSnapshot next = new ScaleSnapshot(state.scaleRevision, base, entity.getBbWidth(), entity.getBbHeight(),
             entity.getEyeHeight(), value(ScaleTypes.MODEL_WIDTH, entity) * vanilla,
             value(ScaleTypes.MODEL_HEIGHT, entity) * vanilla, value(ScaleTypes.MOTION, entity),
             value(ScaleTypes.JUMP_HEIGHT, entity), value(ScaleTypes.ATTACK, entity),
             value(ScaleTypes.REACH, entity), state.proxyLimit, footprint,
-            Math.min(1.5, 0.42 * Math.sqrt(Math.clamp(base, 1, 64)) * 1.5));
+            Math.min(4.2, 0.42 * Math.sqrt(Math.clamp(base, ScaleSafety.MINIMUM, 100))) / Math.max(1,value(ScaleTypes.MOTION, entity)));
         if (old == null || !old.equals(next)) {
             next = new ScaleSnapshot(++state.scaleRevision, next.base(), next.width(), next.height(), next.eyeHeight(),
                 next.modelWidth(), next.modelHeight(), next.motionFactor(), next.jumpFactor(), next.attackFactor(),

@@ -34,9 +34,12 @@ public final class ScaleImpactTests {
     private static void require(boolean ok,String label,Consumer<String> passed) { if(!ok)throw new AssertionError(label);passed.accept(label); }
     private static void floor(ServerPlayer actor, net.minecraft.world.level.block.Block block) {
         for(var pos:BlockPos.betweenClosed(CENTER.offset(-6,-1,-6),CENTER.offset(6,-1,6)))actor.level().setBlock(pos,block.defaultBlockState(),3);
+        EntityState.of(actor).contacts.footprints.clear();
         Impact.beginTick();
     }
     private static void tick(MinecraftServer server,ServerPlayer actor) {
+        dev.magnitude.physics.PhysicsWork.beginTick();
+        EntityState.of(actor).physicsTick = Long.MIN_VALUE;
         EntityState.of(actor).contacts.sampleTick = Long.MIN_VALUE;
         server.getPlayerList().getPlayers().add(actor);
         try {Interactions.tick(server);} finally {server.getPlayerList().getPlayers().remove(actor);}
@@ -128,6 +131,7 @@ public final class ScaleImpactTests {
             tick(server,actor);require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"stationary scale 8 compresses soft terrain",passed);
             floor(actor,Blocks.STONE);tick(server,actor);require(level.getBlockState(CENTER.offset(2,-1,0)).is(Blocks.STONE),"moderate static load preserves stronger stone",passed);
             Dimensions.set(actor,32,0);state.previousSize=32;floor(actor,Blocks.STONE);tick(server,actor);
+            for(int i=0;i<20 && !state.contacts.footprints.isEmpty();i++){Impact.beginTick();Impact.continueFeet(actor);}
             require(level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"greater stationary load breaks stone",passed);
             floor(actor,Blocks.DIRT);actor.getAbilities().flying=true;tick(server,actor);
             require(Impact.remaining()==Magnitude.settings.blocksPerTick,"flying player does not apply standing pressure",passed);actor.getAbilities().flying=false;
@@ -135,7 +139,7 @@ public final class ScaleImpactTests {
             actor.jumpFromGround();require(state.jumpImpact&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"ordinary vanilla jump hook breaks ground on takeoff",passed);
             floor(actor,Blocks.STONE);actor.jumpFromGround();require(Impact.remaining()==Magnitude.settings.blocksPerTick,"repeated same-tick jump hooks share cooldown",passed);
             actor.setOnGround(false);actor.setDeltaMovement(new Vec3(0,-0.42,0));tick(server,actor);actor.setOnGround(true);floor(actor,Blocks.STONE);tick(server,actor);
-            require(!state.jumpImpact&&level.getBlockState(CENTER.offset(0,-1,0)).isAir(),"normal jump landing produces impact without manual stomp",passed);
+            require(!state.jumpImpact&&level.getBlockState(BlockPos.containing(dev.magnitude.physics.PlayerBody.foot(actor,1))).isAir(),"normal jump landing produces impact without manual stomp",passed);
             state.contacts.takeoffTick = Long.MIN_VALUE;floor(actor,Blocks.STONE);state.nextJumpImpact=0;state.jumpImpact=false;actor.setOnGround(true);actor.setDeltaMovement(Vec3.ZERO);
             actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());
             actor.connection.resetPosition();

@@ -46,47 +46,73 @@ public final class Impact {
         }
         return changed;
     }
-    /** Break the obstacle directly in a walking direction, preserving vanilla step-up behavior. */
+    /** Compatibility entry; callers use the same exact contact collection as movement. */
     public static int kick(ServerPlayer actor, Vec3 movement) {
-        if (!allowed(actor) || !actor.onGround() || movement.horizontalDistanceSqr() < 1.0e-8) return 0;
-        double size = Math.clamp(dev.magnitude.core.Dimensions.snapshot(actor).base(), 1, 32);
-        if (size < 4) return 0;
-        Vec3 direction = new Vec3(movement.x, 0, movement.z).normalize();
-        Vec3 center = actor.position().add(direction.scale(Math.max(0.6, Math.min(2.5, size * 0.3))));
-        return breakAround(actor, center.add(0, Math.min(1.2, actor.getBbHeight() * 0.45), 0), Math.min(1.5, 0.45 + size * 0.08), 1.2);
+        var contacts=dev.magnitude.physics.ObstacleContacts.capture(actor,movement);
+        return obstacles(actor,contacts.blocks(),movement);
     }
-    /** Two oriented boot contacts; side -1 or +1 selects one alternating step, 0 both. */
+    /** Continuous material strength response; bounds work without a visual-size radius. */
+    public static int obstacles(ServerPlayer actor, List<BlockPos> contacts, Vec3 movement) {
+        if (!allowed(actor) || !actor.onGround() || movement.horizontalDistanceSqr()<1e-8) return 0;
+        double size=dev.magnitude.core.Dimensions.snapshot(actor).base();
+        float strength=(float)Math.min(128,Math.max(0,size-1)*0.75
+            * (0.75+Math.min(1,movement.horizontalDistance())*0.25));
+        if(strength<=0)return 0;
+        int changed=0;
+        for(var pos:contacts) {
+            if(changed>=Magnitude.settings.blocksPerImpact || BLOCKS.remaining()==0 || CHECKS.remaining()==0)break;
+            if(breakBlock(actor,pos,strength))changed++;
+        }
+        return changed;
+    }
+    /** Real oriented soles, with bounded cursors retained for later ticks. */
     public static int feet(ServerPlayer actor, int side, boolean pressure) {
         if (!allowed(actor) || !actor.onGround() || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
         var snapshot = dev.magnitude.core.Dimensions.snapshot(actor);
-        double scale = snapshot.footprintScale();
-        if (scale < (pressure ? 8 : 4)) return 0;
-        double yaw = Math.toRadians(actor.getYRot());
-        double halfWidth = snapshot.bootHalfWidth(), halfLength = snapshot.bootHalfLength();
-        float hardness = pressure ? (float)Math.min(Float.MAX_VALUE / 2, dev.magnitude.core.Dimensions.snapshot(actor).base()/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
-        int changed = 0;
-        for (int foot : new int[]{-1, 1}) {
-            if (side != 0 && side != foot) continue;
-            if ((dev.magnitude.physics.PlayerBody.support(actor) & (foot<0?1:2))==0) continue;
-            Vec3 center = dev.magnitude.physics.PlayerBody.foot(actor,foot);
-            BlockPos origin = BlockPos.containing(center);
-            for (BlockPos offset : OFFSETS) {
-                if (offset.getY() != 0) continue;
-                if (changed >= Magnitude.settings.blocksPerImpact || BLOCKS.remaining() == 0 || CHECKS.remaining() == 0) return changed;
-                BlockPos pos = origin.offset(offset);
-                double x = pos.getX()+0.5-center.x, z = pos.getZ()+0.5-center.z;
-                if (!Rules.insideFootprint(x,z,yaw,halfWidth,halfLength)) continue;
-                double dx = pos.getX()+0.5-actor.getX(), dz = pos.getZ()+0.5-actor.getZ();
-                if (dx*dx+dz*dz > Magnitude.settings.impactRadius*Magnitude.settings.impactRadius) continue;
-                // Keep a small central support column so static load does not instantly make the player fall through its footprint.
-                if (pressure && dx*dx + dz*dz < 0.75 * 0.75) continue;
-                if (breakBlock(actor, pos, hardness)) changed++;
-            }
+        if (snapshot.base() <= 1) return 0;
+        float hardness = pressure ? (float)Math.min(128, snapshot.base()/Magnitude.settings.pressureHardnessFactor)
+            : (float)Math.min(128,Math.max(0,snapshot.base()-1)*0.75);
+        var pending=EntityState.of(actor).contacts.footprints;
+        if(pending.size()>=4) return continueFeet(actor);
+        var work=new FootprintWork(actor,side,pressure,hardness);
+        pending.addLast(work);
+        return continueFeet(actor);
+    }
+    public static int landing(ServerPlayer actor,double descent,double fallHeight) {
+        if(!Double.isFinite(descent) || !Double.isFinite(fallHeight) || !allowed(actor) || !actor.onGround())return 0;
+        double size=dev.magnitude.core.Dimensions.snapshot(actor).base();
+        double speed=Math.max(Math.max(0,descent),Math.sqrt(0.16*Math.max(0,fallHeight)));
+        if(size<=1 || speed<=0.1)return 0;
+        float hardness=(float)Math.min(128,Math.max(0,size-1)*0.75*Math.max(1,speed/0.42));
+        int depth=(int)Math.clamp(1+Math.log1p(size*speed*speed)*0.5,1,4);
+        var pending=EntityState.of(actor).contacts.footprints;
+        // A landing supersedes queued surface impressions at the same actor's feet.
+        pending.clear();pending.addLast(new FootprintWork(actor,0,false,hardness,depth));
+        return continueFeet(actor);
+    }
+    public static int continueFeet(ServerPlayer actor) {
+        var pending=EntityState.of(actor).contacts.footprints;
+        if(pending.isEmpty())return 0;
+        if(!allowed(actor) || actor.getAbilities().flying || actor.isNoGravity() || actor.isPassenger()) {
+            pending.clear();return 0;
+        }
+        int changed=0,visited=0;
+        while(!pending.isEmpty() && changed<Magnitude.settings.blocksPerImpact
+            && BLOCKS.remaining()>0 && CHECKS.remaining()>0 && visited<2048) {
+            var work=pending.peekFirst();
+            if(!work.valid(actor) || work.complete()) {pending.removeFirst();continue;}
+            var pos=work.next(); visited++;
+            // Every cursor visit is charged, including empty space and retained support.
+            if(!CHECKS.take())break;
+            if(pos!=null && breakBlockChecked(actor,pos,work.hardness))changed++;
         }
         return changed;
     }
     private static boolean breakBlock(ServerPlayer actor, BlockPos pos, float maximumHardness) {
         if (!CHECKS.take()) return false;
+        return breakBlockChecked(actor,pos,maximumHardness);
+    }
+    private static boolean breakBlockChecked(ServerPlayer actor, BlockPos pos, float maximumHardness) {
         var level = actor.level();
         if (!level.hasChunkAt(pos) || !level.getWorldBorder().isWithinBounds(pos) || !actor.mayInteract(level, pos)) return false;
         var block = level.getBlockState(pos);

@@ -77,7 +77,7 @@ public final class ContactTests {
             state.terrainEnabled=true;state.contacts.obstacleTick=Long.MIN_VALUE;
             PhysicsWork.beginTick();EntityQueries.beginTick();Impact.beginTick();state.physicsTick=Long.MIN_VALUE;
             var cleared=BodyCollision.move(player,new Vec3(2,0,0));
-            require(state.contacts.changedBlocks>0 && cleared.x>stopped.x,
+            require(state.contacts.changedBlocks>0 && cleared.x>=stopped.x && cleared.y<stopped.y,
                 "obstacle mutation re-queries collision and advances the same movement",passed);
             for(int y=0;y<8;y++)level.setBlock(root.offset(2,y,0),Blocks.AIR.defaultBlockState(),2);
             Dimensions.set(player,1,0);player.setPos(7000.5,220,7000.5);player.setOnGround(true);
@@ -85,7 +85,7 @@ public final class ContactTests {
             PhysicsWork.beginTick(); EntityQueries.beginTick();
             Vec3 clipped=BodyCollision.move(player,new Vec3(0,1,0));
             require(clipped.y<0.3,"verified upward escape still clips against a ceiling",passed);
-            PhysicsWork.beginTick();PhysicsWork.cells(131072);EntityQueries.beginTick();
+            PhysicsWork.beginTick();PhysicsWork.cells(PhysicsWork.cellsRemaining());EntityQueries.beginTick();
             require(BodyCollision.move(player,new Vec3(0,1,0)).equals(Vec3.ZERO) && state.movementDenied,"exhausted collision budget cannot allow upward ceiling penetration",passed);
             player.setPos(550000.5,220,550000.5);var old=player.position();
             player.move(MoverType.SELF,new Vec3(0,1,0));
