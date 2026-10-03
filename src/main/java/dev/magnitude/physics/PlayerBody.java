@@ -10,13 +10,13 @@ import java.util.List;
 public final class PlayerBody {
     private PlayerBody() {}
     public static List<BodyBox> parts(Player player, Vec3 root) {
-        return parts(player,root,player.getBbWidth()/0.6,player.getBbHeight()/1.8);
+        var scale = Dimensions.snapshot(player);
+        return parts(player,root,scale.width()/0.6,scale.height()/1.8);
     }
     /** The implicit full body is available without visiting its world-sized bounding volume. */
     public static List<BodyBox> actualParts(Player player) {
-        double vanilla=virtuoel.pehkui.api.PehkuiConfig.COMMON.applyVanillaScale.get() ? 1 : player.getScale();
-        return parts(player,player.position(),virtuoel.pehkui.api.ScaleTypes.MODEL_WIDTH.getScaleData(player).getScale()*vanilla,
-            virtuoel.pehkui.api.ScaleTypes.MODEL_HEIGHT.getScaleData(player).getScale()*vanilla);
+        var scale = Dimensions.snapshot(player);
+        return parts(player,player.position(),scale.modelWidth(),scale.modelHeight());
     }
     private static List<BodyBox> parts(Player player,Vec3 root,double width,double height) {
         BodyPose pose=EntityState.of(player).pose;
@@ -37,7 +37,7 @@ public final class PlayerBody {
             new Vec3(c,0,s),new Vec3(-s*sp,cp,c*sp),new Vec3(-s*cp,-sp,c*cp));
     }
     public static Vec3 foot(Player player,int side) {
-        double scale=Math.min(Dimensions.size(player),EntityState.of(player).proxyLimit);
+        double scale=Dimensions.snapshot(player).footprintScale();
         double yaw=Math.toRadians(player.getYRot());
         double pitch=side<0 ? EntityState.of(player).pose.leftLeg() : EntityState.of(player).pose.rightLeg();
         return player.position().add(Math.cos(yaw)*side*scale*.15 + Math.sin(yaw)*Math.sin(pitch)*scale*.72,

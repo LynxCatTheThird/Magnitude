@@ -13,6 +13,7 @@ import virtuoel.pehkui.api.ScaleTypes;
 public final class Dimensions {
     private Dimensions() {}
     public static double size(Entity entity) { return ScaleTypes.BASE.getScaleData(entity).getScale(); }
+    public static ScaleSnapshot snapshot(Entity entity) { return ScaleService.snapshot(entity); }
     public static double target(Entity entity) { return ScaleTypes.BASE.getScaleData(entity).getTargetScale() * (float)vanillaFactor(entity); }
     private static double vanillaFactor(Entity entity) {
         return entity instanceof LivingEntity living && virtuoel.pehkui.api.PehkuiConfig.COMMON.applyVanillaScale.get() && !virtuoel.pehkui.api.PehkuiConfig.COMMON.vanillaScaleSyncBack.get() ? living.getScale() : 1;
@@ -69,6 +70,7 @@ public final class Dimensions {
         for (var type : virtuoel.pehkui.api.ScaleRegistries.SCALE_TYPES.values()) {
             if (type != ScaleTypes.BASE) type.getScaleData(entity).onUpdate();
         }
+        ScaleService.invalidate(entity);
         return true;
     }
     public static boolean settled(Entity entity) { var data=ScaleTypes.BASE.getScaleData(entity);return data.getBaseScale()==data.getTargetScale(); }

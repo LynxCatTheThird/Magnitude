@@ -29,7 +29,7 @@ public final class LocalProxy {
     }
     public static void update(ServerPlayer player) {
         var state=EntityState.of(player);
-        double size=dev.magnitude.core.Dimensions.size(player);
+        double size=dev.magnitude.core.Dimensions.snapshot(player).base();
         // Small/ordinary entities already fit inside their current proxy. Movement still
         // validates chunks every time; growing an unused proxy only wastes world queries.
         if(size<=state.proxyLimit)return;
@@ -72,5 +72,6 @@ public final class LocalProxy {
         ScaleTypes.HITBOX_WIDTH.getScaleData(player).onUpdate();
         ScaleTypes.HITBOX_HEIGHT.getScaleData(player).onUpdate();
         player.refreshDimensions();
+        dev.magnitude.core.ScaleService.invalidate(player);
     }
 }
