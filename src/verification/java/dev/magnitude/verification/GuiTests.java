@@ -70,7 +70,21 @@ public final class GuiTests implements ClientModInitializer {
                         var entry=options.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals("Magnitude")).map(x->(Button)x).findFirst().orElseThrow();
                         check(entry.active,"options menu exposes offline settings entry");entry.onPress(null);check(client.gui.screen() instanceof SettingsScreen,"options entry opens native settings screen");
                     }
-                    case 10 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
+                    case 10 -> {
+                        screen=new SettingsScreen(null);SettingsConnection.view=fixture(true);client.gui.setScreen(screen);click("gui.magnitude.tab.server");
+                        click("gui.magnitude.group.rules");click("gui.magnitude.group.response");click("gui.magnitude.group.size");
+                        var label=Component.translatable("gui.magnitude.workPreset",Component.translatable("gui.magnitude.preset.standard")).getString();
+                        var preset=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(label)).map(x->(Button)x).findFirst().orElseThrow();preset.onPress(null);
+                        check(SettingsConnection.view.server().get("blocksPerTick")==256,"preset selection stays a draft before acknowledgement");
+                        var writes=screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().getString().equals(Component.translatable("config.magnitude.field.blocksPerTick").getString())).map(x->(EditBox)x).findFirst().orElseThrow();
+                        check(Double.parseDouble(writes.getValue())==32,"preset updates grouped numeric drafts together");screen.init(320,240);
+                        check(screen.children().stream().filter(x->x instanceof net.minecraft.client.gui.components.AbstractWidget).allMatch(x->{var w=(net.minecraft.client.gui.components.AbstractWidget)x;return w.getX()>=0&&w.getY()>=0&&w.getRight()<=320&&w.getBottom()<=240;}),"preset controls remain within small scaled screen");
+                        var widgets=screen.children().stream().filter(x->x instanceof net.minecraft.client.gui.components.AbstractWidget).map(x->(net.minecraft.client.gui.components.AbstractWidget)x).toList();
+                        boolean overlap=false;for(int i=0;i<widgets.size();i++)for(int j=i+1;j<widgets.size();j++){var a=widgets.get(i);var b=widgets.get(j);overlap|=a.getX()<b.getRight()&&a.getRight()>b.getX()&&a.getY()<b.getBottom()&&a.getBottom()>b.getY();}
+                        check(!overlap,"small scaled preset screen has no overlapping interactive controls");
+                    }
+                    case 11 -> {screenshot(client,"work-presets");}
+                    case 12 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
                     default -> {return;}
                 }
                 stage++;

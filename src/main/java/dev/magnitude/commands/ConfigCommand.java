@@ -28,6 +28,9 @@ public final class ConfigCommand {
             server.then(node);
         }
         config.then(server);
+        var preset=literal("preset").requires(ConfigService::administrator);
+        for(var option:dev.magnitude.config.WorkPreset.values())preset.then(literal(option.id).executes(c->reply(c,ConfigService.INSTANCE.server(c.getSource(),-1,option.patch()))));
+        config.then(preset);
         config.then(literal("food").requires(ConfigService::administrator).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())
             .then(argument("factor",doubleArg(.015625,4)).executes(c->reply(c,ConfigService.INSTANCE.food(c.getSource(),net.minecraft.commands.arguments.IdentifierArgument.getId(c,"item").toString(),getDouble(c,"factor")))))));
 

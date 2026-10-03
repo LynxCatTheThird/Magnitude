@@ -51,7 +51,9 @@ public final class FootContacts {
             for(int y=(int)lowY;y<=highY;y++) {
                 var pos=new BlockPos(x,y,z);var block=level.getBlockState(pos);
                 int id=Block.getId(block);revision=31*revision+pos.asLong();revision=31*revision+id;
-                var boxes=block.getCollisionShape(level,pos,net.minecraft.world.phys.shapes.CollisionContext.of(player)).toAabbs();
+                var shape=block.getCollisionShape(level,pos,net.minecraft.world.phys.shapes.CollisionContext.of(player));
+                if(shape.isEmpty())continue;
+                var boxes=shape.toAabbs();
                 if(boxes.size()>BOXES_PER_CELL){complete=false;reason="surface shape budget";break outer;}
                 for(var box:boxes) {
                     double height=y+box.maxY;

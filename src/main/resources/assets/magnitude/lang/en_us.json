@@ -247,5 +247,10 @@
   "gui.magnitude.command.toolValue": "Held tool: set value to 2 (example)",
   "gui.magnitude.command.toolMode": "Held tool: multiply mode",
   "gui.magnitude.command.randomStart": "Random 1–5× every 200 ticks (example)",
-  "gui.magnitude.command.randomStop": "Stop random scaling"
+  "gui.magnitude.command.randomStop": "Stop random scaling",
+  "gui.magnitude.workPreset": "Work limits: %s",
+  "gui.magnitude.preset.low": "Low write peaks",
+  "gui.magnitude.preset.standard": "Standard",
+  "gui.magnitude.preset.custom": "Custom",
+  "gui.magnitude.workPresetHint": "Cycle low write peaks / standard, then Apply for server confirmation. Changes only checks and writes, not geometry, materials, or terrain permissions. Low limits may delay effects or expire work; higher FPS is not guaranteed."
 }

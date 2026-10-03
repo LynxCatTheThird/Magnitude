@@ -247,5 +247,10 @@
   "gui.magnitude.command.toolValue": "手持工具：设为2（示例）",
   "gui.magnitude.command.toolMode": "手持工具：乘法模式",
   "gui.magnitude.command.randomStart": "每200刻随机为1～5倍（示例）",
-  "gui.magnitude.command.randomStop": "停止随机缩放"
+  "gui.magnitude.command.randomStop": "停止随机缩放",
+  "gui.magnitude.workPreset": "工作配额：%s",
+  "gui.magnitude.preset.low": "低写入峰值",
+  "gui.magnitude.preset.standard": "标准配额",
+  "gui.magnitude.preset.custom": "自定义",
+  "gui.magnitude.workPresetHint": "点击切换低写入峰值/标准配额，应用后由服务器确认。只修改检查和写入配额；不改变几何、材料规则或开启地形作用。低配额可能延迟或遗漏过期效果，不能保证提高帧率。"
 }

@@ -6,7 +6,8 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.magnitude.verification.RuntimeTests"
+      "dev.magnitude.verification.RuntimeTests",
+      "dev.magnitude.verification.TerrainPerformanceTests"
     ],
     "client": [
       "dev.magnitude.verification.GuiTests",

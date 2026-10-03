@@ -1,6 +1,6 @@
 # 设置界面与命令
 
-适用版本：0.1.4-alpha16+26.3。客户端与服务器使用同一版本。
+适用版本：0.1.4-alpha17+26.3。客户端与服务器使用同一版本。
 
 ## 打开界面
 
@@ -54,6 +54,17 @@
 工具配置使用 `tool set value <数值>`、`tool set duration <ticks>`、`tool set mode multiply|add|set|swap|transfer`；解除绑定为`tool unbind`。携带位置使用`carry position shoulder|hand|custom`，相对偏移使用`carry offset`。随机规则使用`random start <low> <high> <period>`和`random stop`。
 
 个人地形与压力分别使用`config player terrain on`和`config player pressure on`；管理员服务器规则分别使用`config server terrainDamage true`和`config server standingPressure true`。GUI各页同样分别提交，没有同时修改个人和服务器范围的隐式快捷行为。
+
+## 工作配额预设
+
+服务器“高级：工作预算”分组可切换低写入峰值/标准配额，点击应用后确认。管理员也可执行`/magnitude config preset low`或`/magnitude config preset standard`。三个字段作为同一批次保存，失败不发布部分值；其它预算值显示自定义。
+
+| 配额 | 每刻写入 | 每刻检查 | 单批写入 |
+| --- | --- | --- | --- |
+| low（低写入峰值） | 32 | 256 | 16 |
+| standard（标准） | 256 | 2048 | 64 |
+
+预设不改变尺寸/碰撞、材料公式、地形后端和许可，不清除已有地面。low可能延迟或遗漏过期效果，不能保证提高FPS。两种数值已在单实体真实服务端刻测量；完整视觉预设及多人自然世界成本仍需验证。
 
 ## 配置存储与性能边界
 

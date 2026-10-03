@@ -34,6 +34,7 @@ public final class ObstacleContacts {
             // Vegetation and cobwebs have contact even when they do not block movement.
             if(shape.isEmpty() && !block.isAir() && block.getFluidState().isEmpty() && !block.hasBlockEntity())
                 shape=block.getShape(player.level(),pos,context);
+            if(shape.isEmpty())continue;
             boolean hit=false;
             for(var box:shape.toAabbs()) {
                 if(state.physicsPairs+legs.size()>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(legs.size()))return ordered(result,player,false);

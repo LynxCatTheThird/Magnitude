@@ -61,12 +61,15 @@ public final class GuiNetworkTests implements ClientModInitializer {
                             off.onPress(null);
                             click(screen,"gui.magnitude.group.rules");click(screen,"gui.magnitude.group.response");
                             var maximum=screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().getString().equals(Component.translatable("config.magnitude.field.maximum").getString())).map(x->(EditBox)x).findFirst().orElseThrow();maximum.setValue("48");
+                            click(screen,"gui.magnitude.group.size");
+                            var presetLabel=Component.translatable("gui.magnitude.workPreset",Component.translatable("gui.magnitude.preset.standard")).getString();
+                            var preset=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(presetLabel)).map(x->(Button)x).findFirst().orElseThrow();preset.onPress(null);
                             click(screen,"gui.magnitude.apply");
                         }
                     }
                     case 4 -> {
                         if(SettingsConnection.busy())return;
-                        if(admin)check(SettingsConnection.result.equals("applied")&&SettingsConnection.view.server().get("terrainDamage")==1&&SettingsConnection.view.server().get("maximum")==48,"GUI administrator edits across groups persisted and acknowledged over network");
+                        if(admin)check(SettingsConnection.result.equals("applied")&&SettingsConnection.view.server().get("terrainDamage")==1&&SettingsConnection.view.server().get("maximum")==48&&SettingsConnection.view.server().get("blocksPerTick")==32&&SettingsConnection.view.server().get("checksPerTick")==256&&SettingsConnection.view.server().get("blocksPerImpact")==16,"GUI administrator edits across groups persisted and acknowledged over network");
                         else check(SettingsConnection.result.equals("permission")&&SettingsConnection.view.server().get("terrainDamage")==0,"server rejects forged GUI edit over network");
                         client.player.connection.sendCommand("magnitude config player pressure off");
                     }

@@ -85,14 +85,24 @@ public final class SettingsScreen extends Screen {
         return String.format(java.util.Locale.ROOT,"%.2f / %.2f / %.2f ms (%d)",summary.p50(),summary.p95(),summary.p99(),summary.samples());
     }
     @Override protected void init(){
-        rows=Math.max(1,(height-158)/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
+        rows=Math.max(1,(height-(tab==3&&serverGroup==3?184:158))/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
         int tabW=w/TABS.length;
         for(int i=0;i<TABS.length;i++){final int target=i;var b=button(tr("tab."+TABS[i]),left+i*tabW,30,tabW-2,ignored->{tab=target;page=0;localResult="ready";invalidField=null;rebuildWidgets();});b.active=tab!=i;}
         if(tab==1||tab==3){String[] names=local()?CLIENT_NAMES:SERVER_NAMES;int selected=local()?clientGroup:serverGroup;
             button(tr("group."+names[selected]),left+w-150,54,150,b->{if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr("groupHint")));}
+        if(tab==3&&serverGroup==3&&SettingsConnection.view!=null){
+            var values=new LinkedHashMap<>(SettingsConnection.view.server());
+            for(var row:fields())try{values.put(row.id,Double.parseDouble(drafts.getOrDefault(draftKey(row.id),Double.toString(row.value))));}catch(NumberFormatException ignored){}
+            var selected=dev.magnitude.config.WorkPreset.matching(values);
+            var preset=button(tr("workPreset",tr("preset."+(selected==null?"custom":selected.id))),left,76,w,b->{
+                var next=selected==dev.magnitude.config.WorkPreset.LOW_WRITES?dev.magnitude.config.WorkPreset.STANDARD:dev.magnitude.config.WorkPreset.LOW_WRITES;
+                for(var entry:next.patch().entrySet()){String key=draftKey(entry.getKey());if(entry.getValue().equals(SettingsConnection.view.server().get(entry.getKey())))drafts.remove(key);else drafts.put(key,Double.toString(entry.getValue()));}
+                rebuildWidgets();
+            });preset.active=editable()&&!SettingsConnection.busy();preset.setTooltip(Tooltip.create(tr("workPresetHint")));
+        }
         var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?COMMANDS.length:tab==0||tab==4?details.size():fields.size();int pages=Math.max(1,(total+rows-1)/rows);page=Math.clamp(page,0,pages-1);
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
-            int y=76+(index-page*rows)*26;
+            int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
             if(tab==0||tab==4)continue;
             if(tab==5){final String command=COMMANDS[index][1];var copy=button(tr("copy"),left+w-100,y,100,b->{minecraft.keyboardHandler.setClipboard(command);localResult="copied";});copy.setTooltip(Tooltip.create(Component.literal(command)));continue;}
             Row row=fields.get(index);String key=draftKey(row.id);String value=drafts.getOrDefault(key,Double.toString(row.value));
@@ -114,12 +124,14 @@ public final class SettingsScreen extends Screen {
             }
         }
         if(pages>1){button(Component.literal("<"),left,height-76,35,b->{page--;rebuildWidgets();}).active=page>0;button(Component.literal(">"),left+40,height-76,35,b->{page++;rebuildWidgets();}).active=page+1<pages;}
-        if(tab==1||tab==2||tab==3) {
-            var apply=button(tr("apply"),left+90,height-48,90,b->apply());apply.active=editable()&&!SettingsConnection.busy();
-            button(tr("discard"),left+185,height-48,90,b->{drafts.keySet().removeIf(key->key.startsWith(tab+":"));localResult="ready";rebuildWidgets();});
+        int footerWidth=(w-10)/3;
+        boolean editTab=tab==1||tab==2||tab==3;
+        if(editTab) {
+            var apply=button(tr("apply"),left,height-48,footerWidth,b->apply());apply.active=editable()&&!SettingsConnection.busy();
+            button(tr("discard"),left+footerWidth+5,height-48,footerWidth,b->{drafts.keySet().removeIf(key->key.startsWith(tab+":"));localResult="ready";rebuildWidgets();});
         }
         var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
-        button(tr("close"),left+w-90,height-48,90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
+        button(tr("close"),editTab?left+2*(footerWidth+5):left+w-90,height-48,editTab?footerWidth:90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
     }
     @Override public void added(){if(SettingsConnection.view==null&&SettingsConnection.supported())SettingsConnection.request(0,Map.of());}
     public void received(){
@@ -155,7 +167,7 @@ public final class SettingsScreen extends Screen {
         g.text(font,font.plainSubstrByWidth(tr("scope."+TABS[tab]).getString(),tab==1||tab==3?w-155:w),left,58,0xffbbbbbb);
         var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?COMMANDS.length:tab==0||tab==4?details.size():fields.size();
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
-            int y=76+(index-page*rows)*26;
+            int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
             if(tab==5){
                 Component description=tr("command."+COMMANDS[index][0]);
                 g.text(font,font.plainSubstrByWidth(description.getString(),w-110),left,y+5,0xffeeeeee);
@@ -170,7 +182,7 @@ public final class SettingsScreen extends Screen {
         boolean dirty=drafts.keySet().stream().anyMatch(key->key.startsWith(tab+":"));
         int pages=Math.max(1,(total+rows-1)/rows);
         if(pages>1)g.text(font,Component.literal((page+1)+" / "+pages),left+85,height-70,0xffbbbbbb);
-        if(dirty)g.text(font,tr("unsaved"),left+(pages>1?145:90),height-70,0xffffcc77);
+        if(dirty)g.text(font,font.plainSubstrByWidth(tr("unsaved").getString(),Math.max(0,w-95-(pages>1?145:90))),left+(pages>1?145:90),height-70,0xffffcc77);
         String result=local()||!localResult.equals("ready")?localResult:SettingsConnection.result;
         Component resultText=Component.translatable("config.magnitude.result."+result);
         if(result.equals("invalid")&&invalidField!=null)resultText=resultText.copy().append(": ").append(Component.translatable("config.magnitude.field."+invalidField));

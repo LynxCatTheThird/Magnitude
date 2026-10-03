@@ -46,6 +46,12 @@ public final class ConfigTests {
             Magnitude.settings=new Settings();
             var service=new ConfigService(s->s.save(temp.resolve("settings.json")));
             var original=Magnitude.settings;
+            check(service.server(normal,0,WorkPreset.LOW_WRITES.patch()).code().equals("permission")&&Magnitude.settings==original,"work preset cannot bypass administrator permission",passed);
+            check(service.server(admin,0,WorkPreset.LOW_WRITES.patch()).success()&&Magnitude.settings.blocksPerTick==32&&Magnitude.settings.checksPerTick==256&&Magnitude.settings.blocksPerImpact==16&&!Magnitude.settings.terrainDamage&&!Magnitude.settings.shallowDeformation,"measured work preset changes all three limits atomically without enabling terrain or backend",passed);
+            check(WorkPreset.matching(service.values())==WorkPreset.LOW_WRITES,"work preset derives from actual confirmed limits",passed);
+            var failingPreset=new ConfigService(s->{throw new IllegalStateException("save failure");});var beforePreset=Magnitude.settings;
+            check(failingPreset.server(admin,0,WorkPreset.STANDARD.patch()).code().equals("saveFailed")&&Magnitude.settings==beforePreset,"failed preset save keeps all active limits unchanged",passed);
+            Magnitude.settings=new Settings();service=new ConfigService(s->s.save(temp.resolve("settings.json")));original=Magnitude.settings;
             check(service.server(normal,0,Map.of("terrainDamage",1d)).code().equals("permission")&&Magnitude.settings==original,"config service rejects unauthorized server mutation",passed);
             check(service.server(admin,0,Map.of("terrainDamage",1d,"maximum",Double.NaN)).code().equals("invalid")&&!Magnitude.settings.terrainDamage,"invalid batch cannot partially change live settings",passed);
             check(service.server(admin,0,Map.of("blocksPerTick",2.5)).code().equals("invalid"),"integer config field rejects fractional value",passed);
