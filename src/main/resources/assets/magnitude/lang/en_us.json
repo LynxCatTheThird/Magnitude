@@ -40,7 +40,7 @@
   "key.magnitude.throw": "Throw passenger",
   "key.magnitude.ability": "Mount ability",
   "key.magnitude.ride": "Ride aimed target",
-  "message.magnitude.help": "Magnitude: scale, config, action, carry, tool, random, diagnostics. Open /magnitude menu or F8 for settings; diagnostics physics for detailed diagnostics.",
+  "message.magnitude.help": "Magnitude: click a group below to fill the chat box, then complete parameters before sending. Use /magnitude menu or F8 for settings and copyable command examples.",
   "message.magnitude.size": "Current scale %s; target %s; hitbox height %s blocks",
   "message.magnitude.reset": "Size and interactions reset",
   "message.magnitude.consent": "Interaction consent updated",
@@ -273,5 +273,16 @@
   "gui.magnitude.visualPreset.extended": "Extended (4096)",
   "gui.magnitude.visualPreset.custom": "Custom",
   "gui.magnitude.visualPresetHint": "Changes only the local footprint cache after Apply. Preserves visibility, distance and camera settings; server physics is unchanged. Larger caches retain more surfaces; no frame rate guarantee.",
-  "gui.magnitude.rejectionEvents": "Rejection events in current contact state: %s"
+  "gui.magnitude.rejectionEvents": "Rejection events in current contact state: %s",
+  "gui.magnitude.command.sizeMultiply": "Multiply size (20-tick transition)",
+  "gui.magnitude.command.sizeAdd": "Add to size (20-tick transition)",
+  "gui.magnitude.command.toolUnbind": "Unbind held tool",
+  "gui.magnitude.command.carryOffset": "Custom carrying offset",
+  "gui.magnitude.command.throw": "Throw carried entity",
+  "gui.magnitude.command.ride": "Ride action",
+  "gui.magnitude.command.blow": "Blow action",
+  "gui.magnitude.command.ability": "Ability action",
+  "gui.magnitude.command.targets": "Administrator: resize entities",
+  "gui.magnitude.command.food": "Administrator: food size factor",
+  "gui.magnitude.commandGroupHint": "Click to change command group; copying writes to the clipboard without executing"
 }

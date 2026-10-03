@@ -9,7 +9,7 @@ import static net.minecraft.commands.Commands.literal;
 public final class Commands {
     private Commands() {}
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        var root=literal("magnitude").executes(c->CommandReply.message(c,"help"));
+        var root=literal("magnitude").executes(CommandReply::help);
         ScaleCommand.attach(root);
         ConfigCommand.attach(root);
         ActionCommand.attach(root);

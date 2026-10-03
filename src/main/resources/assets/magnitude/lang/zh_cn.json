@@ -40,7 +40,7 @@
   "key.magnitude.throw": "抛出乘客",
   "key.magnitude.ability": "使用坐骑能力",
   "key.magnitude.ride": "骑乘瞄准目标",
-  "message.magnitude.help": "Magnitude：scale 尺寸；config 设置与许可；action 动作；carry 携带；tool 工具；random 随机；diagnostics 诊断。使用 /magnitude menu 或 F8 打开设置，diagnostics physics 查看详细诊断。",
+  "message.magnitude.help": "Magnitude：点击下方分组将语法填入聊天框，补全参数后再执行。/magnitude menu 或 F8 打开设置；命令页可复制完整示例。",
   "message.magnitude.size": "当前倍率 %s；目标 %s；碰撞高度 %s 格",
   "message.magnitude.reset": "尺寸和交互状态已重置",
   "message.magnitude.consent": "外部交互许可已更新",
@@ -273,5 +273,16 @@
   "gui.magnitude.visualPreset.extended": "扩展（4096）",
   "gui.magnitude.visualPreset.custom": "自定义",
   "gui.magnitude.visualPresetHint": "仅修改本地脚印缓存。点击应用后保存；保留开关、距离和镜头设置，不改变服务器物理。缓存越大可保留更多顶面，未保证提高帧率。",
-  "gui.magnitude.rejectionEvents": "当前接触状态累计拒绝事件：%s"
+  "gui.magnitude.rejectionEvents": "当前接触状态累计拒绝事件：%s",
+  "gui.magnitude.command.sizeMultiply": "相对乘倍（20刻过渡）",
+  "gui.magnitude.command.sizeAdd": "增加尺寸（20刻过渡）",
+  "gui.magnitude.command.toolUnbind": "解除手持工具绑定",
+  "gui.magnitude.command.carryOffset": "自定义携带位置",
+  "gui.magnitude.command.throw": "投掷携带对象",
+  "gui.magnitude.command.ride": "骑乘动作",
+  "gui.magnitude.command.blow": "吹气动作",
+  "gui.magnitude.command.ability": "能力动作",
+  "gui.magnitude.command.targets": "管理员：调整实体尺寸",
+  "gui.magnitude.command.food": "管理员：食物尺寸系数",
+  "gui.magnitude.commandGroupHint": "点击切换命令分组；复制只写入剪贴板，不执行命令"
 }

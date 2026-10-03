@@ -103,6 +103,18 @@ public final class ConfigTests {
             Dimensions.set(player,2,0);
             check(dispatcher.execute("magnitude scale reset",normal)==1&&Dimensions.target(player)==1,"scale reset is a direct sibling of scale get",passed);
             check(dispatcher.parse("magnitude action release",normal).getExceptions().isEmpty(),"grouped action command remains available",passed);
+            for(int group=0;group<dev.magnitude.commands.CommandReference.GROUPS.size();group++){
+                for(var example:dev.magnitude.commands.CommandReference.examples(group)){
+                    var parsed=dispatcher.parse(example[1].substring(1),admin);
+                    check(!parsed.getReader().canRead()&&parsed.getExceptions().isEmpty(),"shared reference parses fully: "+example[1],passed);
+                }
+            }
+            var suggestion=dev.magnitude.commands.CommandReference.suggestion("gui.magnitude.command.sizeSet","/magnitude scale set 5 20");
+            check(suggestion.getStyle().getClickEvent() instanceof net.minecraft.network.chat.ClickEvent.SuggestCommand,
+                "chat help fills input without running a command",passed);
+            long helpRevision=ConfigService.INSTANCE.revision();
+            check(dispatcher.execute("magnitude",normal)==1&&helpRevision==ConfigService.INSTANCE.revision(),
+                "ordinary root help keeps server settings unchanged",passed);
             var expectedRoots=java.util.Set.of("scale","config","action","carry","tool","random","diagnostics","menu");
             check(dispatcher.getRoot().getChild("magnitude").getChildren().stream().map(com.mojang.brigadier.tree.CommandNode::getName).collect(java.util.stream.Collectors.toSet()).equals(expectedRoots),"only canonical domain roots are registered",passed);
             for(String oldCommand:new String[]{"get","set 2","multiply 2","add 1","height 4","reset","consent carry true","terrain true","pickup","release","throw","blow","stomp","ability","ride","physics status","physics enable","admin set @s 2","scale get reset","tool mode 0","tool value 2","tool duration 20","carry hand","random 1 2 20"}) {

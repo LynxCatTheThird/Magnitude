@@ -21,22 +21,10 @@ public final class SettingsScreen extends Screen {
     private String invalidField;
     private static final String[][] CLIENT_GROUPS={{"magnification","sensitivity","smoothing","hiddenNames"},{"footprints","footprintDistance","footprintCache"}};
     private static final String[] CLIENT_NAMES={"camera","footprints"},SERVER_NAMES={"rules","response","size","budget"};
-    private static final String[] COMMAND_NAMES={"common","size","actions","server"};
-    private static final String[][][] COMMAND_GROUPS={
-        {{"status","/magnitude config show"},{"menu","/magnitude menu"},
-         {"terrain","/magnitude config player terrain on"},{"pressure","/magnitude config player pressure on"},
-         {"diagnostics","/magnitude diagnostics physics"}},
-        {{"sizeGet","/magnitude scale get"},{"sizeSet","/magnitude scale set 5 20"},
-         {"sizeHeight","/magnitude scale height 10 20"},{"sizeReset","/magnitude scale reset"},
-         {"randomStart","/magnitude random start 1 5 200"},{"randomStop","/magnitude random stop"}},
-        {{"action","/magnitude action stomp"},{"pickup","/magnitude action pickup"},{"release","/magnitude action release"},
-         {"carry","/magnitude carry position hand"},{"toolValue","/magnitude tool set value 2"},
-         {"toolMode","/magnitude tool set mode multiply"},{"toolDuration","/magnitude tool set duration 20"}},
-        {{"serverTerrain","/magnitude config server terrainDamage true"},{"serverPressure","/magnitude config server standingPressure true"},
-         {"soil","/magnitude config server shallowDeformation true"},{"rules","/magnitude config server"},
-         {"presetLow","/magnitude config preset low"},{"presetStandard","/magnitude config preset standard"},
-         {"reload","/magnitude config reload"}}};
-    private String[][] commands(){return COMMAND_GROUPS[commandGroup];}
+    private static final String[] COMMAND_NAMES=dev.magnitude.commands.CommandReference.GROUPS.toArray(String[]::new);
+    private final String[][][] commandExamples=java.util.stream.IntStream.range(0,COMMAND_NAMES.length)
+        .mapToObj(dev.magnitude.commands.CommandReference::examples).toArray(String[][][]::new);
+    private String[][] commands(){return commandExamples[commandGroup];}
     private String localResult="ready";
     private boolean wasBusy;
     private long connectionEpoch=SettingsConnection.epoch;
@@ -99,7 +87,7 @@ public final class SettingsScreen extends Screen {
         int tabW=w/TABS.length;
         for(int i=0;i<TABS.length;i++){final int target=i;var b=button(tr("tab."+TABS[i]),left+i*tabW,30,tabW-2,ignored->{tab=target;page=0;localResult="ready";invalidField=null;rebuildWidgets();});b.active=tab!=i;}
         if(tab==1||tab==3||tab==5){String[] names=tab==5?COMMAND_NAMES:local()?CLIENT_NAMES:SERVER_NAMES;int selected=tab==5?commandGroup:local()?clientGroup:serverGroup;
-            button(tr((tab==5?"commandGroup.":"group.")+names[selected]),left+w-150,54,150,b->{if(tab==5)commandGroup=(commandGroup+1)%COMMAND_NAMES.length;else if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr("groupHint")));}
+            button(tr((tab==5?"commandGroup.":"group.")+names[selected]),left+w-150,54,150,b->{if(tab==5)commandGroup=(commandGroup+1)%COMMAND_NAMES.length;else if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr(tab==5?"commandGroupHint":"groupHint")));}
         if(local()&&clientGroup==1){
             var values=new LinkedHashMap<>(ClientPreferences.values());
             try{values.put("footprintCache",Double.parseDouble(drafts.getOrDefault(draftKey("footprintCache"),Double.toString(values.get("footprintCache")))));}catch(NumberFormatException ignored){}
@@ -190,7 +178,8 @@ public final class SettingsScreen extends Screen {
             int y=(hasPreset()?102:76)+(index-page*rows)*26;
             if(tab==5){
                 Component description=tr("command."+commands()[index][0]);
-                g.text(font,font.plainSubstrByWidth(description.getString(),w-110),left,y+5,0xffeeeeee);
+                g.text(font,font.plainSubstrByWidth(description.getString(),w-110),left,y+1,0xffeeeeee);
+                g.text(font,font.plainSubstrByWidth(commands()[index][1],w-110),left,y+12,0xffbbbbbb);
                 if(mouseX>=left&&mouseX<left+w-105&&mouseY>=y&&mouseY<y+26)g.setComponentTooltipForNextFrame(font,List.of(description,Component.literal(commands()[index][1])),mouseX,mouseY);
             }else if(tab==0||tab==4) {
                 var wrapped=font.split(details.get(index),w);
