@@ -15,5 +15,6 @@ public record PhysicsPayload(int entity, long revision, double limit, boolean fa
         buf.writeDouble(pose.leftLeg());buf.writeDouble(pose.rightLeg());buf.writeDouble(pose.leftArm());buf.writeDouble(pose.rightArm());buf.writeDouble(pose.head());
     },buf->new PhysicsPayload(buf.readVarInt(),buf.readVarLong(),buf.readDouble(),buf.readBoolean(),buf.readFloat(),
         new BodyPose(buf.readVarInt(),buf.readLong(),buf.readDouble(),buf.readVarInt(),buf.readDouble(),buf.readDouble(),buf.readDouble(),buf.readDouble(),buf.readDouble())));
+    public boolean newerThan(long revision) { return this.revision > revision; }
     @Override public Type<PhysicsPayload> type(){return TYPE;}
 }

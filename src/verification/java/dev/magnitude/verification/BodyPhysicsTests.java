@@ -26,6 +26,8 @@ public final class BodyPhysicsTests {
     private static final BlockPos ROOT=new BlockPos(6000,220,6000);
     private static void require(boolean ok,String label,Consumer<String> passed){if(!ok)throw new AssertionError(label);passed.accept(label);}
     private static void ready(ServerPlayer player) {
+        EntityState.of(player).contacts.takeoffTick = Long.MIN_VALUE;
+        EntityState.of(player).contacts.obstacleTick = Long.MIN_VALUE;
         PhysicsWork.beginTick();EntityQueries.beginTick();Impact.beginTick();
         var state=EntityState.of(player);state.physicsTick=Long.MIN_VALUE;state.physicsCells=0;state.physicsPairs=0;state.proxyFallback=false;state.pose=BodyPose.IDLE;
         player.setDeltaMovement(Vec3.ZERO);player.setOnGround(true);player.setYRot(0);

@@ -64,7 +64,7 @@ public final class MagnitudeClient implements ClientModInitializer {
             if(context.client().level==null || !payload.pose().valid() || !Double.isFinite(payload.limit()) || payload.limit()<1 || payload.limit()>32 || !Float.isFinite(payload.yaw()))return;
             if(!(context.client().level.getEntity(payload.entity()) instanceof net.minecraft.world.entity.player.Player player))return;
             var state=EntityState.of(player);
-            if(payload.revision()<state.physicsRevision)return;
+            if(!payload.newerThan(state.physicsRevision))return;
             state.previousPose=state.pose;state.physicsRevision=payload.revision();state.posePhase=payload.pose().phase();state.pose=payload.pose();state.proxyFallback=payload.fallback();
             if(Math.abs(state.proxyLimit-payload.limit())>0.001)dev.magnitude.physics.LocalProxy.apply(player,payload.limit());
         });

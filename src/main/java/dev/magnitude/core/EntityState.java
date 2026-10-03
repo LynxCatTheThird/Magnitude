@@ -8,6 +8,8 @@ public final class EntityState {
     public boolean acceptResize;
     public boolean acceptCarry;
     public boolean terrainEnabled;
+    public boolean pressureEnabled = true;
+    public dev.magnitude.physics.ContactState contacts = new dev.magnitude.physics.ContactState();
     public boolean carrying;
     public boolean riderInitiated;
     public int carryPosition;
@@ -52,8 +54,6 @@ public final class EntityState {
     public long scaleTick = Long.MIN_VALUE, scaleRevision;
     public Settings scaleSettings;
     public String scaleWarning = "none";
-    /** Last support location/size that received a static-load check. */
-    public double pressureX = Double.NaN, pressureZ = Double.NaN, pressureSize = -1;
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
     public void load(ValueInput input, Entity entity) {
@@ -61,6 +61,7 @@ public final class EntityState {
         acceptResize = data.getBooleanOr("resizeConsent", false);
         acceptCarry = data.getBooleanOr("carryConsent", false);
         terrainEnabled = data.getBooleanOr("terrainEnabled", false);
+        pressureEnabled = data.getBooleanOr("pressureEnabled", true);
         carryPosition = Math.clamp(data.getIntOr("carryPosition", 0), 0, 2);
         offsetForward = safe(data.getDoubleOr("offsetForward", 0.4), -2, 2, 0.4);
         offsetSide = safe(data.getDoubleOr("offsetSide", 0), -2, 2, 0);
@@ -92,13 +93,14 @@ public final class EntityState {
         scaleTick = Long.MIN_VALUE;
         scaleRevision = 0;
         scaleSettings = null;
-        pressureX = pressureZ = Double.NaN; pressureSize = -1;
+        contacts = new dev.magnitude.physics.ContactState();
     }
     public void save(ValueOutput output, Entity entity) {
         ValueOutput data = output.child("magnitude");
         data.putBoolean("resizeConsent", acceptResize);
         data.putBoolean("carryConsent", acceptCarry);
         data.putBoolean("terrainEnabled", terrainEnabled);
+        data.putBoolean("pressureEnabled", pressureEnabled);
         data.putInt("carryPosition", carryPosition);
         data.putDouble("offsetForward", offsetForward);
         data.putDouble("offsetSide", offsetSide);
@@ -117,6 +119,7 @@ public final class EntityState {
         acceptResize = old.acceptResize;
         acceptCarry = old.acceptCarry;
         terrainEnabled = old.terrainEnabled;
+        pressureEnabled = old.pressureEnabled;
         carryPosition = old.carryPosition;
         offsetForward = old.offsetForward;
         offsetSide = old.offsetSide;

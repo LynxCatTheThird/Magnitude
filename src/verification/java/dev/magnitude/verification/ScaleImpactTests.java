@@ -37,6 +37,7 @@ public final class ScaleImpactTests {
         Impact.beginTick();
     }
     private static void tick(MinecraftServer server,ServerPlayer actor) {
+        EntityState.of(actor).contacts.sampleTick = Long.MIN_VALUE;
         server.getPlayerList().getPlayers().add(actor);
         try {Interactions.tick(server);} finally {server.getPlayerList().getPlayers().remove(actor);}
     }
@@ -133,9 +134,9 @@ public final class ScaleImpactTests {
             Dimensions.set(actor,8,0);state.previousSize=8;Magnitude.settings.standingPressure=false;floor(actor,Blocks.STONE);state.nextJumpImpact=0;
             actor.jumpFromGround();require(state.jumpImpact&&level.getBlockState(CENTER.offset(2,-1,0)).isAir(),"ordinary vanilla jump hook breaks ground on takeoff",passed);
             floor(actor,Blocks.STONE);actor.jumpFromGround();require(Impact.remaining()==Magnitude.settings.blocksPerTick,"repeated same-tick jump hooks share cooldown",passed);
-            actor.setOnGround(false);tick(server,actor);actor.setOnGround(true);floor(actor,Blocks.STONE);tick(server,actor);
+            actor.setOnGround(false);actor.setDeltaMovement(new Vec3(0,-0.42,0));tick(server,actor);actor.setOnGround(true);floor(actor,Blocks.STONE);tick(server,actor);
             require(!state.jumpImpact&&level.getBlockState(CENTER.offset(0,-1,0)).isAir(),"normal jump landing produces impact without manual stomp",passed);
-            floor(actor,Blocks.STONE);state.nextJumpImpact=0;state.jumpImpact=false;actor.setOnGround(true);actor.setDeltaMovement(Vec3.ZERO);
+            state.contacts.takeoffTick = Long.MIN_VALUE;floor(actor,Blocks.STONE);state.nextJumpImpact=0;state.jumpImpact=false;actor.setOnGround(true);actor.setDeltaMovement(Vec3.ZERO);
             actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());
             actor.connection.resetPosition();
             level.addNewPlayer(actor);attached=true;

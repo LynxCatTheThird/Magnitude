@@ -30,7 +30,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import virtuoel.pehkui.util.ScaleUtils;
 
 public final class Interactions {
     private Interactions() {}
@@ -70,7 +69,7 @@ public final class Interactions {
         if (action<0 || action>5 || !request(player)) return false;
         return switch(action) {
             case 0 -> blow(player);
-            case 1 -> shock(player,Math.min(Magnitude.settings.impactRadius,Dimensions.size(player)*Magnitude.settings.impactScaleFactor),false);
+            case 1 -> shock(player,Math.min(Magnitude.settings.impactRadius,Dimensions.snapshot(player).base()*Magnitude.settings.impactScaleFactor),false);
             case 2,3 -> { if(!cooldown(player,10))yield false;release(player,action==3);yield true; }
             case 4 -> ability(player);
             case 5 -> { var target=aim(player,16);yield target!=null&&ride(player,target); }
@@ -84,58 +83,22 @@ public final class Interactions {
     }
     public static void detach(Entity entity) {
         if (entity.getVehicle() instanceof ServerPlayer carrier && EntityState.of(carrier).carrying) release(carrier,false);
-        if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding();EntityState.of(player).initialized=false;EntityState.of(player).jumpImpact=false; }
+        if (entity instanceof ServerPlayer player) { release(player,false);player.stopRiding();EntityState.of(player).initialized=false;EntityState.of(player).jumpImpact=false;EntityState.of(player).contacts=new dev.magnitude.physics.ContactState(); }
     }
     public static void jump(ServerPlayer player) {
-        if (!player.isAlive() || player.isSpectator() || !player.onGround() || player.getAbilities().flying || player.isPassenger() || player.isNoGravity()) return;
-        EntityState state = EntityState.of(player);
-        long now = player.level().getGameTime();
-        if (state.nextJumpImpact > now) return;
-        state.nextJumpImpact = now + 5;
-        state.jumpImpact = true;
-        dev.magnitude.physics.BodyPoses.update(player,0,true);
-        Impact.feet(player, 0, false);
+        dev.magnitude.physics.ContactEvents.takeoff(player);
         Messages.syncPhysics(player);
     }
     public static void groundContact(ServerPlayer player) {
-        EntityState state = EntityState.of(player);
-        double travelled=state.previousPosition==null ? 0 : player.position().subtract(state.previousPosition).horizontalDistance();
-        dev.magnitude.physics.BodyPoses.update(player,travelled,false);
-        if (!player.onGround() || player.isPassenger() || player.getAbilities().flying || player.isNoGravity()) {
-            state.strideDistance=0; state.pressureX=state.pressureZ=Double.NaN; state.pressureSize=-1; return;
-        }
-        if (state.initialized && state.previousPosition != null) {
-            Vec3 movement = player.position().subtract(state.previousPosition);
-            double distance = movement.horizontalDistance();
-            if (distance > 16 || Math.abs(movement.y)>2) state.strideDistance=0;
-            else if (distance > 0.001) {
-                state.strideDistance += distance;
-                double stride = Math.max(0.4, Math.min(8, Dimensions.size(player))*0.4);
-                if (state.strideDistance >= stride) {
-                    state.strideDistance %= stride;
-                    Impact.feet(player, 0, false);
-                    if (Magnitude.settings.bodyDamage) damageSmall(player,player.getBoundingBox().inflate(0.1,0.25,0.1),scaledImpactDamage(player,Magnitude.settings.walkDamageFactor));
-                }
-            }
-        }
-        double size = Dimensions.size(player);
-        boolean newLoad = state.pressureSize < size - 0.05
-            || !Double.isFinite(state.pressureX)
-            || Math.hypot(player.getX() - state.pressureX, player.getZ() - state.pressureZ) > 0.5;
-        // Static pressure is event driven: initial support, landing, movement to a new support,
-        // or a size change. There is no periodic mining timer.
-        if (Magnitude.settings.standingPressure && newLoad) {
-            Impact.feet(player,0,true);
-            state.pressureX = player.getX(); state.pressureZ = player.getZ(); state.pressureSize = size;
-        }
+        dev.magnitude.physics.ContactEvents.sample(player);
     }
     public static void tick(MinecraftServer server) {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             if (!player.isAlive() || player.isSpectator()) { release(player, false); continue; }
             EntityState state = EntityState.of(player);
             dev.magnitude.physics.LocalProxy.update(player);
-            double size = Dimensions.size(player);
-            if (!Double.isFinite(size)) { Dimensions.reset(player); continue; }
+            double size = Dimensions.snapshot(player).base();
+            if (!Double.isFinite(Dimensions.size(player))) { Dimensions.reset(player); continue; }
             if (state.randomPeriod >= 20 && (Magnitude.settings.allowSelfChange || Dimensions.operator(player)) && --state.nextRandom <= 0) {
                 state.nextRandom = state.randomPeriod;
                 double value = state.randomLow + player.getRandom().nextDouble() * (state.randomHigh - state.randomLow);
@@ -144,23 +107,11 @@ public final class Interactions {
             if (state.carrying && player.getFirstPassenger() == null) { state.carrying = false; Messages.syncCarry(player); }
             if (state.carrying && player.getFirstPassenger() != null) {
                 Entity passenger=player.getFirstPassenger();
-                if (!passenger.isAlive() || passenger.isSpectator() || !Rules.ratio(size,Dimensions.size(passenger),2)
+                if (!passenger.isAlive() || passenger.isSpectator() || !Rules.ratio(size,Dimensions.snapshot(passenger).base(),2)
                     || (state.riderInitiated ? !state.acceptCarry : passenger instanceof Player && !EntityState.of(passenger).acceptCarry)) release(player,false);
-            }
-            if (state.initialized) {
-                if (player.onGround() && !state.grounded) {
-                    if(size>=4 && !player.getAbilities().flying && !player.isPassenger() && !player.isNoGravity() && (state.jumpImpact || state.downward < -0.1)) shock(player, Math.min(Magnitude.settings.impactRadius, size * Magnitude.settings.impactScaleFactor), true);
-                    state.jumpImpact=false;
-                }
-                if (size > state.previousSize + 0.05 && size >= 4) Impact.breakAround(player, player.position().add(0, Math.min(3, player.getBbHeight()/2), 0), Math.min(6, player.getBbWidth()/2), Math.min(6, player.getBbHeight()/2));
             }
             groundContact(player);
             Messages.syncPhysics(player);
-            state.previousPosition = player.position();
-            state.initialized = true;
-            state.grounded = player.onGround();
-            state.downward = player.getDeltaMovement().y;
-            state.previousSize = size;
             if (player.tickCount % 10 == 0) {
                 if (size <= 0.25 && !player.onGround() && player.getDeltaMovement().y < -0.06 && (player.getMainHandItem().is(Content.GLIDER) || player.getOffhandItem().is(Content.GLIDER))) {
                     player.setDeltaMovement(player.getDeltaMovement().multiply(1.02,0,1.02).add(0,-0.06,0));
@@ -207,8 +158,8 @@ public final class Interactions {
         return actor.level() == target.level() && target.isAlive() && !target.isSpectator() && !actor.isSpectator() && target.getBoundingBox().distanceToSqr(actor.getEyePosition()) <= range * range && Dimensions.lineOfSight(actor,target);
     }
     public static boolean carry(ServerPlayer player, LivingEntity target) {
-        double range = Math.min(16, Math.max(4, Dimensions.size(player)*2));
-        if (target == player || player.isPassenger() || !within(player,target,range) || !player.getAbilities().mayBuild || target.isPassenger() || !target.getPassengers().isEmpty() || !Rules.ratio(Dimensions.size(player), Dimensions.size(target), 2)) return false;
+        double range = Math.min(16, Math.max(4, Dimensions.snapshot(player).base()*2));
+        if (target == player || player.isPassenger() || !within(player,target,range) || !player.getAbilities().mayBuild || target.isPassenger() || !target.getPassengers().isEmpty() || !Rules.ratio(Dimensions.snapshot(player).base(), Dimensions.snapshot(target).base(), 2)) return false;
         if (target instanceof Player && !EntityState.of(target).acceptCarry) return false;
         if (player.getFirstPassenger() != null || !cooldown(player, 10)) return false;
         boolean result = PlayerMounts.start(target,player);
@@ -216,7 +167,7 @@ public final class Interactions {
         return result;
     }
     public static boolean ride(ServerPlayer player, LivingEntity target) {
-        if (!player.getAbilities().mayBuild || target.isPassenger() || !player.getPassengers().isEmpty() || !within(player,target,Math.min(16,Math.max(4,Dimensions.size(target)*2))) || !Rules.ratio(Dimensions.size(target), Dimensions.size(player), 4) || player.isPassenger() || !target.getPassengers().isEmpty()) return false;
+        if (!player.getAbilities().mayBuild || target.isPassenger() || !player.getPassengers().isEmpty() || !within(player,target,Math.min(16,Math.max(4,Dimensions.snapshot(target).base()*2))) || !Rules.ratio(Dimensions.snapshot(target).base(), Dimensions.snapshot(player).base(), 4) || player.isPassenger() || !target.getPassengers().isEmpty()) return false;
         if (target instanceof Player && !EntityState.of(target).acceptCarry) return false;
         if (!cooldown(player,10)) return false;
         if (target instanceof ServerPlayer carrier) {
@@ -235,7 +186,7 @@ public final class Interactions {
         EntityState.of(player).carrying = false;
         Messages.syncCarry(player);
         if (thrown && player.getAbilities().mayBuild && (!(passenger instanceof Player) || EntityState.of(passenger).acceptCarry)) {
-            passenger.setDeltaMovement(player.getLookAngle().scale(Math.clamp(Dimensions.size(player)/Math.max(0.25,Dimensions.size(passenger)),0.5,2)));
+            passenger.setDeltaMovement(player.getLookAngle().scale(Math.clamp(Dimensions.snapshot(player).base()/Math.max(0.25,Dimensions.snapshot(passenger).base()),0.5,2)));
             passenger.syncVelocity = true;
         }
     }
@@ -250,22 +201,22 @@ public final class Interactions {
         return passenger.position();
     }
     public static boolean crush(ServerPlayer player, LivingEntity target) {
-        if (!player.isShiftKeyDown() || !player.getMainHandItem().isEmpty() || !Magnitude.settings.bodyDamage || !within(player,target,Math.min(16,Math.max(4,Dimensions.size(player)*2))) || !Rules.ratio(Dimensions.size(player),Dimensions.size(target),4) || !canDamage(player,target) || !cooldown(player,20)) return false;
-        float damage=(float)Math.clamp(ScaleUtils.getAttackScale(player) * Dimensions.size(player) / Math.max(0.25,Dimensions.size(target)),1,40);
+        if (!player.isShiftKeyDown() || !player.getMainHandItem().isEmpty() || !Magnitude.settings.bodyDamage || !within(player,target,Math.min(16,Math.max(4,Dimensions.snapshot(player).base()*2))) || !Rules.ratio(Dimensions.snapshot(player).base(),Dimensions.snapshot(target).base(),4) || !canDamage(player,target) || !cooldown(player,20)) return false;
+        float damage=(float)Math.clamp(Dimensions.snapshot(player).attackFactor() / Math.max(0.25,Dimensions.snapshot(target).base()),1,40);
         return target.hurtServer(player.level(),player.damageSources().playerAttack(player),damage);
     }
     public static boolean canDamage(ServerPlayer actor, LivingEntity target) {
         return actor != target && actor.getAbilities().mayBuild && !actor.isPassengerOfSameVehicle(target) && (!(target instanceof Player other) || actor.canHarmPlayer(other));
     }
-    private static void damageSmall(ServerPlayer player, AABB box, float damage) {
+    public static void damageSmall(ServerPlayer player, AABB box, float damage) {
         int count=0;
         for (Entity entity:EntityQueries.nearby(player.level(),box,player,32)) {
             if (++count>32) break;
-            if(entity instanceof LivingEntity living && canDamage(player,living) && Rules.ratio(Dimensions.size(player),Dimensions.size(living),4)) living.hurtServer(player.level(),player.damageSources().playerAttack(player),damage);
+            if(entity instanceof LivingEntity living && canDamage(player,living) && Rules.ratio(Dimensions.snapshot(player).base(),Dimensions.snapshot(living).base(),4)) living.hurtServer(player.level(),player.damageSources().playerAttack(player),damage);
         }
     }
     public static boolean shock(ServerPlayer player,double radius,boolean landing) {
-        if (Dimensions.size(player)<4 || !player.onGround()) return false;
+        if (Dimensions.snapshot(player).base()<4 || !player.onGround()) return false;
         if (!landing && !cooldown(player,20)) return false;
         double speed = landing ? Math.clamp(Math.max(0, -EntityState.of(player).downward) / 0.42, 0.25, 4) : 1;
         double impactRadius = Math.clamp(radius * (0.5 + speed * 0.5), 0.5, Magnitude.settings.impactRadius);
@@ -274,27 +225,26 @@ public final class Interactions {
         player.level().sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,player.getX(),player.getY()+0.1,player.getZ(),12,radius/2,0.1,radius/2,0.03);
         return true;
     }
-    private static float scaledImpactDamage(ServerPlayer player,double base) {
-        return (float)Math.clamp(base * ScaleUtils.getAttackScale(player), 0, 100);
+    public static float scaledImpactDamage(ServerPlayer player,double base) {
+        return (float)Math.clamp(base * Dimensions.snapshot(player).attackFactor(), 0, 100);
     }
     /** Pehkui's jump modifier is multiplicative; cap the resulting launch velocity to a
      * physically useful envelope so an extreme visual scale cannot launch hundreds of blocks. */
     public static void limitJumpVelocity(ServerPlayer player) {
         Vec3 velocity = player.getDeltaMovement();
         if (velocity.y <= 0 || player.getAbilities().flying || player.isNoGravity()) return;
-        double size = Math.clamp(Dimensions.size(player), 1, 64);
-        double maximum = Math.min(1.5, 0.42 * Math.sqrt(size) * 1.5);
+        double maximum = Dimensions.snapshot(player).jumpVelocityLimit();
         if (velocity.y > maximum) { player.setDeltaMovement(velocity.x, maximum, velocity.z); player.syncVelocity = true; }
     }
     public static boolean blow(ServerPlayer player) {
-        if (Dimensions.size(player)<2 || !cooldown(player,20)) return false;
+        if (Dimensions.snapshot(player).base()<2 || !cooldown(player,20)) return false;
         Vec3 forward=player.getLookAngle(); Vec3 origin=player.getEyePosition();
-        double range=Math.min(24,Dimensions.size(player)*3);
+        double range=Math.min(24,Dimensions.snapshot(player).base()*3);
         int count=0;
         for(Entity entity:EntityQueries.nearby(player.level(),new AABB(origin,origin.add(forward.scale(range))).inflate(range*0.4),player,64)) {
             if(++count>64) break;
             Vec3 direction=entity.getBoundingBox().getCenter().subtract(origin);
-            if(direction.lengthSqr()>range*range || direction.normalize().dot(forward)<0.7 || !Rules.ratio(Dimensions.size(player),Dimensions.size(entity),2) || !Dimensions.lineOfSight(player,entity)) continue;
+            if(direction.lengthSqr()>range*range || direction.normalize().dot(forward)<0.7 || !Rules.ratio(Dimensions.snapshot(player).base(),Dimensions.snapshot(entity).base(),2) || !Dimensions.lineOfSight(player,entity)) continue;
             if(entity instanceof LivingEntity living && !canDamage(player,living)) continue;
             entity.setDeltaMovement(entity.getDeltaMovement().add(forward.scale(0.7)).add(0,0.15,0)); entity.syncVelocity=true;
         }

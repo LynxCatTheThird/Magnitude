@@ -2,7 +2,6 @@ package dev.magnitude.physics;
 
 import dev.magnitude.core.EntityState;
 import dev.magnitude.interaction.EntityQueries;
-import dev.magnitude.interaction.Impact;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
@@ -36,7 +35,7 @@ public final class BodyCollision {
         if(wanted.lengthSqr()==0)return true;
         var parts=PlayerBody.parts(player,player.position());AABB region=parts.getFirst().bounds();
         for(var part:parts)region=region.minmax(part.bounds());
-        region=region.expandTowards(wanted).expandTowards(0,Math.min(4.8,player.maxUpStep()),0).inflate(1e-7);
+        region=region.expandTowards(wanted).expandTowards(0,Math.min(0.6,player.maxUpStep()),0).inflate(1e-7);
         if(!LocalProxy.loaded(player.level(),region)) {fallback(player);return false;}
         return true;
     }
@@ -55,7 +54,17 @@ public final class BodyCollision {
         }
         return false;
     }
+    public record Result(Vec3 movement, boolean obstacle, boolean denied) {}
     public static Vec3 move(Player player, Vec3 wanted) {
+        return MotionContacts.move(player, wanted);
+    }
+    public static Result solve(Player player, Vec3 wanted) {
+        Vec3 movement = solveMovement(player, wanted);
+        boolean denied = EntityState.of(player).movementDenied;
+        return new Result(movement, !denied && player.onGround()
+            && (Math.abs(movement.x-wanted.x)>1e-8 || Math.abs(movement.z-wanted.z)>1e-8), denied);
+    }
+    private static Vec3 solveMovement(Player player, Vec3 wanted) {
         var state=EntityState.of(player);
         state.movementDenied=false;
         long now=player.level().getGameTime();
@@ -88,8 +97,6 @@ public final class BodyCollision {
         if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs))return fallback(player,wanted);
         state.physicsPairs+=(int)pairs;
         Vec3 result=clip(parts,obstacles,wanted);
-        if ((result.x != wanted.x || result.z != wanted.z) && player.onGround()
-            && player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) Impact.kick(serverPlayer, wanted);
         if(step>0 && (player.onGround() || wanted.y<0 && result.y!=wanted.y)
             && (result.x!=wanted.x || result.z!=wanted.z)) {
             Vec3 up=clip(parts,obstacles,new Vec3(0,step,0));
@@ -103,9 +110,8 @@ public final class BodyCollision {
     }
     private static Vec3 fallback(Player player, Vec3 wanted) {
         var state=EntityState.of(player);state.proxyFallback=true;
-        // A budget miss must not turn a jump into a permanent pit trap. Preserve upward
-        // escape while withholding uncertain horizontal movement until the proxy recovers.
-        if (wanted.y > 0) { state.movementDenied=false; return new Vec3(0,wanted.y,0); }
+        // Unknown space is never treated as air. Upward escape is handled by the
+        // normal collision solver once the destination has been verified.
         state.movementDenied=true;return Vec3.ZERO;
     }
     private static void fallback(Player player) { var state=EntityState.of(player);state.proxyFallback=true;state.movementDenied=true; }

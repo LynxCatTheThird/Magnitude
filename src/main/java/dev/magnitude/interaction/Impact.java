@@ -25,7 +25,11 @@ public final class Impact {
     public static int remaining() { return BLOCKS.remaining(); }
     public static int checksRemaining() { return CHECKS.remaining(); }
     private static boolean allowed(ServerPlayer actor) {
-        return Magnitude.settings.terrainDamage && EntityState.of(actor).terrainEnabled && actor.isAlive() && actor.getAbilities().mayBuild && !actor.isSpectator();
+        var contacts = EntityState.of(actor).contacts;
+        if (!Magnitude.settings.terrainDamage) { contacts.reason = "server terrain disabled"; return false; }
+        if (!EntityState.of(actor).terrainEnabled) { contacts.reason = "player terrain disabled"; return false; }
+        if (!actor.isAlive() || !actor.getAbilities().mayBuild || actor.isSpectator()) { contacts.reason = "actor cannot build"; return false; }
+        return true;
     }
     public static int breakAround(ServerPlayer actor, Vec3 center, double radius, double height) {
         if (!allowed(actor)) return 0;
@@ -45,7 +49,7 @@ public final class Impact {
     /** Break the obstacle directly in a walking direction, preserving vanilla step-up behavior. */
     public static int kick(ServerPlayer actor, Vec3 movement) {
         if (!allowed(actor) || !actor.onGround() || movement.horizontalDistanceSqr() < 1.0e-8) return 0;
-        double size = Math.clamp(dev.magnitude.core.Dimensions.size(actor), 1, 32);
+        double size = Math.clamp(dev.magnitude.core.Dimensions.snapshot(actor).base(), 1, 32);
         if (size < 4) return 0;
         Vec3 direction = new Vec3(movement.x, 0, movement.z).normalize();
         Vec3 center = actor.position().add(direction.scale(Math.max(0.6, Math.min(2.5, size * 0.3))));
@@ -54,11 +58,12 @@ public final class Impact {
     /** Two oriented boot contacts; side -1 or +1 selects one alternating step, 0 both. */
     public static int feet(ServerPlayer actor, int side, boolean pressure) {
         if (!allowed(actor) || !actor.onGround() || actor.isPassenger() || actor.getAbilities().flying || actor.isNoGravity()) return 0;
-        double scale = Math.min(EntityState.of(actor).proxyLimit, dev.magnitude.core.Dimensions.size(actor));
+        var snapshot = dev.magnitude.core.Dimensions.snapshot(actor);
+        double scale = snapshot.footprintScale();
         if (scale < (pressure ? 8 : 4)) return 0;
         double yaw = Math.toRadians(actor.getYRot());
-        double halfWidth = scale * 0.09 + 0.35, halfLength = scale * 0.22 + 0.35;
-        float hardness = pressure ? (float)Math.min(Float.MAX_VALUE / 2, dev.magnitude.core.Dimensions.size(actor)/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
+        double halfWidth = snapshot.bootHalfWidth(), halfLength = snapshot.bootHalfLength();
+        float hardness = pressure ? (float)Math.min(Float.MAX_VALUE / 2, dev.magnitude.core.Dimensions.snapshot(actor).base()/Magnitude.settings.pressureHardnessFactor) : Float.MAX_VALUE;
         int changed = 0;
         for (int foot : new int[]{-1, 1}) {
             if (side != 0 && side != foot) continue;
