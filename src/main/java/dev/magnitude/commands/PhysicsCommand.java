@@ -22,6 +22,7 @@ public final class PhysicsCommand {
             var state = EntityState.of(player);
             var scale = Dimensions.snapshot(player);
             var event = state.contacts.last;
+            var metrics=state.contacts.diagnostics;
             String status = "terrain server=" + Magnitude.settings.terrainDamage + " player=" + state.terrainEnabled
                 + "; pressure server=" + Magnitude.settings.standingPressure + " player=" + state.pressureEnabled
                 + "; scale=" + scale.base() + " revision=" + scale.revision() + " proxy=" + scale.proxyLimit()
@@ -33,6 +34,9 @@ public final class PhysicsCommand {
                 + "; reason=" + state.contacts.reason + " writes=" + state.contacts.changedBlocks
                 + "; blocks=" + Impact.remaining() + " checks=" + Impact.checksRemaining()
                 + " cells=" + PhysicsWork.cellsRemaining() + " pairs=" + PhysicsWork.pairsRemaining()
+                + "; serverTickMs="+c.getSource().getServer().getAverageTickTimeNanos()/1_000_000.0
+                + "; moveAvgMs="+metrics.averageMillis()+" moveMaxMs="+metrics.maximumNanos/1_000_000.0
+                + "; moveDenied="+metrics.denied+"/"+metrics.samples+" lastFailure="+metrics.failure
                 + "; fallback=" + state.proxyFallback + "; scaleWarning=" + state.scaleWarning;
             c.getSource().sendSuccess(() -> Component.literal(status), false);
             return 1;

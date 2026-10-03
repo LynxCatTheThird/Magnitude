@@ -20,7 +20,14 @@ public final class BodyCollision {
         state.pose=proposed;
         List<BodyBox> after;
         try { after=PlayerBody.parts(player,player.position()); } finally {state.pose=old;}
-        var obstacles=WorldObstacles.query(player,WorldObstacles.regions(after,Vec3.ZERO,0),false);
+        var changed=new ArrayList<BodyBox>();
+        for(int i=0;i<after.size();i++) {
+            var a=after.get(i);var b=before.get(i);
+            if(!a.center().equals(b.center()) || !a.half().equals(b.half())
+                || !a.x().equals(b.x()) || !a.y().equals(b.y()) || !a.z().equals(b.z()))changed.add(a);
+        }
+        if(changed.isEmpty())return true;
+        var obstacles=WorldObstacles.query(player,WorldObstacles.regions(changed,Vec3.ZERO,0),false);
         if(!obstacles.complete())return false;
         for(AABB obstacle:obstacles.boxes()) {
             if(state.physicsPairs+12>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(12))return false;
@@ -33,7 +40,10 @@ public final class BodyCollision {
         if(!Double.isFinite(wanted.lengthSqr())) {fallback(player);return false;}
         if(wanted.lengthSqr()==0)return true;
         var parts=PlayerBody.parts(player,player.position());
-        if(!WorldObstacles.loaded(player,WorldObstacles.regions(parts,wanted,StepPolicy.height(player)))) {fallback(player);return false;}
+        if(!WorldObstacles.loaded(player,WorldObstacles.regions(parts,wanted,StepPolicy.height(player)))) {
+            EntityState.of(player).contacts.diagnostics.failure="query envelope budget or unloaded chunks";
+            fallback(player);return false;
+        }
         return true;
     }
     public static boolean newCollision(Player player,Vec3 oldRoot,Vec3 target) {
@@ -76,7 +86,9 @@ public final class BodyCollision {
         if(obstacles.isEmpty())return wanted;
         // Charge all SAT pairs including empty/failed contacts, before doing any work.
         long pairs=(long)obstacles.size()*parts.size()*12;
-        if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs))return fallback(player,wanted);
+        if(state.physicsPairs+pairs>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(pairs)) {
+            state.contacts.diagnostics.failure="collision pair budget";return fallback(player,wanted);
+        }
         state.physicsPairs+=(int)pairs;
         Vec3 result=clip(parts,obstacles,wanted);
         if(step>0 && (player.onGround() || wanted.y<0 && result.y!=wanted.y)

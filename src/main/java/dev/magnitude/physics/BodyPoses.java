@@ -46,7 +46,10 @@ public final class BodyPoses {
         }
         if(changed(state.pose,result) && !BodyCollision.poseAllowed(player,result)) {
             BodyPose old=state.pose;
-            int retainedSupport=result.support() & ((Math.abs(old.leftLeg())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05 ? 2 : 0));
+            int straight=(Math.abs(old.leftLeg())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05 ? 2 : 0);
+            int retainedSupport=result.support() & straight;
+            if(grounded && retainedSupport==0)retainedSupport=old.support() & straight;
+            if(grounded && retainedSupport==0)retainedSupport=straight;
             result=new BodyPose(result.action(),result.startTick(),result.phase(),retainedSupport,old.leftLeg(),old.rightLeg(),old.leftArm(),old.rightArm(),old.head());
         }
         state.pose=result;

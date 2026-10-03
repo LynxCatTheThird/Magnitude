@@ -3,6 +3,7 @@ package dev.magnitude.physics;
 /** Bounded transient event history. Cleared on unload, transfer and respawn. */
 public final class ContactState {
     public final java.util.ArrayDeque<dev.magnitude.interaction.FootprintWork> footprints = new java.util.ArrayDeque<>(4);
+    public final PhysicsDiagnostics diagnostics=new PhysicsDiagnostics();
     public long sequence, handled;
     public long sampleTick = Long.MIN_VALUE, takeoffTick = Long.MIN_VALUE;
     public long obstacleTick = Long.MIN_VALUE;

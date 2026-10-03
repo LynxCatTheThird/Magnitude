@@ -9,6 +9,13 @@ import net.minecraft.world.phys.Vec3;
 public final class MotionContacts {
     private MotionContacts() {}
     public static Vec3 move(Player player, Vec3 wanted) {
+        long start=System.nanoTime();
+        var state=EntityState.of(player);
+        try {return resolve(player,wanted);} finally {
+            state.contacts.diagnostics.movement(System.nanoTime()-start,state.movementDenied);
+        }
+    }
+    private static Vec3 resolve(Player player,Vec3 wanted) {
         var contacts = EntityState.of(player).contacts;
         if ((player.onGround() || wanted.y<0) && wanted.lengthSqr()>1e-8
             && player instanceof ServerPlayer server

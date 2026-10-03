@@ -145,6 +145,30 @@ public final class GameplayPhysicsTests {
             ready(player);PhysicsWork.cells(PhysicsWork.cellsRemaining());
             var missing=ObstacleContacts.capture(player,new Vec3(2,0,0));
             require(!missing.complete() && missing.blocks().isEmpty(),"truncated leg scan never supplies partial destructive candidates",passed);
+            Dimensions.set(player,50,0);ready(player);
+            var rejectedGait=EntityState.of(player);
+            rejectedGait.pose=new BodyPose(1,0,Math.PI-.01,1,0,.4,0,0,0);
+            rejectedGait.posePhase=Math.PI-.01;
+            PhysicsWork.cells(PhysicsWork.cellsRemaining());
+            var held=BodyPoses.update(player,1,false);
+            require(held.support()==1 && held.leftLeg()==0 && held.rightLeg()==.4,
+                "rejected giant foot switch retains the physically grounded old leg",passed);
+            Impact.beginTick();rejectedGait.terrainEnabled=true;
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-1,-12),ROOT.offset(14,-1,12)))
+                level.setBlock(pos,Blocks.DIRT.defaultBlockState(),2);
+            var fact=ContactEvents.emit(player,ContactEvent.Type.WALKING_STRIDE,new Vec3(0,0,1),0,null);
+            require(rejectedGait.contacts.changedBlocks>0 && fact.pose().support()!=0,
+                "rejected pose switch still produces a grounded footprint",passed);
+            ready(player);long fullCells=0;
+            for(var region:WorldObstacles.regions(PlayerBody.parts(player,player.position()),Vec3.ZERO,0))fullCells+=LocalProxy.cells(region);
+            int available=PhysicsWork.cellsRemaining();
+            var headOnly=new BodyPose(0,0,0,3,0,0,0,0,.1);
+            require(BodyCollision.poseAllowed(player,headOnly) && available-PhysicsWork.cellsRemaining()<fullCells,
+                "head-only pose validates changed geometry without traversing unchanged limbs",passed);
+            ready(player);BodyCollision.move(player,new Vec3(0,0,.1));
+            var measured=EntityState.of(player).contacts.diagnostics;
+            require(measured.samples>0 && measured.averageMillis()>=0 && measured.maximumNanos>=0,
+                "movement diagnostics measure bounded timing samples",passed);
             // Actual ground-to-swing behavior must remain discrete across a long walk.
             for(int x=-1;x<=1;x++)for(int z=-1;z<=7;z++)level.getChunk(ROOT.offset(x*16,0,z*16));
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-14,-1,-10),ROOT.offset(14,0,110)))

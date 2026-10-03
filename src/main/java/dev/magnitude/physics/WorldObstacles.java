@@ -33,26 +33,31 @@ public final class WorldObstacles {
             state.physicsTick=now;state.physicsCells=0;state.physicsPairs=0;state.proxyFallback=false;
         }
     }
+    private static Result denied(Player player,String reason) {
+        EntityState.of(player).contacts.diagnostics.failure=reason;
+        return new Result(List.of(),false);
+    }
     public static Result query(Player player,List<AABB> regions,boolean entities) {
         prepare(player);
         var state=EntityState.of(player);
-        if(!loaded(player,regions))return new Result(List.of(),false);
+        if(!loaded(player,regions))return denied(player,"query envelope budget or unloaded chunks");
         long cells=0;for(var region:regions)cells+=LocalProxy.cells(region);
-        if(state.physicsCells+cells>LocalProxy.CELLS_PER_TICK || !PhysicsWork.cells(cells))return new Result(List.of(),false);
+        if(state.physicsCells+cells>LocalProxy.CELLS_PER_TICK)return denied(player,"player traversal budget");
+        if(!PhysicsWork.cells(cells))return denied(player,"shared traversal budget");
         state.physicsCells+=(int)cells;
         var boxes=new LinkedHashSet<AABB>();
         for(var region:regions) {
             for(var shape:player.level().getBlockCollisions(player,region))for(var box:shape.toAabbs()) {
-                boxes.add(box);if(boxes.size()>1024)return new Result(List.of(),false);
+                boxes.add(box);if(boxes.size()>1024)return denied(player,"obstacle count budget");
             }
             if(entities) {
                 var result=EntityQueries.query(player.level(),region,player,256);
-                if(!result.complete())return new Result(List.of(),false);
+                if(!result.complete())return denied(player,"entity query budget");
                 for(var entity:result.entities())if(player.canCollideWith(entity))boxes.add(entity.getBoundingBox());
             }
             var border=player.level().getWorldBorder();
             if(border.isInsideCloseToBorder(player,region))boxes.addAll(border.getCollisionShape().toAabbs());
-            if(boxes.size()>1024)return new Result(List.of(),false);
+            if(boxes.size()>1024)return denied(player,"obstacle count budget");
         }
         return new Result(new ArrayList<>(boxes),true);
     }
