@@ -14,7 +14,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 public final class ScaleCommand {
     private ScaleCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
-        var scale=literal("scale");
+        var scale=literal("scale").executes(c->CommandReply.message(c,"usage.scale"));
         scale.then(literal("get").executes(c->{
             var entity=c.getSource().getPlayerOrException();
             c.getSource().sendSuccess(()->Component.translatable("message.magnitude.size",Dimensions.size(entity),Dimensions.target(entity),entity.getBbHeight()),false);return 1;

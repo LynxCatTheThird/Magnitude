@@ -58,12 +58,15 @@ public final class GuiNetworkTests implements ClientModInitializer {
                             check(SettingsConnection.request(2,Map.of("terrainDamage",1d)),"forged edit sent for authorization test");
                         }else {
                             var off=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(Component.translatable("options.off").getString())).map(x->(Button)x).findFirst().orElseThrow();
-                            off.onPress(null);click(screen,"gui.magnitude.apply");
+                            off.onPress(null);
+                            click(screen,"gui.magnitude.group.rules");click(screen,"gui.magnitude.group.response");
+                            var maximum=screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().getString().equals(Component.translatable("config.magnitude.field.maximum").getString())).map(x->(EditBox)x).findFirst().orElseThrow();maximum.setValue("48");
+                            click(screen,"gui.magnitude.apply");
                         }
                     }
                     case 4 -> {
                         if(SettingsConnection.busy())return;
-                        if(admin)check(SettingsConnection.result.equals("applied")&&SettingsConnection.view.server().get("terrainDamage")==1,"GUI administrator edit persisted and acknowledged over network");
+                        if(admin)check(SettingsConnection.result.equals("applied")&&SettingsConnection.view.server().get("terrainDamage")==1&&SettingsConnection.view.server().get("maximum")==48,"GUI administrator edits across groups persisted and acknowledged over network");
                         else check(SettingsConnection.result.equals("permission")&&SettingsConnection.view.server().get("terrainDamage")==0,"server rejects forged GUI edit over network");
                         client.player.connection.sendCommand("magnitude config player pressure off");
                     }

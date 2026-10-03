@@ -11,7 +11,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 public final class RandomCommand {
     private RandomCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
-        var random=literal("random");
+        var random=literal("random").executes(c->CommandReply.message(c,"usage.random"));
         random.then(literal("stop").executes(c->{EntityState.of(c.getSource().getPlayerOrException()).randomPeriod=0;return CommandReply.message(c,"random");}));
         random.then(literal("start").then(argument("low",doubleArg(ScaleSafety.MINIMUM,ScaleSafety.MAXIMUM)).then(argument("high",doubleArg(ScaleSafety.MINIMUM,ScaleSafety.MAXIMUM)).then(argument("period",integer(20,72000)).executes(c->{
             var player=c.getSource().getPlayerOrException();if(!Magnitude.settings.allowSelfChange&&!Dimensions.operator(player))return CommandReply.denied(c);

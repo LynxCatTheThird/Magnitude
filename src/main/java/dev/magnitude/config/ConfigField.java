@@ -23,12 +23,17 @@ public enum ConfigField {
     IMPACT_BLOCKS("blocksPerImpact",false,true,0,256,s->s.blocksPerImpact,(s,v)->s.blocksPerImpact=(int)v),
     IMPACT_RADIUS("impactRadius",false,false,.5,8,s->s.impactRadius,(s,v)->s.impactRadius=v);
 
+    public enum Group { RULES, RESPONSE, SIZE, BUDGET }
+    public final Group group;
     public final String id;
     public final boolean bool, integer;
     public final double minimum, maximum;
     private final ToDoubleFunction<Settings> reader;
     private final ObjDoubleConsumer<Settings> writer;
     ConfigField(String id,boolean bool,boolean integer,double minimum,double maximum,ToDoubleFunction<Settings> reader,ObjDoubleConsumer<Settings> writer) {
+        this.group=switch(id){case "minimum","maximum","allowSelfChange","keepSizeAfterDeath"->Group.SIZE;
+            case "walkDamageFactor","landingDamageFactor","pressureHardnessFactor","impactScaleFactor","impactRadius"->Group.RESPONSE;
+            case "blocksPerTick","checksPerTick","blocksPerImpact"->Group.BUDGET;default->Group.RULES;};
         this.id=id;this.bool=bool;this.integer=integer;this.minimum=minimum;this.maximum=maximum;this.reader=reader;this.writer=writer;
     }
     public double read(Settings settings){return reader.applyAsDouble(settings);}

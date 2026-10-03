@@ -112,6 +112,10 @@ public final class RuntimeTests implements ModInitializer {
         PlayerBlockBreakEvents.BEFORE.register((world,player,pos,block,entity)->false);Impact.beginTick();check(Impact.breakAround(actor,Vec3.atCenterOf(center),3,2)==0,"protection event veto honored");
         check(server.getCommands().getDispatcher().parse("magnitude scale targets set @e[type=minecraft:pig,limit=1] 2",server.createCommandSourceStack()).getExceptions().isEmpty(),"admin selector command parses");
         check(server.getCommands().getDispatcher().parse("magnitude config player carry on",actor.createCommandSourceStack()).getExceptions().isEmpty(),"separate carrying consent command");
+        for(String domain:new String[]{"scale","action","carry","tool","random","config player"})
+            check(server.getCommands().getDispatcher().execute("magnitude "+domain,server.createCommandSourceStack())==1,"domain help is executable without changing settings: "+domain);
+        var fractional=server.getCommands().getDispatcher().parse("magnitude config server blocksPerTick 1.5",server.createCommandSourceStack());
+        check(fractional.getReader().canRead()||!fractional.getExceptions().isEmpty(),"integer work budget rejects decimal syntax during parsing");
         pig.discard();restored.discard();
     }
 }

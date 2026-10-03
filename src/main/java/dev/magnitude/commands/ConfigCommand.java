@@ -23,6 +23,7 @@ public final class ConfigCommand {
         for(var field:ConfigField.values()) {
             var node=literal(field.id).executes(c->serverValue(c,field));
             if(field.bool)node.then(argument("value",bool()).executes(c->server(c,field.id,getBool(c,"value")?1:0)));
+            else if(field.integer)node.then(argument("value",com.mojang.brigadier.arguments.IntegerArgumentType.integer((int)field.minimum,(int)field.maximum)).executes(c->server(c,field.id,com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(c,"value"))));
             else node.then(argument("value",doubleArg(field.minimum,field.maximum)).executes(c->server(c,field.id,getDouble(c,"value"))));
             server.then(node);
         }
@@ -30,7 +31,7 @@ public final class ConfigCommand {
         config.then(literal("food").requires(ConfigService::administrator).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())
             .then(argument("factor",doubleArg(.015625,4)).executes(c->reply(c,ConfigService.INSTANCE.food(c.getSource(),net.minecraft.commands.arguments.IdentifierArgument.getId(c,"item").toString(),getDouble(c,"factor")))))));
 
-        var player=literal("player");
+        var player=literal("player").executes(c->dev.magnitude.commands.CommandReply.message(c,"usage.player"));
         for(String field:new String[]{"terrain","pressure","resize","carry"}) {
             var node=literal(field);
             for(boolean enabled:new boolean[]{true,false})node.then(literal(enabled?"on":"off").executes(c->personal(c,field,enabled)));

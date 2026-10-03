@@ -13,7 +13,7 @@ import static com.mojang.brigadier.arguments.IntegerArgumentType.*;
 public final class ToolCommand {
     private ToolCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
-        var tool=literal("tool");var set=literal("set");
+        var tool=literal("tool").executes(c->CommandReply.message(c,"usage.tool"));var set=literal("set");
         set.then(literal("value").then(argument("value",doubleArg(-ScaleSafety.MAXIMUM,ScaleSafety.MAXIMUM)).executes(c->configure(c,"value",getDouble(c,"value")))));
         var mode=literal("mode");String[] modes={"multiply","add","set","swap","transfer"};
         for(int i=0;i<modes.length;i++){final int index=i;mode.then(literal(modes[i]).executes(c->configure(c,"operation",index)));}
