@@ -25,6 +25,12 @@ public final class ConfigTests {
         var admin=server.createCommandSourceStack();var dispatcher=server.getCommands().getDispatcher();
         Path temp=Files.createTempDirectory("magnitude-config-test-");
         try {
+            var timing=new dev.magnitude.physics.TimingWindow(4);
+            check(timing.summary().samples()==0,"empty timing window has no fabricated samples",passed);
+            for(long ms:new long[]{1,2,3,4,5})timing.add(ms*1_000_000);
+            check(timing.summary().samples()==4&&timing.summary().p50()==3&&timing.summary().p95()==5&&timing.summary().p99()==5,"bounded timing window replaces oldest sample and computes nearest-rank percentiles",passed);
+            timing.add(-1);check(timing.summary().samples()==4,"negative timing sample rejected",passed);
+            timing.clear();check(timing.summary().samples()==0,"timing clear removes old world samples",passed);
             Magnitude.settings=new Settings();
             var service=new ConfigService(s->s.save(temp.resolve("settings.json")));
             var original=Magnitude.settings;

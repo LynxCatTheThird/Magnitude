@@ -106,7 +106,7 @@
   "gui.magnitude.scope.client": "仅影响你的客户端；应用后保存",
   "gui.magnitude.scope.player": "个人许可；服务器确认后生效",
   "gui.magnitude.scope.server": "作用于此服务器；修改需要管理员权限",
-  "gui.magnitude.scope.diagnostics": "服务端耗时；不是客户端 FPS",
+  "gui.magnitude.scope.diagnostics": "服务器耗时与本地帧间隔分别采样",
   "gui.magnitude.apply": "应用",
   "gui.magnitude.discard": "撤销修改",
   "gui.magnitude.refresh": "刷新状态",
@@ -194,5 +194,10 @@
   "config.magnitude.field.resize": "允许他人改变尺寸",
   "config.magnitude.hint.resize": "控制其他玩家和外部尺寸效果的许可。",
   "config.magnitude.field.carry": "允许被携带",
-  "config.magnitude.hint.carry": "其他玩家仍需满足距离和尺寸比等条件。"
+  "config.magnitude.hint.carry": "其他玩家仍需满足距离和尺寸比等条件。",
+  "gui.magnitude.percentiles": "%s P50/P95/P99：%s",
+  "gui.magnitude.movement": "移动查询",
+  "gui.magnitude.frame": "世界帧间隔",
+  "gui.magnitude.noSamples": "尚无采样",
+  "gui.magnitude.work": "上刻 单元/碰撞对/材料检查/写入：%s/%s/%s/%s"
 }

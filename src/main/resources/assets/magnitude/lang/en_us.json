@@ -106,7 +106,7 @@
   "gui.magnitude.scope.client": "Local view settings; Apply saves them",
   "gui.magnitude.scope.player": "Personal permissions; confirmed by the server",
   "gui.magnitude.scope.server": "Server-wide rules; administrator permission required",
-  "gui.magnitude.scope.diagnostics": "Server timing; not client FPS",
+  "gui.magnitude.scope.diagnostics": "Server costs and local frame intervals are sampled separately",
   "gui.magnitude.apply": "Apply",
   "gui.magnitude.discard": "Discard edits",
   "gui.magnitude.refresh": "Refresh",
@@ -194,5 +194,10 @@
   "config.magnitude.field.resize": "Allow others to resize you",
   "config.magnitude.hint.resize": "Consent to other players and external resize effects.",
   "config.magnitude.field.carry": "Allow being carried",
-  "config.magnitude.hint.carry": "Other players must still meet distance and size requirements."
+  "config.magnitude.hint.carry": "Other players must still meet distance and size requirements.",
+  "gui.magnitude.percentiles": "%s P50/P95/P99: %s",
+  "gui.magnitude.movement": "Movement queries",
+  "gui.magnitude.frame": "World frame intervals",
+  "gui.magnitude.noSamples": "No samples yet",
+  "gui.magnitude.work": "Last tick cells/pairs/material checks/writes: %s/%s/%s/%s"
 }

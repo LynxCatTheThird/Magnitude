@@ -43,7 +43,8 @@ public final class ConfigNetworking {
         String pressure=!terrain.equals("enabled")?terrain:!settings.standingPressure?"serverPressureOff":!state.pressureEnabled?"personalPressureOff":!player.onGround()||player.getAbilities().flying||player.isNoGravity()||player.isPassenger()?"notSupported":"enabled";
         return new ConfigView(ConfigService.INSTANCE.revision(),state.configRevision,ConfigService.administrator(player.createCommandSourceStack()),
             ConfigService.INSTANCE.values(),ConfigService.personalValues(player),result.code(),result.detail(),Dimensions.size(player),terrain.equals("enabled"),pressure.equals("enabled"),terrain,pressure,
-            player.level().getServer().getAverageTickTimeNanos()/1_000_000d,metrics.averageMillis(),metrics.maximumNanos/1_000_000d,metrics.denied,metrics.samples,state.contacts.footprints.size(),metrics.failure,state.contacts.reason);
+            player.level().getServer().getAverageTickTimeNanos()/1_000_000d,metrics.averageMillis(),metrics.maximumNanos/1_000_000d,metrics.denied,metrics.samples,state.contacts.footprints.size(),metrics.failure,state.contacts.reason,dev.magnitude.physics.ServerMetrics.TICKS.summary(),metrics.timings.summary(),
+            dev.magnitude.physics.ServerMetrics.cellsUsed,dev.magnitude.physics.ServerMetrics.pairsUsed,dev.magnitude.physics.ServerMetrics.materialChecks,dev.magnitude.physics.ServerMetrics.blockWrites);
     }
     public static void send(ServerPlayer player,long requestId,boolean open,ConfigService.Result result){
         if(ServerPlayNetworking.canSend(player,ConfigSnapshot.TYPE))ServerPlayNetworking.send(player,new ConfigSnapshot(requestId,open,JSON.toJson(view(player,result))));

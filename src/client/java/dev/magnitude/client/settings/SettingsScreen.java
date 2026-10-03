@@ -22,6 +22,7 @@ public final class SettingsScreen extends Screen {
     private boolean wasBusy;
     private long connectionEpoch=SettingsConnection.epoch;
     private dev.magnitude.config.ConfigView seenView;
+    private dev.magnitude.physics.TimingWindow.Summary frameSummary=ClientMetrics.FRAMES.summary();
     private record Row(String id,boolean bool,double value){}
     public SettingsScreen(Screen parent){super(Component.translatable("gui.magnitude.title"));this.parent=parent;}
     private Component tr(String key,Object...args){return Component.translatable("gui.magnitude."+key,args);}
@@ -47,12 +48,20 @@ public final class SettingsScreen extends Screen {
             lines.add(tr("pressureState",Component.translatable("config.magnitude.reason."+view.pressureReason())));
             lines.add(tr("currentBackend"));lines.add(tr("scopeHint"));lines.add(tr("protectionHint"));
         }else {
+            lines.add(tr("percentiles", "MSPT", format(view.tickTimings())));
+            lines.add(tr("percentiles", tr("movement"), format(view.moveTimings())));
+            lines.add(tr("percentiles", tr("frame"), format(frameSummary)));
+            lines.add(tr("work", view.cellsUsed(),view.pairsUsed(),view.materialChecks(),view.blockWrites()));
             lines.add(tr("serverMs",String.format(java.util.Locale.ROOT,"%.2f",view.serverTickMs())));
             lines.add(tr("moveMs",String.format(java.util.Locale.ROOT,"%.2f / %.2f",view.moveAvgMs(),view.moveMaxMs())));
             lines.add(tr("denied",view.denied(),view.samples()));lines.add(tr("pending",view.pending()));
             lines.add(tr("failure",view.lastFailure()));lines.add(tr("reason",view.reason()));lines.add(tr("diagnosticHint"));
         }
         return lines;
+    }
+    private String format(dev.magnitude.physics.TimingWindow.Summary summary){
+        if(summary==null||summary.samples()==0)return tr("noSamples").getString();
+        return String.format(java.util.Locale.ROOT,"%.2f / %.2f / %.2f ms (%d)",summary.p50(),summary.p95(),summary.p99(),summary.samples());
     }
     @Override protected void init(){
         rows=Math.max(1,(height-158)/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
@@ -83,7 +92,7 @@ public final class SettingsScreen extends Screen {
             var apply=button(tr("apply"),left+90,height-48,90,b->apply());apply.active=editable()&&!SettingsConnection.busy();
             button(tr("discard"),left+185,height-48,90,b->{drafts.keySet().removeIf(key->key.startsWith(tab+":"));localResult="ready";rebuildWidgets();});
         }
-        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->SettingsConnection.request(0,Map.of()));refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
+        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
         button(tr("close"),left+w-90,height-48,90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
     }
     @Override public void added(){if(SettingsConnection.view==null&&SettingsConnection.supported())SettingsConnection.request(0,Map.of());}

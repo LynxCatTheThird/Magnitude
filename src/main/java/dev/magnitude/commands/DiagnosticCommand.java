@@ -23,6 +23,8 @@ public final class DiagnosticCommand {
             var scale = Dimensions.snapshot(player);
             var event = state.contacts.last;
             var metrics=state.contacts.diagnostics;
+            var tickTimings=dev.magnitude.physics.ServerMetrics.TICKS.summary();
+            var moveTimings=metrics.timings.summary();
             String status = "terrain server=" + Magnitude.settings.terrainDamage + " player=" + state.terrainEnabled
                 + "; pressure server=" + Magnitude.settings.standingPressure + " player=" + state.pressureEnabled
                 + "; scale=" + scale.base() + " revision=" + scale.revision() + " proxy=" + scale.proxyLimit()
@@ -37,6 +39,8 @@ public final class DiagnosticCommand {
                 + "; serverTickMs="+c.getSource().getServer().getAverageTickTimeNanos()/1_000_000.0
                 + "; moveAvgMs="+metrics.averageMillis()+" moveMaxMs="+metrics.maximumNanos/1_000_000.0
                 + "; moveDenied="+metrics.denied+"/"+metrics.samples+" lastFailure="+metrics.failure
+                + "; tickP50P95P99="+tickTimings.p50()+"/"+tickTimings.p95()+"/"+tickTimings.p99()
+                + "; moveP50P95P99="+moveTimings.p50()+"/"+moveTimings.p95()+"/"+moveTimings.p99()
                 + "; fallback=" + state.proxyFallback + "; scaleWarning=" + state.scaleWarning;
             c.getSource().sendSuccess(() -> Component.literal(status), false);
             return 1;

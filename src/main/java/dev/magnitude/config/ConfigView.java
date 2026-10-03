@@ -7,4 +7,5 @@ public record ConfigView(long revision,long personalRevision,boolean administrat
                          Map<String,Double> personal,String result,String detail,double size,
                          boolean terrainEffective,boolean pressureEffective,String terrainReason,String pressureReason,
                          double serverTickMs,double moveAvgMs,double moveMaxMs,int denied,int samples,
-                         int pending,String lastFailure,String reason) {}
+                         int pending,String lastFailure,String reason,dev.magnitude.physics.TimingWindow.Summary tickTimings,
+                         dev.magnitude.physics.TimingWindow.Summary moveTimings,int cellsUsed,int pairsUsed,int materialChecks,int blockWrites) {}

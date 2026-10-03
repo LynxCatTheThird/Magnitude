@@ -32,6 +32,7 @@ public final class MagnitudeClient implements ClientModInitializer {
     @Override public void onInitializeClient() {
         dev.magnitude.client.settings.ClientPreferences.load();
         dev.magnitude.client.settings.SettingsConnection.register();
+        dev.magnitude.client.settings.ClientMetrics.register();
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client,screen,width,height)->{
             if(screen instanceof net.minecraft.client.gui.screens.PauseScreen pause && pause.showsPauseMenu()
                 || screen instanceof net.minecraft.client.gui.screens.options.OptionsScreen) {
