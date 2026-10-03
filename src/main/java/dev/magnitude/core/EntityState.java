@@ -5,6 +5,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.entity.Entity;
 
 public final class EntityState {
+    public long configRevision;
+    public long nextConfigRequest;
+    public long nextConfigReply;
     public boolean acceptResize;
     public boolean acceptCarry;
     public boolean terrainEnabled;
@@ -57,6 +60,7 @@ public final class EntityState {
 
     public static EntityState of(Entity entity) { return ((StateAccess)entity).magnitudeState(); }
     public void load(ValueInput input, Entity entity) {
+        configRevision++;
         ValueInput data = input.childOrEmpty("magnitude");
         acceptResize = data.getBooleanOr("resizeConsent", false);
         acceptCarry = data.getBooleanOr("carryConsent", false);
@@ -116,6 +120,7 @@ public final class EntityState {
         data.putBoolean("reduceExternal", reduceExternal);
     }
     public void copyPersistentFrom(EntityState old) {
+        configRevision=old.configRevision+1;
         acceptResize = old.acceptResize;
         acceptCarry = old.acceptCarry;
         terrainEnabled = old.terrainEnabled;

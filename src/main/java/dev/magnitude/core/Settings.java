@@ -11,6 +11,7 @@ import java.util.Map;
 
 public final class Settings {
     private static final Gson JSON = new GsonBuilder().setPrettyPrinting().create();
+    public int schemaVersion = 1;
     public double minimum = 1.0 / 64;
     public double maximum = 32;
     public boolean allowSelfChange = true;
@@ -28,7 +29,10 @@ public final class Settings {
     public double impactRadius = 6;
     public Map<String, Double> foodFactors = new LinkedHashMap<>();
 
+    public Settings copy() { return JSON.fromJson(JSON.toJson(this), Settings.class); }
     public void validate() {
+        if (schemaVersion > 1) throw new IllegalArgumentException("Unsupported configuration version");
+        schemaVersion = 1;
         minimum = Double.isFinite(minimum) ? Rules.bounded(minimum, ScaleSafety.MINIMUM, 1) : 1.0/64;
         maximum = Double.isFinite(maximum) ? Rules.bounded(maximum, 1, ScaleSafety.MAXIMUM) : 32;
         blocksPerTick = Math.clamp(blocksPerTick, 0, 1024);
@@ -42,9 +46,10 @@ public final class Settings {
         if (foodFactors == null) foodFactors = new LinkedHashMap<>();
         foodFactors.entrySet().removeIf(e -> e.getValue() == null || !Double.isFinite(e.getValue()) || e.getValue() <= 0 || e.getValue() > 4);
     }
-    public void save() {
-        try { Files.writeString(FabricLoader.getInstance().getConfigDir().resolve("magnitude.json"), JSON.toJson(this)); }
-        catch (IOException error) { throw new IllegalStateException("Cannot save magnitude.json", error); }
+    public void save() { save(FabricLoader.getInstance().getConfigDir().resolve("magnitude.json")); }
+    /** Persist before publishing live settings; a failed write leaves the previous file intact. */
+    public void save(Path path) {
+        dev.magnitude.config.ConfigFiles.write(path, JSON.toJson(this));
     }
     public static Settings load() {
         Path path = FabricLoader.getInstance().getConfigDir().resolve("magnitude.json");
@@ -52,8 +57,7 @@ public final class Settings {
             Settings settings = Files.exists(path) ? JSON.fromJson(Files.readString(path), Settings.class) : new Settings();
             if (settings == null) throw new IllegalArgumentException("Empty configuration");
             settings.validate();
-            Files.createDirectories(path.getParent());
-            Files.writeString(path, JSON.toJson(settings));
+            settings.save(path);
             return settings;
         } catch (IOException | RuntimeException error) {
             throw new IllegalStateException("Cannot load magnitude.json: " + error.getMessage(), error);

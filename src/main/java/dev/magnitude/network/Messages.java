@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 public final class Messages {
     private Messages() {}
     public static void register() {
+        ConfigNetworking.register();
         PayloadTypeRegistry.serverboundPlay().register(ActionPayload.TYPE,ActionPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(CarryPayload.TYPE,CarryPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(PhysicsPayload.TYPE,PhysicsPayload.CODEC);

@@ -25,12 +25,23 @@ public final class MagnitudeClient implements ClientModInitializer {
     public static boolean zoom;
     public static boolean hiddenNames;
     private static boolean toggleZoom;
-    private static boolean smoothing;
+    public static boolean smoothing;
     private static Boolean oldSmooth;
-    private static KeyMapping hold, toggle, increase, decrease, reset, smooth, names, precisionUp, precisionDown;
+    private static KeyMapping settingsMenu, hold, toggle, increase, decrease, reset, smooth, names, precisionUp, precisionDown;
     private static final KeyMapping[] ACTIONS=new KeyMapping[6];
     @Override public void onInitializeClient() {
+        dev.magnitude.client.settings.ClientPreferences.load();
+        dev.magnitude.client.settings.SettingsConnection.register();
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client,screen,width,height)->{
+            if(screen instanceof net.minecraft.client.gui.screens.PauseScreen pause && pause.showsPauseMenu()
+                || screen instanceof net.minecraft.client.gui.screens.options.OptionsScreen) {
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getWidgets(screen).add(net.minecraft.client.gui.components.Button.builder(
+                    net.minecraft.network.chat.Component.literal("Magnitude"),button->client.gui.setScreen(new dev.magnitude.client.settings.SettingsScreen(screen)))
+                    .bounds(width-98,6,90,20).build());
+            }
+        });
         KeyMapping.Category category=KeyMapping.Category.register(Magnitude.id("controls"));
+        settingsMenu=key("settings",InputConstants.KEY_F8,category);
         hold=key("observe",InputConstants.KEY_Z,category);toggle=key("observe_toggle",InputConstants.KEY_N,category);
         increase=key("magnify",InputConstants.KEY_EQUALS,category);decrease=key("reduce_zoom",InputConstants.KEY_MINUS,category);
         reset=key("reset_view",InputConstants.KEY_R,category);smooth=key("smooth",InputConstants.KEY_G,category);names=key("names",InputConstants.KEY_J,category);
@@ -39,8 +50,10 @@ public final class MagnitudeClient implements ClientModInitializer {
         for(int i=0;i<ACTIONS.length;i++)ACTIONS[i]=key(labels[i],keys[i],category);
         ClientTickEvents.START_CLIENT_TICK.register(client -> {dev.magnitude.interaction.EntityQueries.beginTick();dev.magnitude.physics.PhysicsWork.beginTick();});
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while(settingsMenu.consumeClick())if(!(client.gui.screen() instanceof dev.magnitude.client.settings.SettingsScreen))client.gui.setScreen(new dev.magnitude.client.settings.SettingsScreen(client.gui.screen()));
             if(client.player==null||client.level==null){restoreSmooth(client);zoom=false;toggleZoom=false;return;}
             if(client.gui.screen()!=null){zoom=false;restoreSmooth(client);return;}
+            var preferencesBefore=dev.magnitude.client.settings.ClientPreferences.values();
             while(toggle.consumeClick())toggleZoom=!toggleZoom;
             while(increase.consumeClick())magnification=Math.clamp(magnification*1.25,1,32);
             while(decrease.consumeClick())magnification=Math.clamp(magnification/1.25,1,32);
@@ -49,6 +62,7 @@ public final class MagnitudeClient implements ClientModInitializer {
             while(precisionDown.consumeClick())sensitivity=Math.clamp(sensitivity/1.1,0.1,2);
             while(smooth.consumeClick())smoothing=!smoothing;
             while(names.consumeClick())hiddenNames=!hiddenNames;
+            if(!preferencesBefore.equals(dev.magnitude.client.settings.ClientPreferences.values())&&!dev.magnitude.client.settings.ClientPreferences.save(dev.magnitude.client.settings.ClientPreferences.values()))dev.magnitude.client.settings.ClientPreferences.restore(preferencesBefore);
             zoom=toggleZoom||hold.isDown();
             if(zoom&&smoothing){if(oldSmooth==null)oldSmooth=client.options.smoothCamera;client.options.smoothCamera=true;}
             else restoreSmooth(client);

@@ -25,6 +25,7 @@ public final class Commands {
     private Commands() {}
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> root=literal("magnitude").executes(c -> message(c,"help"));
+        dev.magnitude.commands.ConfigCommand.attach(root);
         root.then(literal("get").executes(c -> {
             var p=c.getSource().getPlayerOrException();
             c.getSource().sendSuccess(() -> Component.translatable("message.magnitude.size",Dimensions.size(p),Dimensions.target(p),p.getBbHeight()),false);return 1;
@@ -33,24 +34,24 @@ public final class Commands {
         for(String operation:new String[]{"set","multiply","add","height"}) root.then(literal(operation).then(argument("value",DoubleArgumentType.doubleArg()).executes(c -> resize(c,operation,20)).then(argument("ticks",IntegerArgumentType.integer(0,1200)).executes(c -> resize(c,operation,IntegerArgumentType.getInteger(c,"ticks"))))));
         var scale=literal("scale");
         scale.then(literal("get").executes(Commands::get).then(literal("reset").executes(c -> {Dimensions.reset(c.getSource().getPlayerOrException());return message(c,"reset");})));
+        scale.then(literal("reset").executes(c -> {Dimensions.reset(c.getSource().getPlayerOrException());return message(c,"reset");}));
         for(String operation:new String[]{"set","multiply","add","height"}) scale.then(literal(operation).then(argument("value",DoubleArgumentType.doubleArg()).executes(c -> resize(c,operation,20)).then(argument("ticks",IntegerArgumentType.integer(0,1200)).executes(c -> resize(c,operation,IntegerArgumentType.getInteger(c,"ticks"))))));
         root.then(scale);
         var consent=literal("consent");
         for(String permission:new String[]{"resize","carry"}) consent.then(literal(permission).then(argument("enabled",BoolArgumentType.bool()).executes(c -> {
-            var state=EntityState.of(c.getSource().getPlayerOrException());boolean enabled=BoolArgumentType.getBool(c,"enabled");
-            if(permission.equals("resize"))state.acceptResize=enabled;else state.acceptCarry=enabled;
-            return message(c,"consent");
+            return dev.magnitude.commands.ConfigCommand.personal(c,permission,BoolArgumentType.getBool(c,"enabled"));
         })));
         root.then(consent);
-        root.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).terrainEnabled=BoolArgumentType.getBool(c,"enabled");return message(c,"terrain");})));
+        root.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> dev.magnitude.commands.ConfigCommand.personal(c,"terrain",BoolArgumentType.getBool(c,"enabled")))));
         var physics=literal("physics");
-        physics.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {EntityState.of(c.getSource().getPlayerOrException()).terrainEnabled=BoolArgumentType.getBool(c,"enabled");return message(c,"terrain");})));
-        physics.then(literal("pressure").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("enabled",BoolArgumentType.bool()).executes(c -> {Magnitude.settings.standingPressure=BoolArgumentType.getBool(c,"enabled");Magnitude.settings.save();return message(c,"physics");})));
-        physics.then(literal("damage").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("enabled",BoolArgumentType.bool()).executes(c -> {Magnitude.settings.bodyDamage=BoolArgumentType.getBool(c,"enabled");Magnitude.settings.save();return message(c,"physics");})));
-        physics.then(literal("walkDamage").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("factor",DoubleArgumentType.doubleArg(0,40)).executes(c -> {Magnitude.settings.walkDamageFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
-        physics.then(literal("landingDamage").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("factor",DoubleArgumentType.doubleArg(0,80)).executes(c -> {Magnitude.settings.landingDamageFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
-        physics.then(literal("pressureHardness").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("factor",DoubleArgumentType.doubleArg(1,64)).executes(c -> {Magnitude.settings.pressureHardnessFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
-        physics.then(literal("impactScale").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(argument("factor",DoubleArgumentType.doubleArg(0.05,2)).executes(c -> {Magnitude.settings.impactScaleFactor=DoubleArgumentType.getDouble(c,"factor");Magnitude.settings.save();return message(c,"physics");})));
+        physics.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> dev.magnitude.commands.ConfigCommand.personal(c,"terrain",BoolArgumentType.getBool(c,"enabled")))));
+        for(String[] entry:new String[][]{{"pressure","standingPressure"},{"damage","bodyDamage"}}) {
+            physics.then(literal(entry[0]).requires(dev.magnitude.config.ConfigService::administrator).then(argument("enabled",BoolArgumentType.bool()).executes(c -> dev.magnitude.commands.ConfigCommand.server(c,entry[1],BoolArgumentType.getBool(c,"enabled")?1:0))));
+        }
+        for(String[] entry:new String[][]{{"walkDamage","walkDamageFactor"},{"landingDamage","landingDamageFactor"},{"pressureHardness","pressureHardnessFactor"},{"impactScale","impactScaleFactor"}}) {
+            var field=dev.magnitude.config.ConfigField.find(entry[1]);
+            physics.then(literal(entry[0]).requires(dev.magnitude.config.ConfigService::administrator).then(argument("factor",DoubleArgumentType.doubleArg(field.minimum,field.maximum)).executes(c -> dev.magnitude.commands.ConfigCommand.server(c,field.id,DoubleArgumentType.getDouble(c,"factor")))));
+        }
         dev.magnitude.commands.PhysicsCommand.attach(physics);
         root.then(physics);
         root.then(literal("release").executes(c -> action(c,2)));
@@ -62,6 +63,11 @@ public final class Commands {
         root.then(literal("pickup").executes(c -> {
             return Interactions.pickup(c.getSource().getPlayerOrException())?1:denied(c);
         }));
+        var actions=literal("action");
+        String[] actionNames={"blow","stomp","release","throw","ability","ride"};
+        for(int i=0;i<actionNames.length;i++){final int id=i;actions.then(literal(actionNames[i]).executes(c->action(c,id)));}
+        actions.then(literal("pickup").executes(c->Interactions.pickup(c.getSource().getPlayerOrException())?1:denied(c)));
+        root.then(actions);
         var carry=literal("carry");
         for(int mode=0;mode<3;mode++) {final int position=mode;carry.then(literal(new String[]{"shoulder","hand","custom"}[mode]).executes(c -> {
             var p=c.getSource().getPlayerOrException();EntityState.of(p).carryPosition=position;Messages.syncCarry(p);return message(c,"carry_mode");
@@ -91,11 +97,10 @@ public final class Commands {
             var entity=EntityArgument.getEntity(c,"target");c.getSource().sendSuccess(() -> Component.translatable("message.magnitude.size",Dimensions.size(entity),Dimensions.target(entity),entity.getBbHeight()),false);return 1;
         })));
         admin.then(literal("reset").then(argument("targets",EntityArgument.entities()).executes(c -> {int count=0;for(var entity:EntityArgument.getEntities(c,"targets")){Dimensions.reset(entity);count++;}return count;})));
-        admin.then(literal("reload").executes(c -> {try{Magnitude.settings=dev.magnitude.core.Settings.load();return message(c,"reloaded");}catch(RuntimeException error){c.getSource().sendFailure(Component.literal(error.getMessage()));return 0;}}));
-        admin.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> {Magnitude.settings.terrainDamage=BoolArgumentType.getBool(c,"enabled");Magnitude.settings.save();return message(c,"terrain");})));
+        admin.then(literal("reload").executes(c -> dev.magnitude.commands.ConfigCommand.reply(c,dev.magnitude.config.ConfigService.INSTANCE.reload(c.getSource()))));
+        admin.then(literal("terrain").then(argument("enabled",BoolArgumentType.bool()).executes(c -> dev.magnitude.commands.ConfigCommand.server(c,"terrainDamage",BoolArgumentType.getBool(c,"enabled")?1:0))));
         admin.then(literal("food").then(argument("item",StringArgumentType.word()).then(argument("factor",DoubleArgumentType.doubleArg(0.015625,4)).executes(c -> {
-            var id=net.minecraft.resources.Identifier.tryParse(StringArgumentType.getString(c,"item"));if(id==null||!net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id))return denied(c);
-            Magnitude.settings.foodFactors.put(id.toString(),DoubleArgumentType.getDouble(c,"factor"));Magnitude.settings.save();return message(c,"food");
+            return dev.magnitude.commands.ConfigCommand.reply(c,dev.magnitude.config.ConfigService.INSTANCE.food(c.getSource(),StringArgumentType.getString(c,"item"),DoubleArgumentType.getDouble(c,"factor")));
         }))));
         root.then(admin);
         dispatcher.register(root);

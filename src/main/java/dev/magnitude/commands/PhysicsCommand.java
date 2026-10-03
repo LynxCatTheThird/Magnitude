@@ -44,48 +44,26 @@ public final class PhysicsCommand {
         for (boolean enabled : new boolean[]{true,false}) {
             physics.then(literal(enabled ? "enable" : "disable").executes(c -> {
                 var actor=c.getSource().getPlayerOrException();
-                var state=EntityState.of(actor);
-                state.terrainEnabled=enabled;state.pressureEnabled=enabled;
-                if (dev.magnitude.core.Dimensions.operator(actor)) {
-                    Magnitude.settings.terrainDamage=enabled;
-                    Magnitude.settings.standingPressure=enabled;
-                    Magnitude.settings.save();
+                if(dev.magnitude.config.ConfigService.administrator(c.getSource())) {
+                    var result=dev.magnitude.config.ConfigService.INSTANCE.server(c.getSource(),-1,java.util.Map.of("terrainDamage",enabled?1d:0d,"standingPressure",enabled?1d:0d));
+                    if(!result.success())return ConfigCommand.reply(c,result);
                 }
-                return reply(c, "player terrain/pressure="+enabled+"; server terrain="+Magnitude.settings.terrainDamage
-                    +(enabled && !Magnitude.settings.terrainDamage ? "; administrator must enable server terrain" : ""));
+                var result=dev.magnitude.config.ConfigService.INSTANCE.personal(actor,-1,java.util.Map.of("terrain",enabled?1d:0d,"pressure",enabled?1d:0d));
+                if(!result.success())return ConfigCommand.reply(c,result);
+                return ConfigCommand.show(c);
             }));
         }
-        var server = literal("server").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER));
-        var player = literal("player");
-        for (String field : new String[]{"terrain", "pressure"}) {
-            var global = literal(field);
-            var personal = literal(field);
-            for (boolean enabled : new boolean[]{true, false}) {
-                String toggle = enabled ? "on" : "off";
-                global.then(literal(toggle).executes(c -> {
-                    if (field.equals("terrain")) Magnitude.settings.terrainDamage = enabled;
-                    else Magnitude.settings.standingPressure = enabled;
-                    Magnitude.settings.save();
-                    return reply(c, "server " + field + "=" + enabled);
-                }));
-                personal.then(literal(toggle).executes(c -> {
-                    var state = EntityState.of(c.getSource().getPlayerOrException());
-                    if (field.equals("terrain")) state.terrainEnabled = enabled;
-                    else state.pressureEnabled = enabled;
-                    return reply(c, "player " + field + "=" + enabled + "; server="
-                        + (field.equals("terrain") ? Magnitude.settings.terrainDamage : Magnitude.settings.standingPressure));
-                }));
+        var server=literal("server").requires(dev.magnitude.config.ConfigService::administrator);
+        var player=literal("player");
+        for(String field:new String[]{"terrain","pressure"}) {
+            var global=literal(field);var personal=literal(field);
+            for(boolean enabled:new boolean[]{true,false}) {
+                global.then(literal(enabled?"on":"off").executes(c->ConfigCommand.server(c,field.equals("terrain")?"terrainDamage":"standingPressure",enabled?1:0)));
+                personal.then(literal(enabled?"on":"off").executes(c->ConfigCommand.personal(c,field,enabled)));
             }
-            server.then(global); player.then(personal);
+            server.then(global);player.then(personal);
         }
-        physics.then(server); physics.then(player);
-        physics.then(literal("reload").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).executes(c -> {
-            try { Magnitude.settings = Settings.load(); return reply(c, "physics configuration reloaded"); }
-            catch (RuntimeException error) { c.getSource().sendFailure(Component.literal(error.getMessage())); return 0; }
-        }));
-    }
-    private static int reply(CommandContext<CommandSourceStack> c, String text) {
-        c.getSource().sendSuccess(() -> Component.literal(text), false);
-        return 1;
+        physics.then(server);physics.then(player);
+        physics.then(literal("reload").requires(dev.magnitude.config.ConfigService::administrator).executes(c->ConfigCommand.reply(c,dev.magnitude.config.ConfigService.INSTANCE.reload(c.getSource()))));
     }
 }
