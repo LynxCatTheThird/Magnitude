@@ -50,7 +50,7 @@ public final class FootContacts {
                     double height=y+box.maxY;
                     if(height<sole.y-below-1e-7||height>sole.y+above+1e-7||Double.isFinite(highest)&&height<highest-1e-7)continue;
                     var polygon=SoleGeometry.clipRectangle(sole.x-x,sole.z-z,width,length,yaw,box.minX,box.minZ,box.maxX,box.maxZ);
-                    double covered=SoleGeometry.area(polygon);if(covered<=1e-10)continue;
+                    double covered=SoleGeometry.area(polygon);if(covered<=0)continue;
                     if(!Double.isFinite(highest)||height>highest+1e-7){highest=height;area=0;found.clear();}
                     if(found.size()>=PATCHES_PER_QUERY){complete=false;reason="surface patch budget";break outer;}
                     // VoxelShape.toAabbs partitions occupied voxels; equal-height top faces do not overlap.

@@ -26,6 +26,9 @@ public final class FootContactTests {
             level.setBlock(root.below(),Blocks.STONE.defaultBlockState(),2);PhysicsWork.beginTick();
             var full=FootContacts.query(actor,sole,.4,.4,0,.0625,.0625);
             require(full.supported()&&Math.abs(full.area()-.64)<1e-8&&full.height()==200,"surface query measures rectangular area on full block",passed);
+            PhysicsWork.beginTick();
+            var tiny=FootContacts.query(actor,sole,1e-7,1e-7,0,.0625,.0625);
+            require(tiny.supported()&&Math.abs(tiny.area()/4e-14-1)<1e-7,"tiny sole retains positive contact area without fixed world-area cutoff",passed);
             level.setBlock(root.below(),Blocks.STONE_SLAB.defaultBlockState(),2);PhysicsWork.beginTick();
             var slab=FootContacts.query(actor,sole.add(0,-.5,0),.4,.4,.4,.0625,.0625);
             require(slab.supported()&&slab.height()==199.5,"surface query uses partial slab collision height",passed);

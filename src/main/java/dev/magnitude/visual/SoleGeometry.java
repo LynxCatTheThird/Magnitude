@@ -12,7 +12,8 @@ public final class SoleGeometry {
         return clipRectangle(dx,dz,halfWidth,halfLength,yaw,0,0,1,1);
     }
     public static double area(List<Point> polygon){
-        double twice=0;for(int i=0;i<polygon.size();i++){var a=polygon.get(i);var b=polygon.get((i+1)%polygon.size());twice+=a.x*b.z-b.x*a.z;}
+        if(polygon.size()<3)return 0;
+        var origin=polygon.getFirst();double twice=0;for(int i=1;i<polygon.size()-1;i++){var a=polygon.get(i);var b=polygon.get(i+1);twice+=(a.x-origin.x)*(b.z-origin.z)-(b.x-origin.x)*(a.z-origin.z);}
         return Math.abs(twice)*.5;
     }
     public static List<Point> clipRectangle(double dx,double dz,double halfWidth,double halfLength,double yaw,double minX,double minZ,double maxX,double maxZ){

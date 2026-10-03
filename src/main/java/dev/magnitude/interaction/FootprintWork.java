@@ -57,11 +57,11 @@ public final class FootprintWork {
         if(currentRoot.equals(checkedRoot) && currentPose.equals(checkedPose) && checkedScale==revision && checkedYaw==rotation)return occupied;
         checkedRoot=currentRoot;checkedPose=currentPose;checkedScale=revision;checkedYaw=rotation;occupied=false;
         double c=Math.cos(yaw),s=Math.sin(yaw);
-        var legs=PlayerBody.parts(actor,actor.position());
+        var legs=PlayerBody.legs(actor,actor.position());
         for(var center:feet) {
             var contact=new dev.magnitude.physics.BodyBox(center.add(0,.01,0),
                 new Vec3(width,.025,length),new Vec3(c,0,s),new Vec3(0,1,0),new Vec3(-s,0,c));
-            for(int leg=2;leg<=3;leg++)if(legs.get(leg).intersects(contact.bounds())) {occupied=true;return true;}
+            for(var leg:legs)if(leg.intersects(contact.bounds())) {occupied=true;return true;}
         }
         return false;
     }

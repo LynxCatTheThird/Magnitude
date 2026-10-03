@@ -35,6 +35,8 @@ public final class ScaleImpactTests {
     private static void floor(ServerPlayer actor, net.minecraft.world.level.block.Block block) {
         for(var pos:BlockPos.betweenClosed(CENTER.offset(-6,-1,-6),CENTER.offset(6,-1,6)))actor.level().setBlock(pos,block.defaultBlockState(),3);
         EntityState.of(actor).contacts.footprints.clear();
+        EntityState.of(actor).contacts.feet.clear("fixture replaced");
+        if(actor.onGround())EntityState.of(actor).pose=dev.magnitude.physics.BodyPose.IDLE;
         Impact.beginTick();
     }
     private static void tick(MinecraftServer server,ServerPlayer actor) {

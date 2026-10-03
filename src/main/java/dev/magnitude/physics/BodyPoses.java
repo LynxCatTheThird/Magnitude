@@ -44,24 +44,27 @@ public final class BodyPoses {
                     && (grounded ? takeoff ? supplied.support()==1 || supplied.support()==2 : supplied.support()!=0 : supplied.support()==0) && boundedChange(state.pose,supplied,takeoff)) result=supplied;
             } catch (RuntimeException ignored) { /* A broken adapter falls back to the server pose. */ }
         }
+        result=SupportResolver.resolve(player,result,takeoff);
         if(changed(state.pose,result) && !BodyCollision.poseAllowed(player,result)) {
             BodyPose old=state.pose;
-            int straight=(Math.abs(old.leftLeg())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05 ? 2 : 0);
+            int straight=(Math.abs(old.leftLeg())<0.05&&Math.abs(old.leftKnee())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05&&Math.abs(old.rightKnee())<0.05 ? 2 : 0);
             int retainedSupport=result.support() & straight;
             if(grounded && retainedSupport==0)retainedSupport=old.support() & straight;
             if(grounded && retainedSupport==0)retainedSupport=straight;
-            result=new BodyPose(result.action(),result.startTick(),result.phase(),retainedSupport,old.leftLeg(),old.rightLeg(),old.leftArm(),old.rightArm(),old.head());
+            result=new BodyPose(result.action(),result.startTick(),result.phase(),retainedSupport,old.leftLeg(),old.rightLeg(),old.leftArm(),old.rightArm(),old.head(),old.leftKnee(),old.rightKnee());
         }
         state.pose=result;
         return result;
     }
     private static boolean changed(BodyPose a,BodyPose b) {
         return Math.abs(a.leftLeg()-b.leftLeg())>1e-4 || Math.abs(a.rightLeg()-b.rightLeg())>1e-4
-            || Math.abs(a.leftArm()-b.leftArm())>1e-4 || Math.abs(a.rightArm()-b.rightArm())>1e-4 || Math.abs(a.head()-b.head())>1e-4;
+            || Math.abs(a.leftArm()-b.leftArm())>1e-4 || Math.abs(a.rightArm()-b.rightArm())>1e-4 || Math.abs(a.head()-b.head())>1e-4
+            || Math.abs(a.leftKnee()-b.leftKnee())>1e-4 || Math.abs(a.rightKnee()-b.rightKnee())>1e-4;
     }
     private static boolean boundedChange(BodyPose old, BodyPose next, boolean takeoff) {
         double limit=takeoff ? 1.2 : 0.8;
         return Math.abs(old.leftLeg()-next.leftLeg())<=limit && Math.abs(old.rightLeg()-next.rightLeg())<=limit
-            && Math.abs(old.leftArm()-next.leftArm())<=limit && Math.abs(old.rightArm()-next.rightArm())<=limit && Math.abs(old.head()-next.head())<=limit;
+            && Math.abs(old.leftArm()-next.leftArm())<=limit && Math.abs(old.rightArm()-next.rightArm())<=limit && Math.abs(old.head()-next.head())<=limit
+            && Math.abs(old.leftKnee()-next.leftKnee())<=limit&&Math.abs(old.rightKnee()-next.rightKnee())<=limit;
     }
 }

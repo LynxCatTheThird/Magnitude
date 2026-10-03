@@ -12,8 +12,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BodyAnimationMixin {
     @Inject(method="setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",at=@At("TAIL"))
     private void magnitude$animate(AvatarRenderState state,CallbackInfo info) {
-        var pose=((RenderPoseAccess)state).magnitude$pose();if(pose==null)return;
+        var pose=((RenderPoseAccess)state).magnitude$pose();
         var model=(PlayerModel)(Object)this;
+        for(var part:new net.minecraft.client.model.geom.ModelPart[]{model.leftLeg,model.leftPants})
+            ((dev.magnitude.client.LegModelAccess)(Object)part).magnitude$leg(pose!=null,pose==null?0:pose.leftLeg(),pose==null?0:pose.leftKnee());
+        for(var part:new net.minecraft.client.model.geom.ModelPart[]{model.rightLeg,model.rightPants})
+            ((dev.magnitude.client.LegModelAccess)(Object)part).magnitude$leg(pose!=null,pose==null?0:pose.rightLeg(),pose==null?0:pose.rightKnee());
+        if(pose==null)return;
         model.leftLeg.xRot=(float)pose.leftLeg();model.rightLeg.xRot=(float)pose.rightLeg();
         model.leftPants.xRot=model.leftLeg.xRot;model.rightPants.xRot=model.rightLeg.xRot;
         // Item-use and attack poses retain their normal animation; leg support stays authoritative.

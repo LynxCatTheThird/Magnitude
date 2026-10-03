@@ -109,6 +109,22 @@ public final class GuiNetworkTests implements ClientModInitializer {
                     }
                     case 12 -> {
                         check(dev.magnitude.client.visual.FootprintRenderer.cached()==0&&dev.magnitude.client.visual.FootprintRenderer.queued()==0&&dev.magnitude.client.visual.FootprintRenderer.lastDrawn==0,"disabling visual footprints clears pending and cached work");
+                        client.player.connection.sendCommand("fill 90 199 90 99 199 110 minecraft:stone_slab");
+                        client.player.connection.sendCommand("tp @s 100.25 200 100.5 0 15");
+                        client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+                    }
+                    case 13 -> {
+                        var pose=dev.magnitude.core.EntityState.of(client.player).pose;
+                        if(Math.abs(client.player.getY()-199.5)>1e-5||pose.rightKnee()>-.1)return;
+                        check(pose.valid()&&pose.support()==3,"real client receives authoritative articulated support on unequal surfaces");
+                        client.gui.setScreen(null);
+                        client.gui.hud.toggle();
+                        client.player.setXRot(15);
+                    }
+                    case 14 -> {
+                        if(dev.magnitude.client.visual.SegmentedLegMesh.renderCalls==0)return;
+                        check(true,"actual avatar renderer draws segmented knee and boot mesh");
+                        net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("articulated-support.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
                         finish(client);
                     }
                     default -> {return;}

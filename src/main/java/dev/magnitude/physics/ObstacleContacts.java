@@ -15,8 +15,7 @@ public final class ObstacleContacts {
         if (!Double.isFinite(movement.lengthSqr()) || movement.lengthSqr()<1e-8)
             return new Result(List.of(),true);
         WorldObstacles.prepare(player);
-        var parts = PlayerBody.parts(player,player.position());
-        var legs = List.of(parts.get(2),parts.get(3));
+        var legs = PlayerBody.legs(player,player.position());
         Vec3 sweep = movement;
         var regions=WorldObstacles.regions(legs,sweep,0);
         long cells=0;for(var region:regions)cells+=LocalProxy.cells(region);
@@ -37,8 +36,8 @@ public final class ObstacleContacts {
                 shape=block.getShape(player.level(),pos,context);
             boolean hit=false;
             for(var box:shape.toAabbs()) {
-                if(state.physicsPairs+2>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(2))return ordered(result,player,false);
-                state.physicsPairs+=2;
+                if(state.physicsPairs+legs.size()>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(legs.size()))return ordered(result,player,false);
+                state.physicsPairs+=legs.size();
                 var world=box.move(pos.getX(),pos.getY(),pos.getZ());
                 for(var leg:legs)hit|=leg.intersects(world) || leg.sweep(world,sweep)<1-1e-8;
             }

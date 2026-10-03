@@ -39,6 +39,8 @@ public final class ContactEvents {
             contact.selfTerrainFall=false;
         boolean teleport = !Double.isFinite(movement.lengthSqr()) || distance > 16 || Math.abs(movement.y) > 16;
         BodyPoses.update(player, teleport ? 0 : distance, false);
+        // Settlement is ordinary collision-verified movement and belongs to this contact fact.
+        if(state.initialized && state.previousPosition!=null)movement=player.position().subtract(state.previousPosition);
         boolean grounded = supported(player);
         if (state.initialized && Math.abs(Dimensions.snapshot(player).base() - state.previousSize) > 0.05)
             emit(player, ContactEvent.Type.SIZE_CHANGED, movement, 0, null);

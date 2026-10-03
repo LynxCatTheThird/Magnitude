@@ -48,7 +48,7 @@ public final class BodyPhysicsTests {
             PhysicsWork.beginTick();
             require(BodyCollision.move(actor,Vec3.ZERO).equals(Vec3.ZERO) && PhysicsWork.cells(PhysicsWork.cellsRemaining()),"zero displacement skips body collision traversal",passed);
             PhysicsWork.beginTick();
-            require(PlayerBody.parts(actor,actor.position()).size()==6,"body geometry uses six internal parts",passed);
+            require(PlayerBody.parts(actor,actor.position()).size()==10,"body geometry uses ten articulated internal parts",passed);
             var head=PlayerBody.parts(actor,actor.position()).getFirst();
             require(head.ray(head.center(),head.center().add(0,0,2)).orElseThrow().equals(head.center()),"ray starting inside a body part hits at its origin",passed);
             actor.move(MoverType.SELF,new Vec3(0,-.2,0));

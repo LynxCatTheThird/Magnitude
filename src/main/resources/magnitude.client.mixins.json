@@ -9,7 +9,8 @@
     "BodyRenderStateMixin",
     "BodyPoseExtractionMixin",
     "BodyAnimationMixin",
-    "FootprintSurfaceMixin"
+    "FootprintSurfaceMixin",
+    "LegModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

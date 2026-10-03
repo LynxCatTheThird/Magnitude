@@ -30,8 +30,8 @@ public final class BodyCollision {
         var obstacles=WorldObstacles.query(player,WorldObstacles.regions(changed,Vec3.ZERO,0),false);
         if(!obstacles.complete())return false;
         for(AABB obstacle:obstacles.boxes()) {
-            if(state.physicsPairs+12>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(12))return false;
-            state.physicsPairs+=12;
+            if(state.physicsPairs+after.size()*2>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(after.size()*2))return false;
+            state.physicsPairs+=after.size()*2;
             for(int i=0;i<after.size();i++)if(after.get(i).intersects(obstacle) && !before.get(i).intersects(obstacle))return false;
         }
         return true;
@@ -52,8 +52,8 @@ public final class BodyCollision {
         if(!obstacles.complete()) {fallback(player);return true;}
         for(AABB obstacle:obstacles.boxes()) {
             var state=EntityState.of(player);
-            if(state.physicsPairs+12>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(12)) {fallback(player);return true;}
-            state.physicsPairs+=12;
+            if(state.physicsPairs+after.size()*2>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(after.size()*2)) {fallback(player);return true;}
+            state.physicsPairs+=after.size()*2;
             boolean was=false,now=false;
             for(BodyBox box:before)was|=box.intersects(obstacle);
             for(BodyBox box:after)now|=box.intersects(obstacle);

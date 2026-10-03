@@ -29,6 +29,7 @@ public final class DiagnosticCommand {
                 + "; pressure server=" + Magnitude.settings.standingPressure + " player=" + state.pressureEnabled
                 + "; scale=" + scale.base() + " revision=" + scale.revision() + " proxy=" + scale.proxyLimit()
                 + "; step=" + dev.magnitude.physics.StepPolicy.height(player)
+                + "; anchors="+state.contacts.feet.reason
                 + "; pose=" + state.pose.action() + " feet=" + state.pose.support()
                 + "; support=" + (state.contacts.support==null?"none":
                     "left{"+state.contacts.support.leftContact().summary()+"} right{"+state.contacts.support.rightContact().summary()+"}")
