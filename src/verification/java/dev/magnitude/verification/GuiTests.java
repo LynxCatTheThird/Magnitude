@@ -94,7 +94,24 @@ public final class GuiTests implements ClientModInitializer {
                         check(client.keyboardHandler.getClipboard().equals("/magnitude config show"),"changing command group resets pagination to first page");
                     }
                     case 12 -> {screenshot(client,"grouped-commands");}
-                    case 13 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
+                    case 13 -> {
+                        click("gui.magnitude.tab.client");click("gui.magnitude.group.camera");
+                        var before=ClientPreferences.values();var selected=VisualPreset.matching(before);
+                        var label=Component.translatable("gui.magnitude.visualPreset",Component.translatable("gui.magnitude.visualPreset."+(selected==null?"custom":selected.id))).getString();
+                        var preset=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(label)).map(x->(Button)x).findFirst().orElseThrow();preset.onPress(null);
+                        check(ClientPreferences.values().equals(before),"visual preset selection preserves live preferences before Apply");
+                        click("gui.magnitude.group.footprints");click("gui.magnitude.apply");
+                        var after=ClientPreferences.values();var next=selected==null?VisualPreset.LOW:selected.next();
+                        check(after.get("footprintCache")==next.cells,"visual cache preset commits from another group");
+                        check(after.entrySet().stream().filter(e->!e.getKey().equals("footprintCache")).allMatch(e->e.getValue().equals(before.get(e.getKey()))),"visual preset preserves switch distance and every camera field");
+                        click("gui.magnitude.group.camera");screen.init(320,240);
+                        var widgets=screen.children().stream().filter(x->x instanceof net.minecraft.client.gui.components.AbstractWidget).map(x->(net.minecraft.client.gui.components.AbstractWidget)x).toList();
+                        check(widgets.stream().allMatch(w->w.getX()>=0&&w.getY()>=0&&w.getRight()<=320&&w.getBottom()<=240),"visual preset controls fit small scaled screen");
+                        boolean overlap=false;for(int i=0;i<widgets.size();i++)for(int j=i+1;j<widgets.size();j++){var a=widgets.get(i);var b=widgets.get(j);overlap|=a.getX()<b.getRight()&&a.getRight()>b.getX()&&a.getY()<b.getBottom()&&a.getBottom()>b.getY();}
+                        check(!overlap,"visual preset has no overlapping controls");
+                    }
+                    case 14 -> {screenshot(client,"visual-presets");}
+                    case 15 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
                     default -> {return;}
                 }
                 stage++;

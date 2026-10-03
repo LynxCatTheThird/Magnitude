@@ -12,7 +12,8 @@
     "client": [
       "dev.magnitude.verification.GuiTests",
       "dev.magnitude.verification.GuiNetworkTests",
-      "dev.magnitude.verification.DualClientTerrainTests"
+      "dev.magnitude.verification.DualClientTerrainTests",
+      "dev.magnitude.verification.VisualPerformanceTests"
     ]
   },
   "depends": {

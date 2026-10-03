@@ -264,5 +264,13 @@
   "gui.magnitude.commandGroup.common": "Status and personal permissions",
   "gui.magnitude.commandGroup.size": "Size and random rules",
   "gui.magnitude.commandGroup.actions": "Actions, carrying and tools",
-  "gui.magnitude.commandGroup.server": "Admin: server rules"
+  "gui.magnitude.commandGroup.server": "Admin: server rules",
+  "gui.magnitude.visualTick": "Footprint cache tick",
+  "gui.magnitude.visualExtract": "Footprint extraction",
+  "gui.magnitude.visualPreset": "Footprint cache: %s",
+  "gui.magnitude.visualPreset.low": "Low (512)",
+  "gui.magnitude.visualPreset.balanced": "Balanced (2048)",
+  "gui.magnitude.visualPreset.extended": "Extended (4096)",
+  "gui.magnitude.visualPreset.custom": "Custom",
+  "gui.magnitude.visualPresetHint": "Changes only the local footprint cache after Apply. Preserves visibility, distance and camera settings; server physics is unchanged. Larger caches retain more surfaces; no frame rate guarantee."
 }

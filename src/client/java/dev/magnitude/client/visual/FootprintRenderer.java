@@ -28,6 +28,7 @@ public final class FootprintRenderer {
     private static boolean subscribed;
     private static long nextSubscription;
     public static int lastChecks,lastDrawn,dropped;
+    public static final dev.magnitude.physics.TimingWindow TICK_TIMES=new dev.magnitude.physics.TimingWindow(256),EXTRACTION_TIMES=new dev.magnitude.physics.TimingWindow(256);
     private record EventKey(UUID actor,long sequence,int side){}
     private record Patch(BlockPos pos,int state,List<SoleGeometry.Point> polygon,long expires){}
     private record Quad(Vec3 a,Vec3 b,Vec3 c,Vec3 d,int color){}
@@ -44,8 +45,8 @@ public final class FootprintRenderer {
         ClientPlayConnectionEvents.JOIN.register((handler,sender,client)->reset());
         ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->reset());
         ClientPlayNetworking.registerGlobalReceiver(FootprintPayload.TYPE,(payload,context)->accept(payload));
-        ClientTickEvents.END_CLIENT_TICK.register(client->tick(client));
-        LevelExtractionEvents.END_EXTRACTION.register(context->{extract(context.level(),context.camera().position());context.levelState().setData(FRAME,frame);});
+        ClientTickEvents.END_CLIENT_TICK.register(client->{long start=System.nanoTime();try{tick(client);}finally{TICK_TIMES.add(System.nanoTime()-start);}});
+        LevelExtractionEvents.END_EXTRACTION.register(context->{long start=System.nanoTime();try{extract(context.level(),context.camera().position());context.levelState().setData(FRAME,frame);}finally{EXTRACTION_TIMES.add(System.nanoTime()-start);}});
         LevelRenderEvents.COLLECT_SUBMITS.register(context->{
             var quads=context.levelState().getDataOrDefault(FRAME,List.of());if(quads.isEmpty())return;
             context.submitNodeCollector().submitCustomGeometry(context.poseStack(),RenderTypes.debugQuads(),(pose,vertices)->{
@@ -54,7 +55,7 @@ public final class FootprintRenderer {
         });
     }
     private static void vertex(com.mojang.blaze3d.vertex.VertexConsumer consumer,com.mojang.blaze3d.vertex.PoseStack.Pose pose,Vec3 p,int color){consumer.addVertex(pose,(float)p.x,(float)p.y,(float)p.z).setColor(color);}
-    public static void reset(){dimension=null;pending.clear();patches.clear();seen.clear();frame=List.of();subscribed=false;nextSubscription=0;lastChecks=lastDrawn=dropped=0;}
+    public static void reset(){dimension=null;pending.clear();patches.clear();seen.clear();frame=List.of();subscribed=false;nextSubscription=0;lastChecks=lastDrawn=dropped=0;TICK_TIMES.clear();EXTRACTION_TIMES.clear();}
     public static boolean accept(FootprintPayload payload){
         var client=Minecraft.getInstance();if(!enabled||client.level==null||!payload.valid()||!payload.dimension().equals(client.level.dimension().identifier()))return false;
         if(!payload.dimension().equals(dimension)){pending.clear();patches.clear();seen.clear();frame=List.of();dimension=payload.dimension();}
@@ -92,7 +93,7 @@ public final class FootprintRenderer {
             for(int slice=0;slice<32&&!task.cursor.complete()&&checks<256;slice++){
                 checks++;int[] offset=task.cursor.next();var pos=task.origin.offset(offset[0],0,offset[1]);
                 var polygon=SoleGeometry.clip(task.payload.center().x-pos.getX(),task.payload.center().z-pos.getZ(),task.payload.width(),task.payload.length(),task.payload.yaw());
-                if(polygon.size()<3||!loaded(client.level,pos))continue;
+                if(polygon.size()<3||SoleGeometry.area(polygon)<=1e-10||!loaded(client.level,pos))continue;
                 var state=client.level.getBlockState(pos);
                 if(!state.isCollisionShapeFullBlock(client.level,pos)||!client.level.getBlockState(pos.above()).getCollisionShape(client.level,pos.above()).isEmpty()||!state.getFluidState().isEmpty())continue;
                 patches.put(pos.asLong(),new Patch(pos.immutable(),Block.getId(state),polygon,task.expires));
@@ -103,7 +104,7 @@ public final class FootprintRenderer {
         lastChecks=checks;
     }
     private static void extract(net.minecraft.client.multiplayer.ClientLevel level,Vec3 camera){
-        if(!enabled){frame=List.of();lastDrawn=0;return;}
+        if(!enabled||patches.isEmpty()){frame=List.of();lastDrawn=0;return;}
         var quads=new ArrayList<Quad>(1024);var iterator=patches.entrySet().iterator();int checked=0;
         while(iterator.hasNext()&&checked++<cacheLimit){
             var patch=iterator.next().getValue();var pos=patch.pos;
@@ -111,7 +112,9 @@ public final class FootprintRenderer {
             if(!loaded(level,pos))continue;
             var polygon=patch.polygon;Vec3 first=point(pos,polygon.getFirst(),camera);
             double fade=Math.clamp((patch.expires-level.getGameTime())/100d,0,1);int color=((int)(fade*90)<<24)|0x453720;
-            for(int i=1;i<polygon.size()-1&&quads.size()<4096;i++){
+            if(polygon.size()==4){
+                quads.add(new Quad(first,point(pos,polygon.get(1),camera),point(pos,polygon.get(2),camera),point(pos,polygon.get(3),camera),color));
+            }else for(int i=1;i<polygon.size()-1&&quads.size()<4096;i++){
                 Vec3 b=point(pos,polygon.get(i),camera),c=point(pos,polygon.get(i+1),camera);quads.add(new Quad(first,b,c,c,color));
             }
             if(quads.size()>=4096)break;

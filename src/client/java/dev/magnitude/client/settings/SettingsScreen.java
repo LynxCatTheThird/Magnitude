@@ -42,11 +42,13 @@ public final class SettingsScreen extends Screen {
     private long connectionEpoch=SettingsConnection.epoch;
     private dev.magnitude.config.ConfigView seenView;
     private dev.magnitude.physics.TimingWindow.Summary frameSummary=ClientMetrics.FRAMES.summary();
+    private dev.magnitude.physics.TimingWindow.Summary visualTickSummary=dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.summary(),visualExtractSummary=dev.magnitude.client.visual.FootprintRenderer.EXTRACTION_TIMES.summary();
     private record Row(String id,boolean bool,double value){}
     public SettingsScreen(Screen parent){super(Component.translatable("gui.magnitude.title"));this.parent=parent;}
     private Component tr(String key,Object...args){return Component.translatable("gui.magnitude."+key,args);}
     private Button button(Component label,int x,int y,int w,Button.OnPress press){return addRenderableWidget(Button.builder(label,press).bounds(x,y,w,20).build());}
     private boolean local(){return tab==1;}
+    private boolean hasPreset(){return tab==3&&serverGroup==3||local()&&clientGroup==1;}
     private boolean editable(){return local()||SettingsConnection.view!=null&&(tab==2||tab==3&&SettingsConnection.view.administrator());}
     private String draftKey(String id){return tab+":"+id;}
     private List<Row> fields(){
@@ -77,6 +79,8 @@ public final class SettingsScreen extends Screen {
             lines.add(tr("percentiles", "MSPT", format(view.tickTimings())));
             lines.add(tr("percentiles", tr("movement"), format(view.moveTimings())));
             lines.add(tr("percentiles", tr("frame"), format(frameSummary)));
+            lines.add(tr("percentiles",tr("visualTick"),format(visualTickSummary)));
+            lines.add(tr("percentiles",tr("visualExtract"),format(visualExtractSummary)));
             lines.add(tr("visualWork",dev.magnitude.client.visual.FootprintRenderer.cached(),dev.magnitude.client.visual.FootprintRenderer.queued(),dev.magnitude.client.visual.FootprintRenderer.lastChecks,dev.magnitude.client.visual.FootprintRenderer.lastDrawn));
             lines.add(tr("work", view.cellsUsed(),view.pairsUsed(),view.materialChecks(),view.blockWrites()));
             lines.add(tr("serverMs",String.format(java.util.Locale.ROOT,"%.2f",view.serverTickMs())));
@@ -91,11 +95,21 @@ public final class SettingsScreen extends Screen {
         return String.format(java.util.Locale.ROOT,"%.2f / %.2f / %.2f ms (%d)",summary.p50(),summary.p95(),summary.p99(),summary.samples());
     }
     @Override protected void init(){
-        rows=Math.max(1,(height-(tab==3&&serverGroup==3?184:158))/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
+        rows=Math.max(1,(height-(hasPreset()?184:158))/26);int left=Math.max(8,(width-460)/2),w=Math.min(460,width-16);
         int tabW=w/TABS.length;
         for(int i=0;i<TABS.length;i++){final int target=i;var b=button(tr("tab."+TABS[i]),left+i*tabW,30,tabW-2,ignored->{tab=target;page=0;localResult="ready";invalidField=null;rebuildWidgets();});b.active=tab!=i;}
         if(tab==1||tab==3||tab==5){String[] names=tab==5?COMMAND_NAMES:local()?CLIENT_NAMES:SERVER_NAMES;int selected=tab==5?commandGroup:local()?clientGroup:serverGroup;
             button(tr((tab==5?"commandGroup.":"group.")+names[selected]),left+w-150,54,150,b->{if(tab==5)commandGroup=(commandGroup+1)%COMMAND_NAMES.length;else if(local())clientGroup=(clientGroup+1)%CLIENT_NAMES.length;else serverGroup=(serverGroup+1)%SERVER_NAMES.length;page=0;rebuildWidgets();}).setTooltip(Tooltip.create(tr("groupHint")));}
+        if(local()&&clientGroup==1){
+            var values=new LinkedHashMap<>(ClientPreferences.values());
+            try{values.put("footprintCache",Double.parseDouble(drafts.getOrDefault(draftKey("footprintCache"),Double.toString(values.get("footprintCache")))));}catch(NumberFormatException ignored){}
+            var selected=VisualPreset.matching(values);
+            button(tr("visualPreset",tr("visualPreset."+(selected==null?"custom":selected.id))),left,76,w,b->{
+                var next=selected==null?VisualPreset.LOW:selected.next();String key=draftKey("footprintCache");
+                if(ClientPreferences.values().get("footprintCache")==next.cells)drafts.remove(key);else drafts.put(key,Integer.toString(next.cells));
+                rebuildWidgets();
+            }).setTooltip(Tooltip.create(tr("visualPresetHint")));
+        }
         if(tab==3&&serverGroup==3&&SettingsConnection.view!=null){
             var values=new LinkedHashMap<>(SettingsConnection.view.server());
             for(var row:fields())try{values.put(row.id,Double.parseDouble(drafts.getOrDefault(draftKey(row.id),Double.toString(row.value))));}catch(NumberFormatException ignored){}
@@ -108,7 +122,7 @@ public final class SettingsScreen extends Screen {
         }
         var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?commands().length:tab==0||tab==4?details.size():fields.size();int pages=Math.max(1,(total+rows-1)/rows);page=Math.clamp(page,0,pages-1);
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
-            int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
+            int y=(hasPreset()?102:76)+(index-page*rows)*26;
             if(tab==0||tab==4)continue;
             if(tab==5){final String command=commands()[index][1];var copy=button(tr("copy"),left+w-100,y,100,b->{minecraft.keyboardHandler.setClipboard(command);localResult="copied";});copy.setTooltip(Tooltip.create(Component.literal(command)));continue;}
             Row row=fields.get(index);String key=draftKey(row.id);String value=drafts.getOrDefault(key,Double.toString(row.value));
@@ -136,7 +150,7 @@ public final class SettingsScreen extends Screen {
             var apply=button(tr("apply"),left,height-48,footerWidth,b->apply());apply.active=editable()&&!SettingsConnection.busy();
             button(tr("discard"),left+footerWidth+5,height-48,footerWidth,b->{drafts.keySet().removeIf(key->key.startsWith(tab+":"));localResult="ready";rebuildWidgets();});
         }
-        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
+        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();visualTickSummary=dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.summary();visualExtractSummary=dev.magnitude.client.visual.FootprintRenderer.EXTRACTION_TIMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
         button(tr("close"),editTab?left+2*(footerWidth+5):left+w-90,height-48,editTab?footerWidth:90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
     }
     @Override public void added(){if(SettingsConnection.view==null&&SettingsConnection.supported())SettingsConnection.request(0,Map.of());}
@@ -173,7 +187,7 @@ public final class SettingsScreen extends Screen {
         g.text(font,font.plainSubstrByWidth(tr("scope."+TABS[tab]).getString(),tab==1||tab==3||tab==5?w-155:w),left,58,0xffbbbbbb);
         var fields=fields();var details=tab==0||tab==4?details():List.<Component>of();int total=tab==5?commands().length:tab==0||tab==4?details.size():fields.size();
         for(int index=page*rows;index<Math.min(total,(page+1)*rows);index++) {
-            int y=(tab==3&&serverGroup==3?102:76)+(index-page*rows)*26;
+            int y=(hasPreset()?102:76)+(index-page*rows)*26;
             if(tab==5){
                 Component description=tr("command."+commands()[index][0]);
                 g.text(font,font.plainSubstrByWidth(description.getString(),w-110),left,y+5,0xffeeeeee);
