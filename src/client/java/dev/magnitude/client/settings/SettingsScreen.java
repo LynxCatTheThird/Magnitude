@@ -74,7 +74,11 @@ public final class SettingsScreen extends Screen {
     }
     private List<Component> details(){
         var lines=new ArrayList<Component>();var view=SettingsConnection.view;
-        if(view==null){lines.add(tr(SettingsConnection.supported()?"loading":"offline"));return lines;}
+        if(view==null){
+            lines.add(tr(SettingsConnection.supported()?"loading":"offline"));
+            if(tab==4){localDiagnostics(lines);lines.add(tr("localDiagnosticHint"));}
+            return lines;
+        }
         if(tab==0) {
             lines.add(tr("size",String.format(java.util.Locale.ROOT,"%.3f",view.size())));
             lines.add(tr("terrainState",Component.translatable("config.magnitude.reason."+view.terrainReason())));
@@ -83,10 +87,7 @@ public final class SettingsScreen extends Screen {
         }else {
             lines.add(tr("percentiles", "MSPT", format(view.tickTimings())));
             lines.add(tr("percentiles", tr("movement"), format(view.moveTimings())));
-            lines.add(tr("percentiles", tr("frame"), format(frameSummary)));
-            lines.add(tr("percentiles",tr("visualTick"),format(visualTickSummary)));
-            lines.add(tr("percentiles",tr("visualExtract"),format(visualExtractSummary)));
-            lines.add(tr("visualWork",dev.magnitude.client.visual.FootprintRenderer.cached(),dev.magnitude.client.visual.FootprintRenderer.queued(),dev.magnitude.client.visual.FootprintRenderer.lastChecks,dev.magnitude.client.visual.FootprintRenderer.lastDrawn));
+            localDiagnostics(lines);
             lines.add(tr("work", view.cellsUsed(),view.pairsUsed(),view.materialChecks(),view.blockWrites()));
             lines.add(tr("serverMs",String.format(java.util.Locale.ROOT,"%.2f",view.serverTickMs())));
             lines.add(tr("moveMs",String.format(java.util.Locale.ROOT,"%.2f / %.2f",view.moveAvgMs(),view.moveMaxMs())));
@@ -94,6 +95,12 @@ public final class SettingsScreen extends Screen {
             lines.add(tr("failure",view.lastFailure()));lines.add(tr("reason",view.reason()));lines.add(tr("diagnosticHint"));
         }
         return lines;
+    }
+    private void localDiagnostics(List<Component> lines){
+        lines.add(tr("percentiles",tr("frame"),format(frameSummary)));
+        lines.add(tr("percentiles",tr("visualTick"),format(visualTickSummary)));
+        lines.add(tr("percentiles",tr("visualExtract"),format(visualExtractSummary)));
+        lines.add(tr("visualWork",dev.magnitude.client.visual.FootprintRenderer.cached(),dev.magnitude.client.visual.FootprintRenderer.queued(),dev.magnitude.client.visual.FootprintRenderer.lastChecks,dev.magnitude.client.visual.FootprintRenderer.lastDrawn));
     }
     private String format(dev.magnitude.physics.TimingWindow.Summary summary){
         if(summary==null||summary.samples()==0)return tr("noSamples").getString();
@@ -180,7 +187,13 @@ public final class SettingsScreen extends Screen {
             .setTooltip(Tooltip.create(tr("diagnosticHint")));
         if(tab==4)button(tr("copyReport"),left,height-48,w-95,b->{minecraft.keyboardHandler.setClipboard(SettingsReport.create());localResult="copied";})
             .setTooltip(Tooltip.create(tr("copyReportHint")));
-        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();visualTickSummary=dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.summary();visualExtractSummary=dev.magnitude.client.visual.FootprintRenderer.EXTRACTION_TIMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
+        var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{
+            frameSummary=ClientMetrics.FRAMES.summary();
+            visualTickSummary=dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.summary();
+            visualExtractSummary=dev.magnitude.client.visual.FootprintRenderer.EXTRACTION_TIMES.summary();
+            if(SettingsConnection.supported())SettingsConnection.request(0,Map.of());
+            rebuildWidgets();
+        });refresh.active=(tab==4||SettingsConnection.supported())&&!SettingsConnection.busy();
         button(tr("close"),editTab?left+2*(footerWidth+5):left+w-90,height-48,editTab?footerWidth:90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
     }
     @Override public void added(){if(SettingsConnection.view==null&&SettingsConnection.supported())SettingsConnection.request(0,Map.of());}

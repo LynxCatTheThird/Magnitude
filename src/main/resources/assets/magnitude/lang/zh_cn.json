@@ -53,7 +53,7 @@
   "message.magnitude.food": "食物尺寸规则已保存",
   "message.magnitude.denied": "操作未执行：检查许可、体型、目标和冷却",
   "message.magnitude.bound": "已绑定：%s",
-  "message.magnitude.tool_mode": "调谐杖模式：%s（0 乘法 / 1 加法 / 2 设定 / 3 交换 / 4 转移）",
+  "message.magnitude.tool_mode": "调谐器模式：%s",
   "message.magnitude.target_missing": "绑定目标当前未加载或不在本维度",
   "message.magnitude.rest_failed": "此处不能睡眠；请靠近正常可用的床",
   "hint.magnitude.reservoir": "对实体使用抽取或注入；对空气使用作用于自己",
@@ -221,7 +221,7 @@
   "gui.magnitude.groupHint": "直接选择分组；应用提交本页所有分组的修改",
   "gui.magnitude.range": "范围：%s～%s",
   "gui.magnitude.copy": "复制命令",
-  "config.magnitude.result.copied": "命令已复制；不会自动执行",
+  "config.magnitude.result.copied": "已复制到剪贴板",
   "gui.magnitude.backend.shallow": "当前地面作用：浅层泥土/草地压实；已有凹陷保留。",
   "gui.magnitude.backend.excavation": "当前地面作用：脚离开后分批形成单层脚印。",
   "gui.magnitude.command.status": "查看生效状态",
@@ -309,5 +309,11 @@
   "gui.magnitude.copyReportHint": "复制所有分页的完整报告；使用确认值，不包含草稿，不发送。服务器采样在刷新后更新；本地帧间隔不是 GPU 渲染耗时。",
   "gui.magnitude.command.report": "复制诊断报告",
   "message.magnitude.usage.diagnostics": "诊断：/magnitude diagnostics physics 查看详细状态；report 获取可复制的设置与耗时快照。",
-  "message.magnitude.reportReady": "诊断报告已准备，点击复制。"
+  "message.magnitude.reportReady": "诊断报告已准备，点击复制。",
+  "gui.magnitude.localDiagnosticHint": "点击刷新本地采样；未连接服务器时不显示服务器数据。帧间隔不等于 GPU 耗时。",
+  "tool.magnitude.mode.multiply": "乘法",
+  "tool.magnitude.mode.add": "加法",
+  "tool.magnitude.mode.set": "设定",
+  "tool.magnitude.mode.swap": "交换",
+  "tool.magnitude.mode.transfer": "转移"
 }

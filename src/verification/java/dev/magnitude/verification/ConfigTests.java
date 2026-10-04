@@ -157,6 +157,25 @@ public final class ConfigTests {
             check(dispatcher.execute("magnitude config food minecraft:apple 2",admin)==1&&Magnitude.settings.foodFactors.get("minecraft:apple")==2,"food settings use canonical configuration scope",passed);
             player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,new net.minecraft.world.item.ItemStack(dev.magnitude.content.Content.TUNER));
             check(dispatcher.execute("magnitude tool set mode swap",normal)==1&&dev.magnitude.content.ToolItem.data(player.getMainHandItem()).getIntOr("operation",-1)==3,"named tool mode maps to persisted operation",passed);
+            player.connection=new net.minecraft.server.network.ServerGamePacketListenerImpl(server,
+                new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND),player,
+                net.minecraft.server.network.CommonListenerCookie.createInitial(player.getGameProfile(),false));
+            for(var mode:dev.magnitude.content.ToolMode.values()){
+                check(dispatcher.execute("magnitude tool set mode "+mode.command,normal)==1
+                    &&dev.magnitude.content.ToolItem.data(player.getMainHandItem()).getIntOr("operation",-1)==mode.storedId,
+                    "named command preserves legacy stored tool mode "+mode.command,passed);
+                var tooltip=new java.util.ArrayList<net.minecraft.network.chat.Component>();
+                dev.magnitude.content.Content.TUNER.appendHoverText(player.getMainHandItem(),null,
+                    net.minecraft.world.item.component.TooltipDisplay.DEFAULT,tooltip::add,net.minecraft.world.item.TooltipFlag.NORMAL);
+                var args=((net.minecraft.network.chat.contents.TranslatableContents)tooltip.getLast().getContents()).getArgs();
+                check(args[0] instanceof net.minecraft.network.chat.Component label&&label.equals(mode.label()),
+                    "actual tuner tooltip names command mode "+mode.command,passed);
+                player.setShiftKeyDown(true);
+                dev.magnitude.content.Content.TUNER.use(player.level(),player,net.minecraft.world.InteractionHand.MAIN_HAND);
+                player.setShiftKeyDown(false);
+                check(dev.magnitude.content.ToolItem.data(player.getMainHandItem()).getIntOr("operation",-1)==mode.next().storedId,
+                    "sneak cycling retains stored tool sequence after "+mode.command,passed);
+            }
             check(dispatcher.execute("magnitude tool set value 2",normal)==1&&dev.magnitude.content.ToolItem.data(player.getMainHandItem()).getDoubleOr("value",0)==2,"canonical tool value setting applies",passed);
             check(dispatcher.parse("magnitude carry position hand",normal).getReader().canRead()==false,"carry position is explicit",passed);
             check(dispatcher.parse("magnitude scale targets set @e[type=minecraft:pig] 2 0",admin).getReader().canRead()==false,"administrator target resizing belongs to scale scope",passed);

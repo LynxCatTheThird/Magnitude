@@ -45,9 +45,10 @@ public final class ToolItem extends Item {
         }
         if (kind == Kind.TUNER && user.isShiftKeyDown()) {
             CompoundTag tag = data(stack);
-            tag.putInt("operation", (tag.getIntOr("operation", 0) + 1) % 5);
+            var mode=ToolMode.fromStored(tag.getIntOr("operation",0)).next();
+            tag.putInt("operation",mode.storedId);
             data(stack, tag);
-            player.sendOverlayMessage(Component.translatable("message.magnitude.tool_mode", tag.getIntOr("operation", 0)));
+            player.sendOverlayMessage(Component.translatable("message.magnitude.tool_mode",mode.label()));
             return InteractionResult.SUCCESS;
         }
         LivingEntity target = player;
@@ -136,6 +137,6 @@ public final class ToolItem extends Item {
         tooltip.accept(Component.translatable("hint.magnitude." + kind.name().toLowerCase(java.util.Locale.ROOT)));
         CompoundTag tag = data(stack);
         if (kind == Kind.RESERVOIR) tooltip.accept(Component.translatable("hint.magnitude.charge", tag.getDoubleOr("charge", 0)));
-        if (kind == Kind.TUNER) tooltip.accept(Component.translatable("hint.magnitude.operation", tag.getIntOr("operation", 0), tag.getDoubleOr("value", 0.5)));
+        if (kind == Kind.TUNER) tooltip.accept(Component.translatable("hint.magnitude.operation",ToolMode.fromStored(tag.getIntOr("operation",0)).label(),tag.getDoubleOr("value",0.5)));
     }
 }

@@ -4,6 +4,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import dev.magnitude.content.Content;
 import dev.magnitude.content.ToolItem;
+import dev.magnitude.content.ToolMode;
 import dev.magnitude.core.ScaleSafety;
 import net.minecraft.commands.CommandSourceStack;
 import static net.minecraft.commands.Commands.*;
@@ -15,8 +16,8 @@ public final class ToolCommand {
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
         var tool=literal("tool").executes(c->CommandReply.usage(c,"tool"));var set=literal("set");
         set.then(literal("value").then(argument("value",doubleArg(-ScaleSafety.MAXIMUM,ScaleSafety.MAXIMUM)).executes(c->configure(c,"value",getDouble(c,"value")))));
-        var mode=literal("mode");String[] modes={"multiply","add","set","swap","transfer"};
-        for(int i=0;i<modes.length;i++){final int index=i;mode.then(literal(modes[i]).executes(c->configure(c,"operation",index)));}
+        var mode=literal("mode");
+        for(var operation:ToolMode.values())mode.then(literal(operation.command).executes(c->configure(c,"operation",operation.storedId)));
         set.then(mode);
         set.then(literal("duration").then(argument("ticks",integer(0,1200)).executes(c->configure(c,"duration",getInteger(c,"ticks")))));
         tool.then(set);

@@ -161,7 +161,27 @@ public final class GuiTests implements ClientModInitializer {
                         check(offline.get("server").isJsonNull()&&offline.get("serverSource").getAsString().equals("unavailable")&&offline.get("serverSnapshotAgeMillis").isJsonNull()
                             &&offline.getAsJsonObject("client").has("frameIntervals"),"offline report keeps local diagnostics and explicitly marks unavailable server state");
                     }
-                    case 21 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
+                    case 21 -> {
+                        ClientMetrics.FRAMES.add(2_000_000);
+                        dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.add(1_000_000);
+                        click("gui.magnitude.refresh");
+                        var details=SettingsScreen.class.getDeclaredMethod("details");details.setAccessible(true);
+                        var lines=(java.util.List<?>)details.invoke(screen);
+                        check(lines.size()==6&&lines.stream().anyMatch(line->((Component)line).getString().contains(Component.translatable("gui.magnitude.frame").getString()))
+                            &&lines.stream().anyMatch(line->((Component)line).getString().contains("2.00")),"offline refresh displays newly sampled local diagnostics without a server snapshot");
+                        check(SettingsConnection.view==null&&!SettingsConnection.busy(),"offline diagnostics never fabricate server state or send a request");
+                        checkLayout();clickLiteral(">");checkLayout();
+                    }
+                    case 22 -> {
+                        screenshot(client,"diagnostics-offline");
+                        String[] expected=client.options.languageCode.equals("zh_cn")?new String[]{"乘法","加法","设定","交换","转移"}:new String[]{"Multiply","Add","Set","Swap","Transfer"};
+                        for(var mode:dev.magnitude.content.ToolMode.values()){
+                            check(mode.label().getString().equals(expected[mode.storedId]),"tool mode has a localized readable name: "+mode.command);
+                            String feedback=Component.translatable("message.magnitude.tool_mode",mode.label()).getString();
+                            check(feedback.contains(expected[mode.storedId])&&!feedback.matches(".*[0-4].*"),"localized mode feedback names the operation without numeric mapping: "+mode.command);
+                        }
+                    }
+                    case 23 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
                     default -> {return;}
                 }
                 stage++;

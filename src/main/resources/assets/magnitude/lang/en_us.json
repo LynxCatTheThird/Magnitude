@@ -53,7 +53,7 @@
   "message.magnitude.food": "Food size rule saved",
   "message.magnitude.denied": "Action refused: check consent, size ratio, target and cooldown",
   "message.magnitude.bound": "Bound to %s",
-  "message.magnitude.tool_mode": "Tuning mode %s (0 multiply / 1 add / 2 set / 3 swap / 4 transfer)",
+  "message.magnitude.tool_mode": "Tuning mode: %s",
   "message.magnitude.target_missing": "Bound target is unloaded or in another dimension",
   "message.magnitude.rest_failed": "Cannot rest here; use a valid nearby bed",
   "hint.magnitude.reservoir": "Use on an entity to extract or inject; use in air for yourself",
@@ -221,7 +221,7 @@
   "gui.magnitude.groupHint": "Choose a group directly. Apply submits changes from every group on this page.",
   "gui.magnitude.range": "Range: %s–%s",
   "gui.magnitude.copy": "Copy command",
-  "config.magnitude.result.copied": "Command copied; nothing was executed",
+  "config.magnitude.result.copied": "Copied to clipboard",
   "gui.magnitude.backend.shallow": "Ground response: shallow dirt/grass compaction; existing dents remain.",
   "gui.magnitude.backend.excavation": "Ground response: single-layer footprints formed after the foot lifts.",
   "gui.magnitude.command.status": "Check effective settings",
@@ -309,5 +309,11 @@
   "gui.magnitude.copyReportHint": "Copies the full report across all pages. Uses confirmed settings, excludes drafts, and sends nothing. Server samples update after Refresh; local frame intervals are not GPU render time.",
   "gui.magnitude.command.report": "Copy diagnostic report",
   "message.magnitude.usage.diagnostics": "Diagnostics: /magnitude diagnostics physics for detailed state; report for a copyable settings and timing snapshot.",
-  "message.magnitude.reportReady": "Diagnostic report ready — click to copy."
+  "message.magnitude.reportReady": "Diagnostic report ready — click to copy.",
+  "gui.magnitude.localDiagnosticHint": "Refresh local samples. Server data is unavailable offline. Frame intervals are not GPU render time.",
+  "tool.magnitude.mode.multiply": "Multiply",
+  "tool.magnitude.mode.add": "Add",
+  "tool.magnitude.mode.set": "Set",
+  "tool.magnitude.mode.swap": "Swap",
+  "tool.magnitude.mode.transfer": "Transfer"
 }
