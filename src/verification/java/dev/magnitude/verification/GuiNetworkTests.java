@@ -130,6 +130,13 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         var pose=dev.magnitude.core.EntityState.of(client.player).pose;
                         if(Math.abs(client.player.getY()-199.5)>1e-5||pose.rightKnee()>-.1)return;
                         check(pose.valid()&&pose.support()==3,"real client receives authoritative articulated support on unequal surfaces");
+                        var velocity=client.player.getDeltaMovement();
+                        var intent=new net.minecraft.world.phys.Vec3(.02,0,.03);client.player.setDeltaMovement(intent);
+                        dev.magnitude.physics.PhysicsWork.beginTick();
+                        dev.magnitude.core.EntityState.of(client.player).physicsTick=Long.MIN_VALUE;
+                        ((dev.magnitude.verification.mixin.EscapeProbeAccessor)client.player).magnitude$escape(100.25,100.5);
+                        check(client.player.getDeltaMovement().equals(intent),"native client escape preserves intent when unequal support lowers only the pelvis into proxy ground");
+                        client.player.setDeltaMovement(velocity);
                         client.gui.setScreen(null);
                         client.gui.hud.toggle();
                         client.player.setXRot(15);

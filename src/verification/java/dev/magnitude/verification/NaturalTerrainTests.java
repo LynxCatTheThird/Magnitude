@@ -33,10 +33,14 @@ public final class NaturalTerrainTests implements ModInitializer {
         net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.registerGlobalReceiver(NaturalTerrainProtocol.Ready.TYPE,(packet,context)->{
             if(packet.index()==phase&&context.player().getName().getString().equals("NaturalWalker"))ready=true;
         });
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(startedServer->{
         ServerTickEvents.START_SERVER_TICK.register(server->{start=System.nanoTime();WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();});
         ServerTickEvents.END_SERVER_TICK.register(server->{
             var p=server.getPlayerList().getPlayerByName("NaturalWalker");if(p==null||phase>=SIZES.length)return;
             try{
+                if(ServerMetrics.blockWrites!=Math.max(0,Magnitude.settings.blocksPerTick-Impact.remaining())
+                    ||ServerMetrics.cellsUsed!=524288-PhysicsWork.cellsRemaining())
+                    throw new AssertionError("production metrics did not include completed end-of-tick contact work");
                 if(phase>=0)totalWriteCost+=Magnitude.settings.blocksPerTick-Impact.remaining();
                 if(site==null){
                     var found=server.overworld().findClosestBiome3d(b->b.is(Biomes.PLAINS),new BlockPos(0,80,0),2048,32,64);
@@ -90,6 +94,7 @@ public final class NaturalTerrainTests implements ModInitializer {
                 if(phase==1&&tick%20==0)Files.writeString(Path.of("natural-query-trace.json"),json.toJson(WorldQueryTrace.ROWS));
                 if(tick%20==0)Files.writeString(Path.of("natural-live.json"),json.toJson(Map.of("phase",phase,"tick",tick,"position",p.position().toString(),"denied",denied,"stalled",stalled,"reason",EntityState.of(p).contacts.diagnostics.failure)));
             }catch(Throwable error){error.printStackTrace();try{Files.writeString(Path.of("natural-server-results.json"),json.toJson(Map.of("success",false,"failure",error.toString(),"results",results)));}catch(Exception ignored){}phase=SIZES.length;}
+        });
         });
     }
 }

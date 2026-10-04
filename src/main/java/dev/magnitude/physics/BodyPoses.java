@@ -23,15 +23,15 @@ public final class BodyPoses {
     public static BodyPose update(ServerPlayer player, double distance, boolean takeoff) {
         var state = EntityState.of(player);
         long now = player.level().getGameTime();
-        boolean grounded = player.onGround() && !player.isPassenger() && !player.getAbilities().flying && !player.isNoGravity();
-        takeoff &= grounded;
+        boolean grounded = SupportResolver.maySettle(player) && !player.isPassenger() && !player.getAbilities().flying && !player.isNoGravity();
+        takeoff &= grounded&&player.onGround();
         if (distance > 0.001 && distance <= 16) state.posePhase = (state.posePhase + distance / dev.magnitude.core.Dimensions.snapshot(player).stride() * Math.PI) % (Math.PI*2);
         int support = grounded ? distance > 0.001 ? state.posePhase < Math.PI ? 1 : 2 : 3 : 0;
         int action = grounded ? distance > 0.001 ? 1 : 0 : 3;
         if (takeoff) { action=2;support=(state.jumpSequence++ & 1)==0 ? 2 : 1;state.posePhase=support==1 ? 0 : Math.PI; }
         if(!grounded && state.pose.action()==2 && now-state.poseStart<4)action=2;
         if (state.pose.action()!=action || takeoff) state.poseStart=now;
-        double swing = action==1 ? Math.sin(state.posePhase)*0.65 : action==2 ? 0.55 : 0;
+        double swing = action==1 ? Math.sin(state.posePhase)*LegKinematics.WALK_SWING : action==2 ? 0.55 : 0;
         int leg=action==2 ? (state.jumpSequence&1)==1 ? 2 : 1 : support;
         double leftLeg=(leg&1)!=0 ? 0 : Math.abs(swing),rightLeg=(leg&2)!=0 ? 0 : Math.abs(swing);
         BodyPose canonical = new BodyPose(action,state.poseStart,state.posePhase,support,leftLeg,rightLeg,swing,-swing,Math.clamp(Math.toRadians(player.getXRot()),-1.2,1.2));
@@ -48,10 +48,16 @@ public final class BodyPoses {
         result=resolution.pose();
         if(changed(state.pose,result) && !resolution.verified() && !BodyCollision.poseAllowed(player,result)) {
             BodyPose old=state.pose;
-            int straight=(Math.abs(old.leftLeg())<0.05&&Math.abs(old.leftKnee())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05&&Math.abs(old.rightKnee())<0.05 ? 2 : 0);
-            int retainedSupport=result.support() & straight;
-            if(grounded && retainedSupport==0)retainedSupport=old.support() & straight;
-            if(grounded && retainedSupport==0)retainedSupport=straight;
+            int touching=0;boolean unknown=false;
+            if(grounded)for(int side:new int[]{-1,1}){
+                var contact=FootContacts.capture(player,side);unknown|=!contact.complete();
+                if(contact.supported()&&Math.abs(contact.height()-contact.sole().y)<1e-6)touching|=side<0?1:2;
+            }
+            // Unknown contact cannot justify switching feet. Keep the previous native
+            // grounded geometry; a known empty contact does not get this fallback.
+            int retainedSupport=unknown&&player.onGround()?old.support():result.support() & touching;
+            if(grounded && retainedSupport==0)retainedSupport=old.support() & touching;
+            if(grounded && retainedSupport==0)retainedSupport=touching;
             result=new BodyPose(result.action(),result.startTick(),result.phase(),retainedSupport,old.leftLeg(),old.rightLeg(),old.leftArm(),old.rightArm(),old.head(),old.leftKnee(),old.rightKnee());
         }
         state.pose=result;

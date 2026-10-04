@@ -2,6 +2,7 @@ package dev.magnitude.physics;
 
 /** Two rigid segments and a horizontal boot. All lengths scale continuously with model height. */
 public final class LegKinematics {
+    public static final double WALK_SWING=.65;
     public static final double HIP=.76, THIGH=.38, SHIN=.76/3, BOOT=.76/6;
     public record Joint(double hip,double knee,boolean reachable){}
     private LegKinematics(){}

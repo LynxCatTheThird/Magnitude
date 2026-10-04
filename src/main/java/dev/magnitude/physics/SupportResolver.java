@@ -10,6 +10,13 @@ import net.minecraft.world.phys.Vec3;
 public final class SupportResolver {
     private SupportResolver(){}
     record Resolution(BodyPose pose,boolean verified){}
+    /** A previous anchor only permits a new query; it does not itself prove groundedness. */
+    static boolean maySettle(ServerPlayer player){
+        if(player.onGround())return true;
+        var state=EntityState.of(player);var feet=state.contacts.feet;
+        return state.grounded&&feet.root!=null&&(feet.left!=null||feet.right!=null)
+            &&player.getY()<=feet.root.y+1e-6&&feet.root.distanceToSqr(player.position())<=16*16;
+    }
     public static BodyPose resolve(ServerPlayer player,BodyPose desired,boolean takeoff){
         return resolveChecked(player,desired,takeoff).pose();
     }
@@ -19,12 +26,12 @@ public final class SupportResolver {
         if(takeoff) {
             var old=state.pose;
             desired=new BodyPose(desired.action(),desired.startTick(),desired.phase(),desired.support(),
-                (desired.support()&1)!=0?old.leftLeg():desired.leftLeg(),(desired.support()&2)!=0?old.rightLeg():desired.rightLeg(),
+                (desired.support()&old.support()&1)!=0?old.leftLeg():desired.leftLeg(),(desired.support()&old.support()&2)!=0?old.rightLeg():desired.rightLeg(),
                 desired.leftArm(),desired.rightArm(),desired.head(),
-                (desired.support()&1)!=0?old.leftKnee():desired.leftKnee(),(desired.support()&2)!=0?old.rightKnee():desired.rightKnee());
+                (desired.support()&old.support()&1)!=0?old.leftKnee():desired.leftKnee(),(desired.support()&old.support()&2)!=0?old.rightKnee():desired.rightKnee());
             feet.clear("takeoff");return new Resolution(desired,false);
         }
-        if(!player.onGround()||player.isPassenger()||player.getAbilities().flying||player.isNoGravity()) {
+        if(!maySettle(player)||player.isPassenger()||player.getAbilities().flying||player.isNoGravity()) {
             feet.clear("not grounded");return new Resolution(desired,false);
         }
         double yaw=Math.toRadians(player.getYRot()),width=scale.modelWidth(),height=PlayerBody.stanceHeight(player);
@@ -33,8 +40,8 @@ public final class SupportResolver {
             ||feet.root.distanceToSqr(player.position())>16*16||Math.abs(Math.IEEEremainder(yaw-feet.yaw,Math.PI*2))>.05)feet.clear("geometry changed");
         feet.dimension=dimension;feet.width=width;feet.height=height;feet.yaw=yaw;
         double reach=Math.min(1.5,height*.3);
-        var left=find(player,feet.left,-1,width,height,yaw,reach);
-        var right=find(player,feet.right,1,width,height,yaw,reach);
+        var left=find(player,feet.left,-1,width,height,yaw,reach,(desired.support()&1)!=0);
+        var right=find(player,feet.right,1,width,height,yaw,reach,(desired.support()&2)!=0);
         if(!left.complete()||!right.complete()) {feet.clear("unknown surface");feet.root=player.position();return new Resolution(desired,false);}
         feet.left=left.supported()?new FootSupportState.Anchor(new Vec3(left.sole().x,left.height(),left.sole().z),left.revision()):null;
         feet.right=right.supported()?new FootSupportState.Anchor(new Vec3(right.sole().x,right.height(),right.sole().z),right.revision()):null;
@@ -43,23 +50,85 @@ public final class SupportResolver {
             double low=Math.min(left.supported()?left.height():Double.POSITIVE_INFINITY,right.supported()?right.height():Double.POSITIVE_INFINITY);
             if(Double.isFinite(low)&&low<rootY-1e-6&&rootY-low<=reach)rootY=low;
         }
+        // A planted foot can trail the root only if the hip drops within the leg's sphere.
+        // Use a stable difference of squares; no leg stretching or virtual support is added.
+        double length=(LegKinematics.THIGH+LegKinematics.SHIN)*height;
+        for(int side:new int[]{-1,1}){
+            int bit=side<0?1:2;var anchor=side<0?feet.left:feet.right;
+            if((desired.support()&bit)==0||anchor==null)continue;
+            Vec3 offset=anchor.point().subtract(player.position());
+            double forward=offset.x*Math.sin(yaw)-offset.z*Math.cos(yaw);
+            if(Math.abs(forward)>=length)continue;
+            double correction=forward*forward/(length+Math.sqrt(length*length-forward*forward));
+            rootY=Math.min(rootY,Math.max(player.getY()-reach,anchor.point().y-correction));
+        }
         var proposal=pose(player,desired,feet,rootY,height,yaw);
         if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("pose obstructed");feet.root=player.position();return new Resolution(desired,false);}
         if(rootY<player.getY()-1e-6) {
+            BodyPose movedPose=proposal;
             BodyPose old=state.pose;state.pose=proposal;
-            try {player.move(MoverType.SELF,new Vec3(0,rootY-player.getY(),0));}
+            try {
+                Vec3 movement=new Vec3(0,rootY-player.getY(),0);
+                var parts=PlayerBody.parts(player,player.position());
+                long cost=WorldObstacles.regions(parts,movement,0).stream().mapToLong(LocalProxy::cells).sum();
+                // Reserve enough room for post-move pose and sole validation before
+                // changing position. Optional settlement must not strand a valid body.
+                state.pose=old;
+                var before=PlayerBody.parts(player,player.position());
+                state.pose=proposal;
+                for(int i=0;i<parts.size();i++)if(!parts.get(i).center().equals(before.get(i).center())
+                    ||!parts.get(i).x().equals(before.get(i).x())||!parts.get(i).y().equals(before.get(i).y()))cost+=LocalProxy.cells(parts.get(i).bounds().move(movement).inflate(1e-7));
+                if(state.contacts.obstacleTick!=player.level().getGameTime()&&movement.lengthSqr()>1e-8)
+                    cost+=WorldObstacles.regions(parts.subList(2,8),movement,0).stream().mapToLong(LocalProxy::cells).sum();
+                cost+=2L*FootContacts.CELLS_PER_QUERY;
+                if(cost>Math.min(PhysicsWork.cellsRemaining(),LocalProxy.CELLS_PER_TICK-state.physicsCells)){
+                    feet.clear("settlement waiting for budget");return new Resolution(desired,false);
+                }
+                player.move(MoverType.SELF,movement.scale(1/scale.motionFactor()));
+            }
             finally {state.pose=old;}
             proposal=pose(player,desired,feet,player.getY(),height,yaw);
-            if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("settlement denied");return new Resolution(desired,false);}
+            if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {
+                feet.clear("settlement validation unavailable");
+                // Normal movement already validated this geometry at the new position.
+                // Never put the old geometry back into a lowered root. Contact stays unknown.
+                return new Resolution(movedPose.withSupport(0),true);
+            }
+            // Reaching a real surface exactly need not shorten native movement. Revalidate
+            // the final soles after movement before restoring the shared grounded fact.
+            BodyPose published=state.pose;state.pose=proposal;
+            int touching=0;
+            try {
+                for(int side:new int[]{-1,1}){
+                    int bit=side<0?1:2;if((proposal.support()&bit)==0)continue;
+                    var contact=FootContacts.capture(player,side);
+                    if(contact.supported()&&Math.abs(contact.height()-contact.sole().y)<1e-6){
+                        touching|=bit;var anchor=new FootSupportState.Anchor(new Vec3(contact.sole().x,contact.height(),contact.sole().z),contact.revision());
+                        if(side<0)feet.left=anchor;else feet.right=anchor;
+                    }else {if(side<0)feet.left=null;else feet.right=null;}
+                }
+            }finally{state.pose=published;}
+            proposal=proposal.withSupport(touching);
+            if(touching!=0)player.setOnGround(true);
         }
         feet.root=player.position();feet.reason=proposal.support()==0?"no reachable support":"verified";
         return new Resolution(proposal,true);
     }
-    private static FootContact find(ServerPlayer player,FootSupportState.Anchor old,int side,double w,double h,double yaw,double reach){
-        Vec3 center=player.position().add(Math.cos(yaw)*side*w*.15,0,Math.sin(yaw)*side*w*.15);
+    private static FootContact find(ServerPlayer player,FootSupportState.Anchor old,int side,double w,double h,double yaw,double reach,boolean planting){
+        Vec3 center=PlayerBody.foot(player,side).add(0,.01,0);
+        if(planting&&old==null){
+            // A bent pelvis may sit below the surface. Seed the new foot's search
+            // at the previous planted sole, then verify the destination independently.
+            int previous=EntityState.of(player).pose.support();double plane=player.getY();
+            if(previous!=0){
+                plane=Double.POSITIVE_INFINITY;
+                for(int planted:new int[]{-1,1})if((previous&(planted<0?1:2))!=0)plane=Math.min(plane,PlayerBody.foot(player,planted).y+.01);
+            }
+            center=player.position().add(Math.cos(yaw)*side*w*.15,plane-player.getY(),Math.sin(yaw)*side*w*.15);
+        }
         if(old!=null) {
             Vec3 offset=old.point().subtract(center);double lateral=offset.x*Math.cos(yaw)+offset.z*Math.sin(yaw);
-            if(Math.abs(lateral)<w*.025&&offset.horizontalDistance()<h*.2)center=new Vec3(old.point().x,player.getY(),old.point().z);
+            if(Math.abs(lateral)<w*.025&&offset.horizontalDistance()<h*.2)center=old.point();
         }
         return FootContacts.query(player,center,w*.09,w*.09,yaw,reach,reach);
     }

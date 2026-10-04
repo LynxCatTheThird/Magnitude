@@ -35,7 +35,7 @@ public final class FootprintCycleTests {
                 state.pose=BodyPose.IDLE;state.posePhase=0;state.strideDistance=0;
                 state.contacts=new ContactState();state.previousPosition=player.position();state.previousSize=size;
                 state.initialized=true;state.grounded=true;
-            double low=200,high=200;int climbs=0,denials=0;
+            double low=200,high=200,lowestSole=Double.POSITIVE_INFINITY;int climbs=0,denials=0,supportTicks=0;
             for(int frame=0;frame<120;frame++) {
                 PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
                 state.physicsTick=Long.MIN_VALUE;state.contacts.sampleTick=Long.MIN_VALUE;state.contacts.obstacleTick=Long.MIN_VALUE;
@@ -44,12 +44,14 @@ public final class FootprintCycleTests {
                 denials+=state.movementDenied?1:0;
                 ContactEvents.sample(player);Impact.continueFeet(player);
                 low=Math.min(low,player.getY());high=Math.max(high,player.getY());
+                if(state.pose.support()!=0)supportTicks++;
+                for(int side:new int[]{-1,1})if((state.pose.support()&(side<0?1:2))!=0)lowestSole=Math.min(lowestSole,PlayerBody.foot(player,side).y+.01);
                 if(player.getY()>before+.05)climbs++;
             }
             System.out.println("FOOTPRINT CYCLE: scale="+size+" y="+low+".."+high+" climbs="+climbs+" denials="+denials+" forward="+(player.getZ()-9000.5));
-            if(Math.abs(low-200)>1e-5 || Math.abs(high-200)>1e-5 || climbs!=0 || denials!=0)
-                throw new AssertionError("walking impressions must not create height oscillations or movement rejection");
-            passed.accept("coupled footprint walking stays level without stairs or movement rejection at "+size);
+            if(low<200-LegKinematics.lift(LegKinematics.WALK_SWING,0,PlayerBody.stanceHeight(player))-1e-5 || Math.abs(high-200)>1e-5 || lowestSole<200-1e-5 || supportTicks==0 || player.getZ()-9000.5<=55 || climbs!=0 || denials!=0)
+                throw new AssertionError("walking impressions must retain real sole support and forward progress without uphill oscillations or rejection; scale="+size+", lowestSole="+lowestSole+", supports="+supportTicks+", low="+low);
+            passed.accept("coupled footprint soles stay above intact support while the pelvis settles without stairs or movement rejection at "+size);
             }
             state.contacts.footprints.clear();state.pose=BodyPose.IDLE;state.contacts.selfTerrainFall=false;
             state.contacts.excavationY=Double.NaN;

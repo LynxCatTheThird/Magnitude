@@ -19,7 +19,14 @@ public abstract class MovementTraceMixin {
     @Inject(method="permitted",at=@At("RETURN"))
     private static void magnitude$end(Player p,Vec3 wanted,CallbackInfoReturnable<Boolean> info){WorldQueryTrace.end(p,new WorldObstacles.Result(java.util.List.of(),info.getReturnValue()));}
     @Inject(method="solve",at=@At("RETURN"))
-    private static void magnitude$solved(Player p,Vec3 wanted,CallbackInfoReturnable<BodyCollision.Result> info){WorldQueryTrace.solved(p,wanted,info.getReturnValue());}
+    private static void magnitude$solved(Player p,Vec3 wanted,CallbackInfoReturnable<BodyCollision.Result> info){
+        WorldQueryTrace.solved(p,wanted,info.getReturnValue());
+        if(p.getName().getString().equals("SupportResolver")&&dev.magnitude.verification.SupportResolverTests.exhaustAfterSettlement
+            &&wanted.y<0&&wanted.horizontalDistanceSqr()==0&&!info.getReturnValue().denied()){
+            dev.magnitude.verification.SupportResolverTests.exhaustAfterSettlement=false;
+            PhysicsWork.cells(PhysicsWork.cellsRemaining());
+        }
+    }
     @Inject(method="newCollision",at=@At("HEAD"))
     private static void magnitude$positionStart(Player p,Vec3 oldRoot,Vec3 target,CallbackInfoReturnable<Boolean> info){if(Boolean.getBoolean("magnitude.queryTrace"))WorldQueryTrace.positionBegin();}
     @Inject(method="newCollision",at=@At("RETURN"))

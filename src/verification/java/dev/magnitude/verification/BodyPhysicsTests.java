@@ -149,7 +149,7 @@ public final class BodyPhysicsTests {
             require(BodyPoses.select(actor,invalid),"explicit server adapter can be selected",passed);
             require(BodyPoses.update(actor,0,false).valid(),"invalid adapter angles fall back to valid server pose",passed);
             var adapted=Magnitude.id("verification_left_takeoff");BodyPoses.register(adapted,(p,c)->c.action()==2 ? c.withSupport(1) : c);
-            BodyPoses.select(actor,adapted);require(BodyPoses.update(actor,0,true).support()==1,"server adapter may choose left takeoff without client claims",passed);
+            BodyPoses.select(actor,adapted);var beforeTakeoff=EntityState.of(actor).pose;var adaptedTakeoff=BodyPoses.update(actor,0,true);require(adaptedTakeoff.support()==1,"server adapter may choose left takeoff without client claims; old="+beforeTakeoff+" new="+adaptedTakeoff+" root="+actor.position()+" reason="+EntityState.of(actor).contacts.feet.reason+" failure="+EntityState.of(actor).contacts.diagnostics.failure,passed);
             actor.setOnGround(false);require(BodyPoses.update(actor,0,false).support()==0,"adapter cannot manufacture airborne support",passed);actor.setOnGround(true);BodyPoses.select(actor,null);
             Dimensions.set(actor,8,0);LocalProxy.apply(actor,8);ready(actor);EntityState.of(actor).jumpSequence=0;
             Magnitude.settings.terrainDamage=true;EntityState.of(actor).terrainEnabled=true;EntityState.of(actor).nextJumpImpact=0;
@@ -161,7 +161,9 @@ public final class BodyPhysicsTests {
             actor.setOnGround(false);Impact.beginTick();
             require(Impact.feet(actor,0,true)==0,"airborne pressure rejected even with stale support state",passed);
             for(var pos:BlockPos.betweenClosed(ROOT.offset(-6,-1,-6),ROOT.offset(6,-1,6)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
-            Dimensions.set(actor,32,0);ready(actor);
+            // The preceding articulated takeoffs may lower the pelvis; this proxy fixture
+            // explicitly starts an upright body in verified free space.
+            actor.setPos(6000.5,220,6000.5);Dimensions.set(actor,32,0);ready(actor);
             for(int i=0;i<40;i++){PhysicsWork.beginTick();EntityQueries.beginTick();EntityState.of(actor).nextProxyGrowth=Long.MIN_VALUE;LocalProxy.update(actor);}
             require(EntityState.of(actor).proxyLimit>8 && actor.getBbWidth()>4.8,"loaded free space allows proxy larger than previous fixed cap",passed);
             double growthLimit=EntityState.of(actor).proxyLimit;

@@ -63,17 +63,19 @@ public final class TerrainIntegrationTests {
                 for(var pos:BlockPos.betweenClosed(root.offset(-16,-1,-8),root.offset(16,-1,100))){level.setBlock(pos,Blocks.GRASS_BLOCK.defaultBlockState(),2);level.setBlock(pos.above(),Blocks.SHORT_GRASS.defaultBlockState(),2);}
                 state.contacts=new ContactState();state.pose=BodyPose.IDLE;state.posePhase=state.strideDistance=0;state.initialized=false;state.terrainEnabled=true;
                 p.setPos(root.getX()+.5,200,root.getZ()+.5);p.setYRot(0);p.setOnGround(true);Dimensions.set(p,size,0);ready(p);ContactEvents.sample(p);
-                double low=p.getY(),high=p.getY();int denied=0,writes=0;long started=System.nanoTime();
+                double low=p.getY(),high=p.getY(),lowestSole=Double.POSITIVE_INFINITY;int denied=0,writes=0,supported=0;long started=System.nanoTime();
                 for(int tick=0;tick<120;tick++){
                     ready(p);double factor=Dimensions.snapshot(p).motionFactor();
                     p.move(MoverType.SELF,new Vec3(0,-.08/factor,.5/factor));
                     denied+=state.movementDenied?1:0;
                     SoilDeformation.continueWork(p);ContactEvents.sample(p);
                     writes+=Magnitude.settings.blocksPerTick-Impact.remaining();low=Math.min(low,p.getY());high=Math.max(high,p.getY());
+                    if(state.pose.support()!=0)supported++;
+                    for(int side:new int[]{-1,1})if((state.pose.support()&(side<0?1:2))!=0)lowestSole=Math.min(lowestSole,PlayerBody.foot(p,side).y+.01);
                 }
                 double forward=p.getZ()-root.getZ()-.5;
                 System.out.println("TERRAIN INTEGRATION scale="+size+" y="+low+".."+high+" forward="+forward+" denied="+denied+" writes="+writes+" ms="+(System.nanoTime()-started)/1e6);
-                check(denied==0&&forward>55&&low>=199.5-1e-5&&high<=200+1e-5,"natural grass walking makes forward progress within shallow depth without denied movement at "+size,passed);
+                check(denied==0&&forward>55&&low>=199.5-LegKinematics.lift(LegKinematics.WALK_SWING,0,PlayerBody.stanceHeight(p))-1e-5&&high<=200+1e-5&&lowestSole>=199.5-1e-5&&supported>0,"grass walking retains above-soil support while the pelvis remains within continuous gait excursion at "+size+", forward="+forward+", low="+low+", lowestSole="+lowestSole+", supported="+supported+", denied="+denied,passed);
                 check(writes>0,"supported natural vegetation no longer suppresses walking compaction at "+size,passed);
                 p.setOnGround(true);ready(p);ContactEvents.sample(p);for(int i=0;i<30;i++){ready(p);p.move(MoverType.SELF,new Vec3(0,-.08/Dimensions.snapshot(p).motionFactor(),0));SoilDeformation.continueWork(p);ContactEvents.sample(p);}
                 double settled=p.getY();int atRest=0;
@@ -112,16 +114,28 @@ public final class TerrainIntegrationTests {
             }
             walk(p,120);
             System.out.println("SLOPE scale="+size+" position="+p.position()+" pose="+EntityState.of(p).pose+" reason="+EntityState.of(p).contacts.reason);
-            check(p.getZ()>root.getZ()+55&&p.getY()>root.getY()+3&&p.getY()<=root.getY()+6,"shallow terrain and foot anchors climb a repeated natural slope at "+size,passed);
+            ready(p);int supported=EntityState.of(p).pose.support();double supportHeight=Double.POSITIVE_INFINITY;boolean touching=supported!=0;
+            for(int side:new int[]{-1,1})if((supported&(side<0?1:2))!=0){
+                var contact=FootContacts.capture(p,side);touching&=contact.supported()&&Math.abs(contact.height()-contact.sole().y)<1e-6;
+                supportHeight=Math.min(supportHeight,contact.sole().y);
+            }
+            check(p.getZ()>root.getZ()+55&&touching&&supportHeight>root.getY()+3&&supportHeight<=root.getY()+6
+                &&p.getY()>root.getY()+3-LegKinematics.lift(LegKinematics.WALK_SWING,0,PlayerBody.stanceHeight(p))&&p.getY()<=root.getY()+6,
+                "repeated slope raises verified planted soles while the pelvis follows rigid leg geometry at "+size+"; sole="+supportHeight+", root="+p.getY()+", touching="+touching,passed);
             reset(p,root,size);
             // A thin loaded roof over a cave: unsupported soil must remain a real surface, not a hidden floor.
             for(var pos:BlockPos.betweenClosed(root.offset(-16,-5,10),root.offset(16,-2,40)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
             walk(p,90);
-            check(p.getZ()>root.getZ()+40&&p.getY()>=root.getY()-.5,"finite soil compaction preserves a thin cave roof during walking at "+size,passed);
-            var left=BlockPos.containing(PlayerBody.foot(p,-1));var right=BlockPos.containing(PlayerBody.foot(p,1));
-            for(var pos:BlockPos.betweenClosed(root.offset(-16,-6,40),root.offset(16,-1,55)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            check(p.getZ()>root.getZ()+40&&p.getY()>=root.getY()-.5-LegKinematics.lift(LegKinematics.WALK_SWING,0,PlayerBody.stanceHeight(p))
+                &&Math.min(PlayerBody.foot(p,-1).y,PlayerBody.foot(p,1).y)+.01>=root.getY()-.5-1e-5
+                &&!level.getBlockState(root.offset(7,-1,20)).isAir(),"finite soil compaction and planted soles preserve a thin cave roof during walking at "+size,passed);
+            var left=PlayerBody.foot(p,-1);var right=PlayerBody.foot(p,1);double half=Dimensions.snapshot(p).bootHalfWidth(),beforeFall=p.getY();
+            // A planted foot may trail the root. Remove the actual complete soles, not a root-centered guess.
+            var removeMin=BlockPos.containing(Math.min(left.x,right.x)-half-1,root.getY()-6,Math.min(left.z,right.z)-half-1);
+            var removeMax=BlockPos.containing(Math.max(left.x,right.x)+half+1,root.getY()-1,Math.max(left.z,right.z)+half+1);
+            for(var pos:BlockPos.betweenClosed(removeMin,removeMax))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
             ready(p);p.move(MoverType.SELF,new Vec3(0,-1/Dimensions.snapshot(p).motionFactor(),0));
-            check(p.getY()<root.getY()-.7&&!p.onGround(),"external removal of a cave roof causes real falling without anchor floor at "+size,passed);
+            check(p.getY()<beforeFall-.7&&!p.onGround(),"external removal of the actual planted sole support causes real falling without anchor floor at "+size,passed);
         }
         reset(p,root,50);
         for(int y=0;y<7;y++){level.setBlock(root.offset(7,y,3),Blocks.OAK_LOG.defaultBlockState(),2);level.setBlock(root.offset(0,y,3),Blocks.OAK_LOG.defaultBlockState(),2);}
@@ -138,7 +152,8 @@ public final class TerrainIntegrationTests {
         reset(p,root,5);var random=new java.util.Random(20261004);
         for(int i=0;i<24;i++){
             double scale=3+random.nextDouble()*50;Dimensions.set(p,scale,0);ready(p);ContactEvents.sample(p);
-            walk(p,2);check(EntityState.of(p).pose.valid()&&p.getY()>=root.getY()-.5,"seeded fractional resize retains valid pose and finite soil depth iteration "+i,passed);
+            walk(p,2);check(EntityState.of(p).pose.valid()&&p.getY()>=root.getY()-.5-LegKinematics.lift(LegKinematics.WALK_SWING,0,PlayerBody.stanceHeight(p))
+                &&Math.min(PlayerBody.foot(p,-1).y,PlayerBody.foot(p,1).y)+.01>=root.getY()-.5-1e-5,"seeded fractional resize retains valid pose and finite soil depth iteration "+i,passed);
         }
     }
 

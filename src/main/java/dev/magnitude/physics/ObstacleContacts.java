@@ -25,6 +25,7 @@ public final class ObstacleContacts {
             return new Result(List.of(),false);
         state.physicsCells+=(int)cells;
         var result=new java.util.LinkedHashSet<BlockPos>();
+        double solePlane=Math.min(PlayerBody.foot(player,-1).y,PlayerBody.foot(player,1).y)+.01;
         var context=CollisionContext.of(player);
         for(var region:regions)for(var pos:BlockPos.betweenClosed(BlockPos.containing(region.minX,region.minY,region.minZ),
             BlockPos.containing(region.maxX,region.maxY,region.maxZ))) {
@@ -40,6 +41,16 @@ public final class ObstacleContacts {
                 if(state.physicsPairs+legs.size()>LocalProxy.PAIRS_PER_TICK || !PhysicsWork.pairs(legs.size()))return ordered(result,player,false);
                 state.physicsPairs+=legs.size();
                 var world=box.move(pos.getX(),pos.getY(),pos.getZ());
+                // Pelvis coordinates can sit below planted soles after articulation.
+                // Supporting surfaces stay in the footprint/soil path, not leg kicks.
+                if(world.maxY<=solePlane+1e-6)continue;
+                boolean underFoot=false;
+                for(int boot=4;boot<6;boot++){
+                    var sole=legs.get(boot).bounds().expandTowards(movement.x,0,movement.z);
+                    if(world.maxY<=sole.minY+1e-6&&world.maxX>sole.minX&&world.minX<sole.maxX
+                        &&world.maxZ>sole.minZ&&world.minZ<sole.maxZ){underFoot=true;break;}
+                }
+                if(underFoot)continue;
                 for(var leg:legs)hit|=leg.intersects(world) || leg.sweep(world,sweep)<1-1e-8;
             }
             if(hit) {
