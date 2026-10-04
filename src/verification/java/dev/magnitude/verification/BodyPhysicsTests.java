@@ -118,6 +118,29 @@ public final class BodyPhysicsTests {
             actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6000.6,220,6000.5,true,false));
             require(Math.abs(actor.getX()-6000.6)<1e-6,"ordinary movement packet accepts clear skeletal movement",passed);
             actor.setPos(6000.5,220,6000.5);ready(actor);
+            actor.connection=new ServerGamePacketListenerImpl(server,new Connection(PacketFlow.SERVERBOUND),actor,CommonListenerCookie.createInitial(actor.getGameProfile(),false));
+            actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());actor.connection.resetPosition();
+            actor.connection.handlePlayerInput(new net.minecraft.network.protocol.game.ServerboundPlayerInputPacket(new net.minecraft.world.entity.player.Input(true,false,false,false,false,false,false)));
+            var packetState=EntityState.of(actor);packetState.nextJumpImpact=0;packetState.contacts.takeoffTick=Long.MIN_VALUE;
+            long takeoffs=packetState.contacts.counts[ContactEvent.Type.TAKEOFF.ordinal()];
+            level.setBlock(ROOT.offset(1,0,0),Blocks.STONE_SLAB.defaultBlockState(),2);
+            actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6001.5,220.5,6000.5,false,false));
+            require(actor.getX()>6001.49&&Math.abs(actor.getY()-220.5)<1e-6,"uphill packet fixture actually reaches the slab destination; position="+actor.position(),passed);
+            require(packetState.contacts.counts[ContactEvent.Type.TAKEOFF.ordinal()]==takeoffs,
+                "uphill movement without jump input cannot emit takeoff or change support foot",passed);
+            require(actor.getDeltaMovement().y==0,"uphill packet without jump intent does not inject launch velocity",passed);
+            level.setBlock(ROOT.offset(1,0,0),Blocks.AIR.defaultBlockState(),2);
+            actor.setPos(6000.5,220,6000.5);ready(actor);
+            actor.connection=new ServerGamePacketListenerImpl(server,new Connection(PacketFlow.SERVERBOUND),actor,CommonListenerCookie.createInitial(actor.getGameProfile(),false));
+            actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());actor.connection.resetPosition();
+            actor.connection.handlePlayerInput(new net.minecraft.network.protocol.game.ServerboundPlayerInputPacket(new net.minecraft.world.entity.player.Input(true,false,false,false,true,false,false)));
+            packetState.nextJumpImpact=0;packetState.contacts.takeoffTick=Long.MIN_VALUE;
+            actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6000.5,220.42,6000.5,false,false));
+            require(Math.abs(actor.getY()-220.42)<1e-6&&packetState.contacts.counts[ContactEvent.Type.TAKEOFF.ordinal()]==takeoffs+1,
+                "genuine jump input and native movement packet retain the takeoff event",passed);
+            actor.setLastClientInput(net.minecraft.world.entity.player.Input.EMPTY);
+            actor.setPos(6000.5,220,6000.5);ready(actor);
+            packetState.jumpSequence=0;
             var first=BodyPoses.update(actor,0,true);var second=BodyPoses.update(actor,0,true);
             require(first.support()==2 && second.support()==1,"canonical successive takeoffs alternate one support foot",passed);
             actor.setOnGround(false);require(BodyPoses.update(actor,0,false).support()==0,"airborne pose has no supporting feet",passed);

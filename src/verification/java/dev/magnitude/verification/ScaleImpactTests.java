@@ -146,6 +146,7 @@ public final class ScaleImpactTests {
             actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());
             actor.connection.resetPosition();
             level.addNewPlayer(actor);attached=true;
+            actor.setLastClientInput(new net.minecraft.world.entity.player.Input(false,false,false,false,true,false,false));
             actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(actor.getX(),actor.getY()+0.42,actor.getZ(),false,false));
             FootprintRelease.drain(actor);
             require(state.jumpImpact&&Impact.remaining()<Magnitude.settings.blocksPerTick,"ordinary movement packet invokes released jump terrain effect",passed);
