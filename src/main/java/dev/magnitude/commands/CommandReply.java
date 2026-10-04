@@ -18,7 +18,7 @@ public final class CommandReply {
         return 1;
     }
     public static int usage(CommandContext<CommandSourceStack> context,String domain){
-        message(context,"usage."+domain);
+        message(context,"usage."+domain.replace(' ','.'));
         boolean administrator=dev.magnitude.config.ConfigService.administrator(context.getSource());
         for(var example:CommandReference.examplesForDomain(domain,administrator)){
             var line=CommandReference.suggestion("gui.magnitude.command."+example[0],example[1]).copy()

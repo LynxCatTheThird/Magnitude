@@ -31,7 +31,7 @@ public final class CommandReference {
     }
     public static final List<String> DOMAINS=List.of("scale","config","action","carry","tool","random","diagnostics","menu");
     public static String entry(String domain){
-        return switch(domain){case "config"->"/magnitude config show";case "diagnostics"->"/magnitude diagnostics physics";default->"/magnitude "+domain;};
+        return domain.equals("diagnostics")?"/magnitude diagnostics physics":"/magnitude "+domain;
     }
     public static List<String[]> examplesForDomain(String domain,boolean administrator){
         var result=new java.util.ArrayList<String[]>();

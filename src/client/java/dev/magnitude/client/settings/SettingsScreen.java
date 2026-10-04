@@ -182,7 +182,13 @@ public final class SettingsScreen extends Screen {
     @Override public void added(){if(SettingsConnection.view==null&&SettingsConnection.supported())SettingsConnection.request(0,Map.of());}
     public void received(){
         if(submitted>=0&&SettingsConnection.result.equals("applied")){int applied=submitted;drafts.keySet().removeIf(key->key.startsWith(applied+":"));}
-        submitted=-1;rebuildWidgets();
+        else if(submitted>=0&&SettingsConnection.result.equals("invalid")&&SettingsConnection.view!=null){
+            String detail=SettingsConnection.view.detail();int rejected=submitted;
+            if(drafts.containsKey(rejected+":"+detail)){
+                tab=rejected;invalidField=detail;localResult="invalid";revealInvalidField();
+            }
+        }
+        submitted=-1;rebuildWidgets();focusInvalidField();
     }
     private void apply(){
         if(!editable()||!local()&&SettingsConnection.busy())return;
@@ -201,7 +207,13 @@ public final class SettingsScreen extends Screen {
             if(local()){localResult=ClientPreferences.save(patch)?"applied":ClientPreferences.lastError;if(localResult.equals("applied"))drafts.keySet().removeIf(key->key.startsWith("1:"));}
             else if(SettingsConnection.request(tab==2?1:2,patch))submitted=tab;
             rebuildWidgets();
-        }catch(RuntimeException error){localResult="invalid";revealInvalidField();rebuildWidgets();}
+        }catch(RuntimeException error){localResult="invalid";revealInvalidField();rebuildWidgets();focusInvalidField();}
+    }
+    private void focusInvalidField(){
+        if(invalidField==null)return;
+        Component label=Component.translatable("config.magnitude.field."+invalidField);
+        children().stream().filter(child->child instanceof EditBox box&&box.getMessage().equals(label))
+            .map(child->(EditBox)child).findFirst().ifPresent(box->{setFocused(box);box.setCursorPosition(box.getValue().length());box.setHighlightPos(0);});
     }
     private void revealInvalidField(){
         if(invalidField==null)return;
@@ -242,7 +254,11 @@ public final class SettingsScreen extends Screen {
         String result=local()||!localResult.equals("ready")?localResult:SettingsConnection.result;
         Component resultText=Component.translatable("config.magnitude.result."+result);
         if(result.equals("invalid")&&invalidField!=null)resultText=resultText.copy().append(": ").append(Component.translatable("config.magnitude.field."+invalidField));
+        else if(!local()&&localResult.equals("ready")&&SettingsConnection.view!=null&&!SettingsConnection.view.detail().isEmpty())
+            resultText=resultText.copy().append(": ").append(Component.translatable("config.magnitude.field."+SettingsConnection.view.detail()));
         g.text(font,font.plainSubstrByWidth(resultText.getString(),w),left,height-20,result.equals("invalid")||result.equals("saveFailed")?0xffff8888:0xffbbbbbb);
+        if(mouseX>=left&&mouseX<left+w&&mouseY>=height-23&&mouseY<height)
+            g.setTooltipForNextFrame(font,resultText,mouseX,mouseY);
         super.extractRenderState(g,mouseX,mouseY,delta);
     }
     @Override public boolean isPauseScreen(){return false;}

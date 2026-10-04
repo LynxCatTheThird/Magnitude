@@ -84,6 +84,12 @@ public final class GuiNetworkTests implements ClientModInitializer {
                     case 8 -> {
                         if(SettingsConnection.busy())return;
                         check(SettingsConnection.result.equals("conflict")&&SettingsConnection.view.personal().get("carry")==0,"real stale patch cannot overwrite newer command state");
+                        check(SettingsConnection.request(admin?2:1,Map.of(admin?"maximum":"carry",admin?0d:Double.NaN)),"malformed settings patch submitted for field diagnostics");
+                    }
+                    case 9 -> {
+                        if(SettingsConnection.busy())return;
+                        check(SettingsConnection.result.equals("invalid")&&SettingsConnection.view.detail().equals(admin?"maximum":"carry"),"server returns the rejected field without changing confirmed values");
+                        check(admin?SettingsConnection.view.server().get("maximum")==48:SettingsConnection.view.personal().get("carry")==0,"invalid patch preserves confirmed settings");
                         if(admin) {
                             client.player.connection.sendCommand("forceload add 90 90 110 110");
                             client.player.connection.sendCommand("fill 90 199 90 110 199 110 minecraft:grass_block");
@@ -92,13 +98,13 @@ public final class GuiNetworkTests implements ClientModInitializer {
                             client.gui.setScreen(null);
                         }else {finish(client);return;}
                     }
-                    case 9 -> {
+                    case 10 -> {
                         if(client.player.position().distanceToSqr(new net.minecraft.world.phys.Vec3(100.5,200,100.5))>4)return;
                         if(!dev.magnitude.client.visual.FootprintRenderer.hasSurface(net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0))))return;
                         check(dev.magnitude.client.visual.FootprintRenderer.cached()>0,"actual authoritative contact builds immediate visual surface cache with terrain disabled");
                         client.player.setXRot(75);
                     }
-                    case 10 -> {
+                    case 11 -> {
                         if(dev.magnitude.client.visual.FootprintRenderer.lastDrawn==0)return;
                         check(true,"actual world renderer submits contact overlay geometry");
                         var below=client.player.blockPosition().below();
@@ -107,20 +113,20 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         var payload=new dev.magnitude.network.FootprintPayload(client.player.getUUID(),999999,-1,client.level.dimension().identifier(),client.player.position().add(-.75,-.01,0),.45,.45,0);
                         check(dev.magnitude.client.visual.FootprintRenderer.accept(payload)&&!dev.magnitude.client.visual.FootprintRenderer.accept(payload),"client visual duplicate contact is ignored");
                     }
-                    case 11 -> {
+                    case 12 -> {
                         var pos=net.minecraft.core.BlockPos.containing(client.player.position().add(-.75,-.01,0));
                         int before=dev.magnitude.client.visual.FootprintRenderer.cached();
                         client.level.setBlock(pos,net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),3);
                         check(dev.magnitude.client.visual.FootprintRenderer.cached()<before,"block change invalidates cached surface decoration");
                         dev.magnitude.client.visual.FootprintRenderer.enabled=false;
                     }
-                    case 12 -> {
+                    case 13 -> {
                         check(dev.magnitude.client.visual.FootprintRenderer.cached()==0&&dev.magnitude.client.visual.FootprintRenderer.queued()==0&&dev.magnitude.client.visual.FootprintRenderer.lastDrawn==0,"disabling visual footprints clears pending and cached work");
                         client.player.connection.sendCommand("fill 90 199 90 99 199 110 minecraft:stone_slab");
                         client.player.connection.sendCommand("tp @s 100.25 200 100.5 0 15");
                         client.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
                     }
-                    case 13 -> {
+                    case 14 -> {
                         var pose=dev.magnitude.core.EntityState.of(client.player).pose;
                         if(Math.abs(client.player.getY()-199.5)>1e-5||pose.rightKnee()>-.1)return;
                         check(pose.valid()&&pose.support()==3,"real client receives authoritative articulated support on unequal surfaces");
@@ -128,7 +134,7 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         client.gui.hud.toggle();
                         client.player.setXRot(15);
                     }
-                    case 14 -> {
+                    case 15 -> {
                         if(dev.magnitude.client.visual.SegmentedLegMesh.renderCalls==0)return;
                         check(true,"actual avatar renderer draws segmented knee and boot mesh");
                         net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("articulated-support.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
@@ -139,7 +145,7 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         client.player.connection.sendCommand("magnitude config player terrain on");
                         client.player.connection.sendCommand("tp @s 100.25 200 100.5 0 75");
                     }
-                    case 15 -> {
+                    case 16 -> {
                         var surface=client.level.getBlockState(net.minecraft.core.BlockPos.containing(99.5,199,100.5));
                         if(!surface.is(dev.magnitude.content.WorldContent.COMPACTED_GRASS))return;
                         if(Math.abs(client.player.getY()-199.875)>1e-5)return;
@@ -147,7 +153,7 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         check(true,"client collision settles onto server deformation height");
                         client.gui.setScreen(null);client.gui.hud.toggle();client.player.setXRot(75);
                     }
-                    case 16 -> {
+                    case 17 -> {
                         net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("shallow-soil.png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
                         finish(client);
                     }

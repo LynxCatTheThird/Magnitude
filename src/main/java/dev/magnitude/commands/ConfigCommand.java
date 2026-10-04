@@ -16,10 +16,10 @@ import static com.mojang.brigadier.arguments.BoolArgumentType.*;
 public final class ConfigCommand {
     private ConfigCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
-        var config=literal("config").executes(ConfigCommand::show);
+        var config=literal("config").executes(c->{show(c);return CommandReply.usage(c,"config");});
         config.then(literal("show").executes(ConfigCommand::show));
         config.then(literal("reload").requires(ConfigService::administrator).executes(c->reply(c,ConfigService.INSTANCE.reload(c.getSource()))));
-        var server=literal("server").requires(ConfigService::administrator).executes(ConfigCommand::serverValues);
+        var server=literal("server").requires(ConfigService::administrator).executes(c->{serverValues(c);return CommandReply.usage(c,"config server");});
         for(var field:ConfigField.values()) {
             var node=literal(field.id).executes(c->serverValue(c,field));
             if(field.bool)node.then(argument("value",bool()).executes(c->server(c,field.id,getBool(c,"value")?1:0)));
@@ -28,15 +28,15 @@ public final class ConfigCommand {
             server.then(node);
         }
         config.then(server);
-        var preset=literal("preset").requires(ConfigService::administrator).executes(c->CommandReply.message(c,"usage.preset"));
+        var preset=literal("preset").requires(ConfigService::administrator).executes(c->CommandReply.usage(c,"config preset"));
         for(var option:dev.magnitude.config.WorkPreset.values())preset.then(literal(option.id).executes(c->reply(c,ConfigService.INSTANCE.server(c.getSource(),-1,option.patch()))));
         config.then(preset);
-        config.then(literal("food").requires(ConfigService::administrator).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())
+        config.then(literal("food").requires(ConfigService::administrator).executes(c->CommandReply.usage(c,"config food")).then(argument("item",net.minecraft.commands.arguments.IdentifierArgument.id())
             .then(argument("factor",doubleArg(.015625,4)).executes(c->reply(c,ConfigService.INSTANCE.food(c.getSource(),net.minecraft.commands.arguments.IdentifierArgument.getId(c,"item").toString(),getDouble(c,"factor")))))));
 
-        var player=literal("player").executes(c->dev.magnitude.commands.CommandReply.message(c,"usage.player"));
+        var player=literal("player").executes(c->CommandReply.usage(c,"config player"));
         for(String field:new String[]{"terrain","pressure","resize","carry"}) {
-            var node=literal(field);
+            var node=literal(field).executes(c->personalValue(c,field));
             for(boolean enabled:new boolean[]{true,false})node.then(literal(enabled?"on":"off").executes(c->personal(c,field,enabled)));
             player.then(node);
         }
@@ -48,6 +48,12 @@ public final class ConfigCommand {
             }
             ConfigNetworking.send(playerEntity,0,true,new ConfigService.Result("ready",""));return 1;
         }));
+    }
+    private static int personalValue(CommandContext<CommandSourceStack> c,String field)throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        double value=ConfigService.personalValues(c.getSource().getPlayerOrException()).get(field);
+        var message=Component.translatable("config.magnitude.field."+field).append(": ")
+            .append(Component.translatable(value==1?"options.on":"options.off"));
+        c.getSource().sendSuccess(()->message,false);return 1;
     }
     private static int serverValue(CommandContext<CommandSourceStack> c,ConfigField field){
         double value=field.read(dev.magnitude.Magnitude.settings);

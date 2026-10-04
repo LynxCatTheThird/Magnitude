@@ -129,9 +129,12 @@ public final class GuiTests implements ClientModInitializer {
                         search("footprintCache");click("gui.magnitude.apply");
                         check(screen.children().stream().anyMatch(x->x instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification"))&&box.getValue().equals("NaN")),"invalid hidden field reveals its original group and draft");
                         check(searchBox().getValue().isEmpty(),"invalid hidden field clears filtering for correction");
+                        check(screen.getFocused() instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification")),"invalid hidden field receives keyboard focus for immediate correction");
+                        check(((EditBox)screen.getFocused()).getHighlighted().equals("NaN"),"invalid draft is selected so typing replaces it");
                         var invalid=screen.children().stream().filter(x->x instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification"))).map(x->(EditBox)x).findFirst().orElseThrow();invalid.setValue("33");
                         search("footprintDistance");click("gui.magnitude.apply");
                         check(searchBox().getValue().isEmpty()&&ClientPreferences.values().get("magnification")==6.25,"finite out-of-range hidden draft is rejected and revealed without saving");
+                        check(screen.getFocused() instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification")),"range failure restores focus to its original numeric input");
                         click("gui.magnitude.discard");screen.init(320,240);
                         checkLayout();
                     }

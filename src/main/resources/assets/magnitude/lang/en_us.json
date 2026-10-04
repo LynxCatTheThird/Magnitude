@@ -240,7 +240,6 @@
   "message.magnitude.usage.action": "Actions: /magnitude action blow|stomp|release|throw|ability|ride|pickup",
   "message.magnitude.usage.carry": "Carry: /magnitude carry position shoulder|hand|custom; offset <forward> <side> <up>",
   "message.magnitude.usage.random": "Random: /magnitude random start <low> <high> <period in ticks>; stop",
-  "message.magnitude.usage.player": "Personal permission: /magnitude config player terrain|pressure|resize|carry on|off",
   "message.magnitude.usage.tool": "Held size tool: /magnitude tool set value <value>; set duration <ticks>; set mode multiply|add|set|swap|transfer; unbind",
   "gui.magnitude.command.action": "Stomp action",
   "gui.magnitude.command.carry": "Carry position: hand",
@@ -260,7 +259,6 @@
   "gui.magnitude.command.presetLow": "Admin: low write peak limits",
   "gui.magnitude.command.presetStandard": "Admin: standard work limits",
   "gui.magnitude.command.reload": "Admin: reload server settings",
-  "message.magnitude.usage.preset": "Work limits: /magnitude config preset low|standard; changes limits without enabling terrain effects.",
   "gui.magnitude.commandGroup.common": "Common",
   "gui.magnitude.commandGroup.size": "Size",
   "gui.magnitude.commandGroup.actions": "Actions",
@@ -300,5 +298,10 @@
   "gui.magnitude.commandDomain.tool": "Tools",
   "gui.magnitude.commandDomain.random": "Random size",
   "gui.magnitude.commandDomain.diagnostics": "Physics diagnostics",
-  "gui.magnitude.commandDomain.menu": "Settings screen"
+  "gui.magnitude.commandDomain.menu": "Settings screen",
+  "message.magnitude.usage.config.player": "Personal permission: /magnitude config player terrain|pressure|resize|carry on|off Omit on|off to read one permission.",
+  "message.magnitude.usage.config.preset": "Work limits: /magnitude config preset low|standard; changes limits without enabling terrain effects.",
+  "message.magnitude.usage.config": "Settings: /magnitude config show; player <permission> on|off; administrators use server <field> <value>, preset, food or reload.",
+  "message.magnitude.usage.config.server": "Server rules: /magnitude config server <field> [value]; omit the value to read it. Boolean values use true|false.",
+  "message.magnitude.usage.config.food": "Food factors: /magnitude config food <item ID> <factor 0.015625–4>."
 }
