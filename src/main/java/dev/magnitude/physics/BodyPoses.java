@@ -44,8 +44,9 @@ public final class BodyPoses {
                     && (grounded ? takeoff ? supplied.support()==1 || supplied.support()==2 : supplied.support()!=0 : supplied.support()==0) && boundedChange(state.pose,supplied,takeoff)) result=supplied;
             } catch (RuntimeException ignored) { /* A broken adapter falls back to the server pose. */ }
         }
-        result=SupportResolver.resolve(player,result,takeoff);
-        if(changed(state.pose,result) && !BodyCollision.poseAllowed(player,result)) {
+        var resolution=SupportResolver.resolveChecked(player,result,takeoff);
+        result=resolution.pose();
+        if(changed(state.pose,result) && !resolution.verified() && !BodyCollision.poseAllowed(player,result)) {
             BodyPose old=state.pose;
             int straight=(Math.abs(old.leftLeg())<0.05&&Math.abs(old.leftKnee())<0.05 ? 1 : 0) | (Math.abs(old.rightLeg())<0.05&&Math.abs(old.rightKnee())<0.05 ? 2 : 0);
             int retainedSupport=result.support() & straight;

@@ -10,6 +10,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BodyCollision.class)
 public abstract class MovementTraceMixin {
+    @Inject(method="poseAllowed",at=@At("HEAD"))
+    private static void magnitude$countPose(Player p,BodyPose pose,CallbackInfoReturnable<Boolean> info){
+        if(p.getName().getString().equals("SupportResolver"))dev.magnitude.verification.SupportResolverTests.poseChecks++;
+    }
     @Inject(method="permitted",at=@At("HEAD"))
     private static void magnitude$start(Player p,Vec3 wanted,CallbackInfoReturnable<Boolean> info){if(!Boolean.getBoolean("magnitude.queryTrace"))return;WorldQueryTrace.begin(p,WorldObstacles.regions(PlayerBody.parts(p,p.position()),wanted,0));WorldQueryTrace.wanted(wanted);}
     @Inject(method="permitted",at=@At("RETURN"))

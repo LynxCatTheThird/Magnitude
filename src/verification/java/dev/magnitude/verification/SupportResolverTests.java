@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class SupportResolverTests {
+    public static int poseChecks;
     private static void check(boolean value,String label,Consumer<String> passed){if(!value)throw new AssertionError(label);passed.accept(label);}
     private static void ready(ServerPlayer p){PhysicsWork.beginTick();EntityQueries.beginTick();EntityState.of(p).physicsTick=Long.MIN_VALUE;}
     public static void run(MinecraftServer server,Consumer<String> passed){
@@ -42,7 +43,9 @@ public final class SupportResolverTests {
             for(int i=0;i<40;i++){ready(p);state.pose=BodyPoses.update(p,0,false);p.move(MoverType.SELF,new Vec3(0,-.05,0));}
             check(Math.abs(p.getY()-initial)<1e-6&&state.contacts.feet.right.point().distanceToSqr(anchor)<1e-10,
                 "standing anchors revalidate and remain stable over repeated gravity/contact cycles",passed);
-            ready(p);var walking=BodyPoses.update(p,.5,false);
+            ready(p);p.setXRot(10);poseChecks=0;BodyPoses.update(p,0,false);
+            check(poseChecks==1,"verified support pose consumes exactly one collision validation before publication; count="+poseChecks,passed);
+            p.setXRot(0);ready(p);var walking=BodyPoses.update(p,.5,false);
             check(state.contacts.feet.left==null||state.contacts.feet.right==null,"walking unloads the swing foot world anchor",passed);
             ready(p);state.pose=BodyPoses.update(p,0,false);
             Vec3 planted=PlayerBody.foot(p,1);state.jumpSequence=0;

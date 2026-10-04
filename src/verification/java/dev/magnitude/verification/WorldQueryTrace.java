@@ -39,7 +39,7 @@ public final class WorldQueryTrace {
     public static void positionChecked(Player player,net.minecraft.world.phys.Vec3 oldRoot,net.minecraft.world.phys.Vec3 target,boolean rejected){
         if(!enabled(player)||!rejected||POSITION_TICK.get()==player.level().getGameTime())return;
         POSITION_TICK.set(player.level().getGameTime());
-        var row=new LinkedHashMap<String,Object>();row.put("tick",player.level().getGameTime());row.put("old",oldRoot.toString());row.put("target",target.toString());row.put("current",player.position().toString());row.put("pose",EntityState.of(player).pose.toString());row.put("failure",EntityState.of(player).contacts.diagnostics.failure);
+        var row=new LinkedHashMap<String,Object>();row.put("tick",player.level().getGameTime());row.put("old",oldRoot.toString());row.put("target",target.toString());row.put("current",player.position().toString());row.put("pose",EntityState.of(player).pose.toString());row.put("failure",EntityState.of(player).contacts.diagnostics.failure);row.put("queries",new ArrayList<>(ROWS));row.put("moves",new ArrayList<>(MOVES));row.put("takeoffTick",EntityState.of(player).contacts.takeoffTick);row.put("grounded",player.onGround());
         var before=PlayerBody.parts(player,oldRoot);var after=PlayerBody.parts(player,target);var hits=new ArrayList<Object>();
         for(var box:LAST.get()){
             boolean was=before.stream().anyMatch(p->p.intersects(box));

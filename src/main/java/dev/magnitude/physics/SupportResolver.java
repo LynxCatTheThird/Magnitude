@@ -9,7 +9,12 @@ import net.minecraft.world.phys.Vec3;
 /** Bounded two-leg solve. Revalidation precedes every use of an anchor; terrain is never written. */
 public final class SupportResolver {
     private SupportResolver(){}
+    record Resolution(BodyPose pose,boolean verified){}
     public static BodyPose resolve(ServerPlayer player,BodyPose desired,boolean takeoff){
+        return resolveChecked(player,desired,takeoff).pose();
+    }
+    /** The proof is consumed immediately, before another world or geometry change. */
+    static Resolution resolveChecked(ServerPlayer player,BodyPose desired,boolean takeoff){
         var state=EntityState.of(player);var feet=state.contacts.feet;var scale=Dimensions.snapshot(player);
         if(takeoff) {
             var old=state.pose;
@@ -17,10 +22,10 @@ public final class SupportResolver {
                 (desired.support()&1)!=0?old.leftLeg():desired.leftLeg(),(desired.support()&2)!=0?old.rightLeg():desired.rightLeg(),
                 desired.leftArm(),desired.rightArm(),desired.head(),
                 (desired.support()&1)!=0?old.leftKnee():desired.leftKnee(),(desired.support()&2)!=0?old.rightKnee():desired.rightKnee());
-            feet.clear("takeoff");return desired;
+            feet.clear("takeoff");return new Resolution(desired,false);
         }
         if(!player.onGround()||player.isPassenger()||player.getAbilities().flying||player.isNoGravity()) {
-            feet.clear("not grounded");return desired;
+            feet.clear("not grounded");return new Resolution(desired,false);
         }
         double yaw=Math.toRadians(player.getYRot()),width=scale.modelWidth(),height=PlayerBody.stanceHeight(player);
         var dimension=player.level().dimension().identifier();
@@ -30,7 +35,7 @@ public final class SupportResolver {
         double reach=Math.min(1.5,height*.3);
         var left=find(player,feet.left,-1,width,height,yaw,reach);
         var right=find(player,feet.right,1,width,height,yaw,reach);
-        if(!left.complete()||!right.complete()) {feet.clear("unknown surface");feet.root=player.position();return desired;}
+        if(!left.complete()||!right.complete()) {feet.clear("unknown surface");feet.root=player.position();return new Resolution(desired,false);}
         feet.left=left.supported()?new FootSupportState.Anchor(new Vec3(left.sole().x,left.height(),left.sole().z),left.revision()):null;
         feet.right=right.supported()?new FootSupportState.Anchor(new Vec3(right.sole().x,right.height(),right.sole().z),right.revision()):null;
         double rootY=player.getY();
@@ -39,16 +44,16 @@ public final class SupportResolver {
             if(Double.isFinite(low)&&low<rootY-1e-6&&rootY-low<=reach)rootY=low;
         }
         var proposal=pose(player,desired,feet,rootY,height,yaw);
-        if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("pose obstructed");feet.root=player.position();return desired;}
+        if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("pose obstructed");feet.root=player.position();return new Resolution(desired,false);}
         if(rootY<player.getY()-1e-6) {
             BodyPose old=state.pose;state.pose=proposal;
             try {player.move(MoverType.SELF,new Vec3(0,rootY-player.getY(),0));}
             finally {state.pose=old;}
             proposal=pose(player,desired,feet,player.getY(),height,yaw);
-            if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("settlement denied");return desired;}
+            if(!proposal.valid()||!BodyCollision.poseAllowed(player,proposal)) {feet.clear("settlement denied");return new Resolution(desired,false);}
         }
         feet.root=player.position();feet.reason=proposal.support()==0?"no reachable support":"verified";
-        return proposal;
+        return new Resolution(proposal,true);
     }
     private static FootContact find(ServerPlayer player,FootSupportState.Anchor old,int side,double w,double h,double yaw,double reach){
         Vec3 center=player.position().add(Math.cos(yaw)*side*w*.15,0,Math.sin(yaw)*side*w*.15);
