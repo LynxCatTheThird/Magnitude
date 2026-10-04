@@ -51,7 +51,15 @@ public final class BodyCollision {
         // lets vanilla update chunk tracking before any actual movement into unknown space.
         if(Double.isFinite(oldRoot.lengthSqr())&&oldRoot.equals(target))return false;
         var before=PlayerBody.parts(player,oldRoot);var after=PlayerBody.parts(player,target);
-        var obstacles=WorldObstacles.query(player,WorldObstacles.regions(after,Vec3.ZERO,0),false);
+        // Unknown space remains unknown even when only the newly occupied edge needs SAT.
+        if(!Double.isFinite(oldRoot.lengthSqr())||!Double.isFinite(target.lengthSqr())
+            ||!WorldObstacles.loaded(player,WorldObstacles.regions(after,Vec3.ZERO,0))){
+            EntityState.of(player).contacts.diagnostics.failure="position target budget or unloaded chunks";
+            fallback(player);return true;
+        }
+        var entered=new ArrayList<AABB>();Vec3 delta=target.subtract(oldRoot);
+        for(var part:before)entered.addAll(part.enteredRegions(delta));
+        var obstacles=WorldObstacles.query(player,entered,false);
         if(!obstacles.complete()) {fallback(player);return true;}
         for(AABB obstacle:obstacles.boxes()) {
             var state=EntityState.of(player);

@@ -68,6 +68,29 @@ public final class BodyPhysicsTests {
             actor.setPos(6000.5,220,6000.5);ready(actor);
             level.setBlock(ROOT.offset(1,0,0),Blocks.STONE.defaultBlockState(),2);level.setBlock(ROOT.offset(1,1,0),Blocks.STONE.defaultBlockState(),2);
             require(BodyCollision.newCollision(actor,actor.position(),actor.position().add(1,0,0)),"server position validation rejects new body penetration",passed);
+            // Rotated boxes need all leading local-axis slabs, including diagonal movement.
+            var random=new java.util.Random(20261004);boolean covered=true;
+            for(int sample=0;sample<2000;sample++){
+                double yaw=random.nextDouble()*Math.PI*2,pitch=random.nextDouble()*2-1;
+                Vec3 x=new Vec3(Math.cos(yaw),0,Math.sin(yaw));
+                Vec3 y=new Vec3(-Math.sin(yaw)*Math.sin(pitch),Math.cos(pitch),Math.cos(yaw)*Math.sin(pitch));
+                Vec3 z=x.cross(y);var box=new BodyBox(Vec3.ZERO,new Vec3(.2+random.nextDouble()*3,.2+random.nextDouble()*5,.2+random.nextDouble()*3),x,y,z);
+                Vec3 delta=new Vec3(random.nextDouble()*8-4,random.nextDouble()*8-4,random.nextDouble()*8-4);
+                for(int trial=0;trial<20;trial++){
+                    Vec3 center=delta.add(random.nextDouble()*10-5,random.nextDouble()*10-5,random.nextDouble()*10-5);
+                    var obstacle=new AABB(center.x-.02,center.y-.03,center.z-.01,center.x+.02,center.y+.03,center.z+.01);
+                    if(box.move(delta).intersects(obstacle)&&!box.intersects(obstacle))
+                        covered&=box.enteredRegions(delta).stream().anyMatch(r->r.intersects(obstacle));
+                }
+            }
+            require(covered,"leading slabs cover new intersections for forty thousand rotated diagonal samples",passed);
+            Dimensions.set(actor,49.875,0);ready(actor);
+            long fullCost=WorldObstacles.regions(PlayerBody.parts(actor,actor.position()),Vec3.ZERO,0).stream().mapToLong(LocalProxy::cells).sum();
+            int available=PhysicsWork.cellsRemaining();
+            require(!BodyCollision.newCollision(actor,actor.position(),actor.position().add(0,0,.1))
+                &&available-PhysicsWork.cellsRemaining()<fullCost/2,
+                "giant clear position validation queries leading edges instead of the full body",passed);
+            Dimensions.set(actor,1,0);ready(actor);
             var loadedRoot=actor.position();actor.setPos(310000.5,220,310000.5);ready(actor);
             require(!level.hasChunkAt(net.minecraft.core.BlockPos.containing(actor.position())),"position acknowledgement fixture starts in an unloaded chunk",passed);
             int cellsBefore=PhysicsWork.cellsRemaining(),pairsBefore=PhysicsWork.pairsRemaining();

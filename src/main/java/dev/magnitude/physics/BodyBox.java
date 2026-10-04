@@ -31,6 +31,20 @@ public final class BodyBox {
         double rz=Math.abs(x.z)*half.x+Math.abs(y.z)*half.y+Math.abs(z.z)*half.z;
         return new AABB(center.x-rx,center.y-ry,center.z-rz,center.x+rx,center.y+ry,center.z+rz);
     }
+    /** Covers destination volume outside this box for a fixed-orientation translation. */
+    public java.util.List<AABB> enteredRegions(Vec3 delta){
+        var result=new java.util.ArrayList<AABB>(3);
+        Vec3[] local={x,y,z};double[] extents={half.x,half.y,half.z};
+        for(int i=0;i<3;i++){
+            double travel=delta.dot(local[i]);
+            if(travel==0)continue;
+            double thickness=Math.min(2*extents[i],Math.abs(travel));
+            double[] reduced=extents.clone();reduced[i]=thickness/2;
+            Vec3 middle=center.add(delta).add(local[i].scale(Math.copySign(extents[i]-thickness/2,travel)));
+            result.add(new BodyBox(middle,new Vec3(reduced[0],reduced[1],reduced[2]),x,y,z).bounds().inflate(1e-7));
+        }
+        return result;
+    }
     public boolean intersects(AABB obstacle) {
         double sx=center.x-(obstacle.minX+obstacle.maxX)/2,sy=center.y-(obstacle.minY+obstacle.maxY)/2,sz=center.z-(obstacle.minZ+obstacle.maxZ)/2;
         double ex=obstacle.getXsize()/2,ey=obstacle.getYsize()/2,ez=obstacle.getZsize()/2;
