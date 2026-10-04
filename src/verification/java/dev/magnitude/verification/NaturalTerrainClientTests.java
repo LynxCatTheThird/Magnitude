@@ -12,15 +12,25 @@ import java.util.*;
 
 /** Sends normal forward input; terrain and movement remain server authoritative. */
 public final class NaturalTerrainClientTests implements ClientModInitializer {
-    private int ticks;
+    private int ticks,phase=-1;
+    private double expectedSize;
+    private boolean running,readySent;
     @Override public void onInitializeClient(){
         if(!Boolean.getBoolean("magnitude.naturalTerrainVerification"))return;
+        net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.registerGlobalReceiver(NaturalTerrainProtocol.Phase.TYPE,(packet,context)->{
+            phase=packet.index();expectedSize=packet.size();running=packet.running();readySent=false;
+        });
         ClientTickEvents.START_CLIENT_TICK.register(client->{
             WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();
             net.minecraft.client.KeyMapping.releaseAll();
             if(client.player!=null&&client.level!=null&&client.gui.overlay()==null){
                 client.options.inactivityFpsLimit().set(net.minecraft.client.InactivityFpsLimit.MINIMIZED);
-                client.player.setYRot(0);client.player.setXRot(10);client.options.keyUp.setDown(true);
+                client.player.setYRot(0);client.player.setXRot(10);if(running)client.options.keyUp.setDown(true);
+                else if(phase>=0&&!readySent&&Math.abs(dev.magnitude.core.Dimensions.snapshot(client.player).base()-expectedSize)<1e-5
+                    &&dev.magnitude.core.EntityState.of(client.player).physicsRevision>0
+                    &&dev.magnitude.physics.WorldObstacles.loaded(client.player,dev.magnitude.physics.WorldObstacles.regions(dev.magnitude.physics.PlayerBody.parts(client.player,client.player.position()),net.minecraft.world.phys.Vec3.ZERO,0))){
+                    net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(new NaturalTerrainProtocol.Ready(phase));readySent=true;
+                }
             }
         });
         ClientTickEvents.END_CLIENT_TICK.register(client->{
@@ -33,7 +43,7 @@ public final class NaturalTerrainClientTests implements ClientModInitializer {
                 if(WorldQueryTrace.ROWS.stream().anyMatch(r->!Boolean.TRUE.equals(((Map<?,?>)r).get("complete"))))Files.writeString(Path.of("natural-client-denied-trace.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(WorldQueryTrace.ROWS));
                 if(++ticks%20==0){
                     if(!WorldQueryTrace.MOVES.isEmpty())Files.writeString(Path.of("natural-client-movement-trace.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(WorldQueryTrace.MOVES));
-                    var data=new LinkedHashMap<String,Object>();data.put("ticks",ticks);data.put("position",client.player.position().toString());data.put("scale",dev.magnitude.core.Dimensions.snapshot(client.player).base());data.put("frames",ClientMetrics.FRAMES.summary());data.put("cache",FootprintRenderer.cached());data.put("cacheTick",FootprintRenderer.TICK_TIMES.summary());data.put("extraction",FootprintRenderer.EXTRACTION_TIMES.summary());data.put("failure",dev.magnitude.core.EntityState.of(client.player).contacts.diagnostics.failure);data.put("rejectionEvents",dev.magnitude.core.EntityState.of(client.player).contacts.diagnostics.rejectionEvents);
+                    var data=new LinkedHashMap<String,Object>();data.put("ticks",ticks);data.put("phase",phase);data.put("walkingEnabled",running);data.put("readySent",readySent);data.put("position",client.player.position().toString());data.put("scale",dev.magnitude.core.Dimensions.snapshot(client.player).base());data.put("frames",ClientMetrics.FRAMES.summary());data.put("cache",FootprintRenderer.cached());data.put("cacheTick",FootprintRenderer.TICK_TIMES.summary());data.put("extraction",FootprintRenderer.EXTRACTION_TIMES.summary());data.put("failure",dev.magnitude.core.EntityState.of(client.player).contacts.diagnostics.failure);data.put("rejectionEvents",dev.magnitude.core.EntityState.of(client.player).contacts.diagnostics.rejectionEvents);
                     var regions=dev.magnitude.physics.WorldObstacles.regions(dev.magnitude.physics.PlayerBody.parts(client.player,client.player.position()),client.player.getDeltaMovement(),dev.magnitude.physics.StepPolicy.height(client.player));
                     var geometry=new ArrayList<Object>();long total=0;
                     for(var region:regions){long count=dev.magnitude.physics.LocalProxy.cells(region);total+=count;geometry.add(Map.of("box",region.toString(),"cells",count,"loaded",dev.magnitude.physics.LocalProxy.loaded(client.level,region)));}

@@ -5,7 +5,7 @@
 ## 安装
 
 1. 安装 Minecraft Java Edition 26.3、Fabric Loader 0.19.5 或更新版本，以及对应的 Fabric API。
-2. 将 `magnitude-0.1.4-alpha26+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
+2. 将 `magnitude-0.1.4-alpha27+26.3.jar` 放进客户端和服务端的 `mods` 文件夹。缩放运行时已内置在这个 JAR 中，不需要另放依赖；升级时移除旧版 Magnitude JAR。
 3. 首次启动后可编辑世界或服务端目录下的 `config/magnitude.json`，修改后使用 `/magnitude config reload`。
 
 客户端和服务端必须使用同一版本。单人游戏也会同时运行服务端逻辑。
