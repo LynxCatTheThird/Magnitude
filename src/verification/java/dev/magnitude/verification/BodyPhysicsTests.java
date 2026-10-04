@@ -23,6 +23,8 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 public final class BodyPhysicsTests {
+    public static boolean packetProbe;
+    public static Vec3 packetMovement;
     private static final BlockPos ROOT=new BlockPos(6000,220,6000);
     private static void require(boolean ok,String label,Consumer<String> passed){if(!ok)throw new AssertionError(label);passed.accept(label);}
     private static void ready(ServerPlayer player) {
@@ -117,6 +119,27 @@ public final class BodyPhysicsTests {
             ready(actor);actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());actor.connection.resetPosition();level.addNewPlayer(actor);attached=true;
             actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6000.6,220,6000.5,true,false));
             require(Math.abs(actor.getX()-6000.6)<1e-6,"ordinary movement packet accepts clear skeletal movement",passed);
+            actor.setPos(6000.5,220,6000.5);ready(actor);
+            actor.connection=new ServerGamePacketListenerImpl(server,new Connection(PacketFlow.SERVERBOUND),actor,CommonListenerCookie.createInitial(actor.getGameProfile(),false));
+            actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());actor.connection.resetPosition();
+            var baseline=(dev.magnitude.verification.mixin.FloatingProbeAccessor)actor.connection;
+            baseline.magnitude$setConnectionTick(1); // Tick zero initializes native position baselines on every packet.
+            actor.move(MoverType.SELF,new Vec3(.8,0,0));
+            require(Math.abs(actor.getX()-6001.3)<1e-6&&Math.abs(baseline.magnitude$lastGoodX()-6000.5)<1e-6,
+                "server displacement fixture moves the body after an established native packet baseline",passed);
+            level.setBlock(ROOT.offset(2,0,0),Blocks.GLASS_PANE.defaultBlockState(),2);
+            level.setBlock(ROOT.offset(2,1,0),Blocks.GLASS_PANE.defaultBlockState(),2);
+            packetMovement=null;packetProbe=true;
+            try{actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6001.4,220,6000.5,true,false));}
+            finally{packetProbe=false;}
+            require(packetMovement!=null&&packetMovement.subtract(new Vec3(.1,0,0)).lengthSqr()<1e-12,
+                "packet collision solver receives only displacement from the current root before native final snapping",passed);
+            require(Math.abs(actor.getX()-6001.4)<1e-6,
+                "packet movement starts at the current server root without reapplying verified server displacement",passed);
+            actor.connection.handleMovePlayer(new ServerboundMovePlayerPacket.Pos(6002.5,220,6000.5,true,false));
+            require(Math.abs(actor.getX()-6001.4)<1e-6,"current-root packet reconciliation still rejects a newly penetrating destination",passed);
+            level.setBlock(ROOT.offset(2,0,0),Blocks.AIR.defaultBlockState(),2);
+            level.setBlock(ROOT.offset(2,1,0),Blocks.AIR.defaultBlockState(),2);
             actor.setPos(6000.5,220,6000.5);ready(actor);
             actor.connection=new ServerGamePacketListenerImpl(server,new Connection(PacketFlow.SERVERBOUND),actor,CommonListenerCookie.createInitial(actor.getGameProfile(),false));
             actor.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());actor.connection.resetPosition();

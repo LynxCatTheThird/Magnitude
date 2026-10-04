@@ -1,1 +1,18 @@
-{"required": true, "package": "dev.magnitude.verification.mixin", "compatibilityLevel": "JAVA_25", "mixins": ["WorldQueryTraceMixin", "MovementTraceMixin"], "client": ["EscapeProbeAccessor"], "injectors": {"defaultRequire": 1}}
+{
+  "required": true,
+  "package": "dev.magnitude.verification.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "WorldQueryTraceMixin",
+    "MovementTraceMixin",
+    "FloatingProbeAccessor",
+    "SparseReadProbeMixin",
+    "SparseShapeMutationMixin"
+  ],
+  "client": [
+    "EscapeProbeAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

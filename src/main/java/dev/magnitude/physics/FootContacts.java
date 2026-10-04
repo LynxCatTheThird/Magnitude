@@ -15,6 +15,21 @@ import java.util.List;
 public final class FootContacts {
     public static final int CELLS_PER_QUERY=1024, PATCHES_PER_QUERY=512, BOXES_PER_CELL=32;
     private FootContacts(){}
+    /** A proposed translation can be a walking step only if a real sole lands on a known surface. */
+    public static boolean supportedAt(Player player,Vec3 movement){
+        var scale=Dimensions.snapshot(player);var pose=EntityState.of(player).pose;var root=player.position();
+        float yaw=player.getYRot();double height=PlayerBody.stanceHeight(player);long revision=WorldObstacles.revision();
+        boolean supported=false;
+        for(int side:new int[]{-1,1}){
+            Vec3 sole=PlayerBody.foot(player,side).add(0,.01,0).add(movement);
+            var contact=query(player,sole,scale.bootHalfWidth(),scale.bootHalfLength(),Math.toRadians(player.getYRot()),.0625,.0625);
+            if(!contact.complete())return false;
+            supported|=contact.supported()&&Math.abs(contact.height()-sole.y)<1e-6;
+        }
+        return supported&&revision==WorldObstacles.revision()&&root.equals(player.position())
+            &&pose.equals(EntityState.of(player).pose)&&yaw==player.getYRot()
+            &&scale.modelWidth()==Dimensions.snapshot(player).modelWidth()&&height==PlayerBody.stanceHeight(player);
+    }
     public static FootContact capture(Player player,int side){
         var scale=Dimensions.snapshot(player);
         // A contact plane is the sole's actual height, not the block containing its center.

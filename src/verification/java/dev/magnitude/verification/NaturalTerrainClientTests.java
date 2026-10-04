@@ -21,7 +21,7 @@ public final class NaturalTerrainClientTests implements ClientModInitializer {
             phase=packet.index();expectedSize=packet.size();running=packet.running();readySent=false;
         });
         ClientTickEvents.START_CLIENT_TICK.register(client->{
-            WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();
+            WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();WorldQueryTrace.POSES.clear();
             net.minecraft.client.KeyMapping.releaseAll();
             if(client.player!=null&&client.level!=null&&client.gui.overlay()==null){
                 client.options.inactivityFpsLimit().set(net.minecraft.client.InactivityFpsLimit.MINIMIZED);
@@ -48,6 +48,7 @@ public final class NaturalTerrainClientTests implements ClientModInitializer {
                     var geometry=new ArrayList<Object>();long total=0;
                     for(var region:regions){long count=dev.magnitude.physics.LocalProxy.cells(region);total+=count;geometry.add(Map.of("box",region.toString(),"cells",count,"loaded",dev.magnitude.physics.LocalProxy.loaded(client.level,region)));}
                     data.put("envelopeCells",total);data.put("regions",geometry);data.put("velocity",client.player.getDeltaMovement().toString());data.put("grounded",client.player.onGround());data.put("inputForward",client.options.keyUp.isDown());data.put("input",client.player.input.keyPresses.toString());data.put("moveVector",client.player.input.getMoveVector().toString());data.put("snapshot",dev.magnitude.core.Dimensions.snapshot(client.player).toString());
+                    data.put("pose",dev.magnitude.core.EntityState.of(client.player).pose.toString());
                     if(ticks%200==0)net.minecraft.client.Screenshot.takeScreenshot(client.gameRenderer.mainRenderTarget(),image->{try{image.writeToFile(Path.of("natural-"+ticks+".png"));}catch(Exception error){throw new RuntimeException(error);}finally{image.close();}});
                     Files.writeString(Path.of("natural-client-live.json"),new com.google.gson.Gson().toJson(data));
                 }

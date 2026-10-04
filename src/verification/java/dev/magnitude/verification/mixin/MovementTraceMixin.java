@@ -14,10 +14,18 @@ public abstract class MovementTraceMixin {
     private static void magnitude$countPose(Player p,BodyPose pose,CallbackInfoReturnable<Boolean> info){
         if(p.getName().getString().equals("SupportResolver"))dev.magnitude.verification.SupportResolverTests.poseChecks++;
     }
+    @Inject(method="poseAllowed",at=@At("RETURN"))
+    private static void magnitude$poseProof(Player p,BodyPose pose,CallbackInfoReturnable<Boolean> info){WorldQueryTrace.poseChecked(p,pose,info.getReturnValue());}
     @Inject(method="permitted",at=@At("HEAD"))
     private static void magnitude$start(Player p,Vec3 wanted,CallbackInfoReturnable<Boolean> info){if(!Boolean.getBoolean("magnitude.queryTrace"))return;WorldQueryTrace.begin(p,WorldObstacles.regions(PlayerBody.parts(p,p.position()),wanted,0));WorldQueryTrace.wanted(wanted);}
     @Inject(method="permitted",at=@At("RETURN"))
     private static void magnitude$end(Player p,Vec3 wanted,CallbackInfoReturnable<Boolean> info){WorldQueryTrace.end(p,new WorldObstacles.Result(java.util.List.of(),info.getReturnValue()));}
+    @Inject(method="solve",at=@At("HEAD"))
+    private static void magnitude$solveStart(Player p,Vec3 wanted,CallbackInfoReturnable<BodyCollision.Result> info){
+        if(Boolean.getBoolean("magnitude.queryTrace"))WorldQueryTrace.solveBegin();
+        if(dev.magnitude.verification.BodyPhysicsTests.packetProbe&&p.getName().getString().equals("BodyPhysics"))
+            dev.magnitude.verification.BodyPhysicsTests.packetMovement=wanted;
+    }
     @Inject(method="solve",at=@At("RETURN"))
     private static void magnitude$solved(Player p,Vec3 wanted,CallbackInfoReturnable<BodyCollision.Result> info){
         WorldQueryTrace.solved(p,wanted,info.getReturnValue());

@@ -8,14 +8,16 @@
     "main": [
       "dev.magnitude.verification.RuntimeTests",
       "dev.magnitude.verification.TerrainPerformanceTests",
-      "dev.magnitude.verification.NaturalTerrainTests"
+      "dev.magnitude.verification.NaturalTerrainTests",
+      "dev.magnitude.verification.StepNetworkTests"
     ],
     "client": [
       "dev.magnitude.verification.GuiTests",
       "dev.magnitude.verification.GuiNetworkTests",
       "dev.magnitude.verification.DualClientTerrainTests",
       "dev.magnitude.verification.VisualPerformanceTests",
-      "dev.magnitude.verification.NaturalTerrainClientTests"
+      "dev.magnitude.verification.NaturalTerrainClientTests",
+      "dev.magnitude.verification.StepNetworkClientTests"
     ]
   },
   "depends": {

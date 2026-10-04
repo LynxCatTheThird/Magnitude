@@ -34,7 +34,7 @@ public final class NaturalTerrainTests implements ModInitializer {
             if(packet.index()==phase&&context.player().getName().getString().equals("NaturalWalker"))ready=true;
         });
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(startedServer->{
-        ServerTickEvents.START_SERVER_TICK.register(server->{start=System.nanoTime();WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();});
+        ServerTickEvents.START_SERVER_TICK.register(server->{start=System.nanoTime();WorldQueryTrace.ROWS.clear();WorldQueryTrace.MOVES.clear();WorldQueryTrace.POSES.clear();});
         ServerTickEvents.END_SERVER_TICK.register(server->{
             var p=server.getPlayerList().getPlayerByName("NaturalWalker");if(p==null||phase>=SIZES.length)return;
             try{
@@ -90,9 +90,16 @@ public final class NaturalTerrainTests implements ModInitializer {
                 }
                 if(WorldQueryTrace.ROWS.stream().anyMatch(r->!Boolean.TRUE.equals(((Map<?,?>)r).get("complete"))))Files.writeString(Path.of("natural-server-denied-trace.json"),json.toJson(WorldQueryTrace.ROWS));
                 if(tick%20==0&&!WorldQueryTrace.MOVES.isEmpty())Files.writeString(Path.of("natural-server-movement-trace.json"),json.toJson(WorldQueryTrace.MOVES));
+                if(tick%20==0&&!WorldQueryTrace.MOVES.isEmpty())Files.writeString(Path.of("natural-server-movement-trace-"+phase+".json"),json.toJson(WorldQueryTrace.MOVES));
+                if(tick%20==0&&!WorldQueryTrace.POSES.isEmpty())Files.writeString(Path.of("natural-pose-trace-"+phase+".json"),json.toJson(WorldQueryTrace.POSES));
                 previous=p.position();
                 if(phase==1&&tick%20==0)Files.writeString(Path.of("natural-query-trace.json"),json.toJson(WorldQueryTrace.ROWS));
-                if(tick%20==0)Files.writeString(Path.of("natural-live.json"),json.toJson(Map.of("phase",phase,"tick",tick,"position",p.position().toString(),"denied",denied,"stalled",stalled,"reason",EntityState.of(p).contacts.diagnostics.failure)));
+                if(tick%20==0){
+                    var state=EntityState.of(p);var row=new LinkedHashMap<String,Object>();
+                    row.put("phase",phase);row.put("tick",tick);row.put("position",p.position().toString());row.put("denied",denied);row.put("stalled",stalled);row.put("reason",state.contacts.diagnostics.failure);
+                    row.put("pose",state.pose.toString());row.put("nativeGrounded",p.onGround());row.put("anchors",state.contacts.feet.reason);row.put("leftSole",PlayerBody.foot(p,-1).toString());row.put("rightSole",PlayerBody.foot(p,1).toString());row.put("velocity",p.getDeltaMovement().toString());
+                    Files.writeString(Path.of("natural-live.json"),json.toJson(row));
+                }
             }catch(Throwable error){error.printStackTrace();try{Files.writeString(Path.of("natural-server-results.json"),json.toJson(Map.of("success",false,"failure",error.toString(),"results",results)));}catch(Exception ignored){}phase=SIZES.length;}
         });
         });

@@ -16,6 +16,8 @@ public final class MotionContacts {
         }
     }
     private static Vec3 resolve(Player player,Vec3 wanted) {
+        Vec3 verified=PacketSteps.consume(player,wanted);
+        if(verified!=null)return verified;
         var contacts = EntityState.of(player).contacts;
         if ((player.onGround() || wanted.y<0) && wanted.lengthSqr()>1e-8
             && player instanceof ServerPlayer server

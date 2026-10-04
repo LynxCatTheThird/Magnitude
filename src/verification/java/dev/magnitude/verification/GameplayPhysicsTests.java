@@ -30,12 +30,13 @@ public final class GameplayPhysicsTests {
         Magnitude.settings.maximum=ScaleSafety.MAXIMUM;
         var level=server.overworld();
         for(int x=-1;x<=1;x++)for(int z=-1;z<=1;z++)level.getChunk(ROOT.offset(x*16,0,z*16));
-        for(var pos:BlockPos.betweenClosed(ROOT.offset(-10,-1,-10),ROOT.offset(10,24,10)))
+        for(var pos:BlockPos.betweenClosed(ROOT.offset(-16,-1,-12),ROOT.offset(16,48,22)))
             level.setBlock(pos,pos.getY()<200?Blocks.STONE.defaultBlockState():Blocks.AIR.defaultBlockState(),2);
         var player=new ServerPlayer(server,level,new GameProfile(UUID.randomUUID(),"GameplayPhysics"),ClientInformation.createDefault());
         player.connection=new net.minecraft.server.network.ServerGamePacketListenerImpl(server,
             new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND),player,
             net.minecraft.server.network.CommonListenerCookie.createInitial(player.getGameProfile(),false));
+        boolean attached=false;
         try {
             // A two-block platform extends across both feet; no terrain mutation needed to climb.
             for(int z=-4;z<=4;z++)for(int y=0;y<2;y++)level.setBlock(ROOT.offset(2,y,z),Blocks.STONE.defaultBlockState(),2);
@@ -299,9 +300,101 @@ public final class GameplayPhysicsTests {
                 require(EntityState.of(player).physicsCells<=LocalProxy.CELLS_PER_TICK&&PhysicsWork.cellsRemaining()>=0,
                     "tall step preserves traversal budgets at "+size,passed);
             }
+            // Exactly enough work for the ordinary query and the upper extension.
+            // Requiring the complete body a second time incorrectly refuses this climb.
+            for(double size:new double[]{49.875,50.125}){
+                Dimensions.set(player,size,0);ready(player);WorldObstacles.prepare(player);
+                var wanted=new Vec3(0,0,2);var parts=PlayerBody.parts(player,player.position());
+                var regions=WorldObstacles.regions(parts,wanted,0);
+                long ordinaryCost=regions.stream().mapToLong(LocalProxy::cells).sum();
+                long extraCost=regions.stream().mapToLong(r->LocalProxy.cells(new net.minecraft.world.phys.AABB(
+                    r.minX,r.maxY,r.minZ,r.maxX,r.maxY+6,r.maxZ))).sum();
+                long reservedStepCost=ordinaryCost+extraCost;
+                var state=EntityState.of(player);state.physicsCells=(int)(LocalProxy.CELLS_PER_TICK-reservedStepCost);
+                PhysicsWork.cells(PhysicsWork.cellsRemaining()-reservedStepCost);
+                var climb=BodyCollision.solve(player,wanted);
+                require(!climb.denied()&&climb.movement().z>1.99&&Math.abs(climb.movement().y-6)<1e-5,
+                    "ordinary envelope is not charged again when selecting a budgeted step at "+size,passed);
+                require(state.physicsCells<=LocalProxy.CELLS_PER_TICK&&PhysicsWork.cellsRemaining()>=0,
+                    "step extensions stay within the conservative reservation after skipping empty sections at "+size,passed);
+                ready(player);WorldObstacles.prepare(player);
+                state.physicsCells=(int)(LocalProxy.CELLS_PER_TICK-extraCost);
+                PhysicsWork.cells(PhysicsWork.cellsRemaining()-extraCost);
+                double allowed=StepPolicy.height(player,parts,wanted);
+                require(allowed>=6-1e-5,"paid ordinary envelope does not reduce the remaining upper extension at "+size,passed);
+                ready(player);WorldObstacles.prepare(player);
+                WorldObstacles.query(player,regions,true);ordinaryCost=state.physicsCells;
+                ready(player);WorldObstacles.prepare(player);state.physicsCells=(int)(LocalProxy.CELLS_PER_TICK-ordinaryCost);
+                PhysicsWork.cells(PhysicsWork.cellsRemaining()-ordinaryCost);
+                var exhausted=BodyCollision.solve(player,wanted);
+                require(!exhausted.denied()&&exhausted.movement().z<2&&Math.abs(exhausted.movement().y)<1e-8
+                    &&state.physicsCells==LocalProxy.CELLS_PER_TICK&&PhysicsWork.cellsRemaining()==0,
+                    "no extension budget preserves verified ordinary movement without granting a climb at "+size,passed);
+            }
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-16,6,5),ROOT.offset(16,19,22)))
+                level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
+            Dimensions.set(player,49.875,0);ready(player);
+            var stepTarget=new Vec3(8000.5,220,8002.5);
+            player.setLastClientInput(new net.minecraft.world.entity.player.Input(true,false,false,false,false,false,false));
+            PacketSteps.prepare(player,stepTarget);
+            require(PacketSteps.velocityAllowance(player)==400&&PacketSteps.movement(player).equals(new Vec3(0,20,2))
+                &&player.position().equals(new Vec3(8000.5,200,8000.5)),
+                "grounded packet proof validates a step without moving the server actor",passed);
+            level.getChunk(ROOT).setBlockState(ROOT.offset(0,30,0),Blocks.STONE.defaultBlockState(),2);
+            require(PacketSteps.movement(player)==null&&PacketSteps.velocityAllowance(player)==0,
+                "direct chunk mutation invalidates a packet step before it can be consumed",passed);
+            level.setBlock(ROOT.offset(0,30,0),Blocks.AIR.defaultBlockState(),2);
+            ready(player);player.setOnGround(false);PacketSteps.prepare(player,stepTarget);
+            require(PacketSteps.velocityAllowance(player)==0,"airborne packets cannot claim anatomical step allowance",passed);
+            ready(player);player.setLastClientInput(new net.minecraft.world.entity.player.Input(true,false,false,false,true,false,false));PacketSteps.prepare(player,stepTarget);
+            require(PacketSteps.velocityAllowance(player)==0,"jump input cannot claim a grounded automatic step",passed);
+            ready(player);player.setLastClientInput(net.minecraft.world.entity.player.Input.EMPTY);PacketSteps.prepare(player,stepTarget);
+            require(PacketSteps.velocityAllowance(player)==0,"position packets without horizontal intent cannot claim a step",passed);
+            ready(player);player.setLastClientInput(new net.minecraft.world.entity.player.Input(true,false,false,false,false,false,false));
+            PacketSteps.prepare(player,stepTarget.add(0,1,0));
+            require(PacketSteps.velocityAllowance(player)==0,"unmatched rise cannot receive the allowance of a real platform",passed);
+            ready(player);PhysicsWork.cells(PhysicsWork.cellsRemaining());PacketSteps.prepare(player,stepTarget);
+            require(PacketSteps.velocityAllowance(player)==0,"unknown source contact after budget exhaustion cannot authorize a step",passed);
+            ready(player);PacketSteps.prepare(player,stepTarget);
+            EntityState.of(player).pose=BodyPose.IDLE.withSupport(1);
+            require(PacketSteps.movement(player)==null&&PacketSteps.velocityAllowance(player)==0,
+                "pose changes invalidate an otherwise verified packet step",passed);
+            ready(player);PacketSteps.prepare(player,stepTarget);player.setPos(player.position().add(.01,0,0));
+            require(PacketSteps.movement(player)==null&&PacketSteps.velocityAllowance(player)==0,
+                "root changes invalidate an otherwise verified packet step",passed);
+            ready(player);PacketSteps.prepare(player,stepTarget);Dimensions.set(player,50.125,0);
+            require(PacketSteps.movement(player)==null&&PacketSteps.velocityAllowance(player)==0,
+                "size changes invalidate an otherwise verified packet step",passed);
+            Dimensions.set(player,49.875,0);ready(player);
+            player.connection=new net.minecraft.server.network.ServerGamePacketListenerImpl(server,
+                new net.minecraft.network.Connection(net.minecraft.network.protocol.PacketFlow.SERVERBOUND),player,
+                net.minecraft.server.network.CommonListenerCookie.createInitial(player.getGameProfile(),false));
+            player.connection.handleAcceptPlayerLoad(new net.minecraft.network.protocol.game.ServerboundPlayerLoadedPacket());player.connection.resetPosition();
+            level.addNewPlayer(player);attached=true;
+            player.connection.handlePlayerInput(new net.minecraft.network.protocol.game.ServerboundPlayerInputPacket(new net.minecraft.world.entity.player.Input(true,false,false,false,false,false,false)));
+            player.connection.handleMovePlayer(new net.minecraft.network.protocol.game.ServerboundMovePlayerPacket.Pos(8000.5,220,8002.5,false,false));
+            require(Math.abs(player.getY()-220)<1e-5&&player.getZ()>8002.49,
+                "native position handler accepts an independently verified twenty-block anatomical step",passed);
+            require(!((dev.magnitude.verification.mixin.FloatingProbeAccessor)player.connection).magnitude$isFloating(),
+                "native floating state recognizes the step's verified actual soles outside the local proxy",passed);
+            require(PacketSteps.velocityAllowance(player)==0&&PacketSteps.movement(player)==null,
+                "a consumed packet proof is cleared before the handler returns",passed);
+            // The center bridge fits between the legs, but would catch the torso on descent.
+            // A body-part collision there is not a planted foot and cannot justify an automatic step.
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-16,0,-12),ROOT.offset(16,48,22)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-2,0,8),ROOT.offset(2,47,22)))level.setBlock(pos,Blocks.STONE.defaultBlockState(),2);
+            Dimensions.set(player,49.875,0);ready(player);
+            var bridge=BodyCollision.solve(player,new Vec3(0,0,4));
+            require(!bridge.denied()&&bridge.movement().z<4&&Math.abs(bridge.movement().y)<1e-6,
+                "automatic stepping cannot lift the pelvis onto a central bridge with both soles dangling",passed);
+            require(FootContacts.supportedAt(player,Vec3.ZERO),"central bridge fixture still has real source foot support",passed);
             Dimensions.set(player,ScaleSafety.MAXIMUM,0);ready(player);
             var extreme=BodyCollision.solve(player,new Vec3(1,0,0));
             require(extreme.denied()&&extreme.movement().equals(Vec3.ZERO),"extreme anatomical step reach cannot bypass traversal budgets or grant unverified movement",passed);
-        } finally {Magnitude.settings=original;PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();}
+        } finally {
+            for(var pos:BlockPos.betweenClosed(ROOT.offset(-2,0,8),ROOT.offset(2,47,22)))level.setBlock(pos,Blocks.AIR.defaultBlockState(),2);
+            PacketSteps.clear();if(attached)level.removePlayerImmediately(player,net.minecraft.world.entity.Entity.RemovalReason.DISCARDED);
+            Magnitude.settings=original;PhysicsWork.beginTick();Impact.beginTick();EntityQueries.beginTick();
+        }
     }
 }

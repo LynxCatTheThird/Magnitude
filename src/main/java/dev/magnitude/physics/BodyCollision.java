@@ -107,8 +107,7 @@ public final class BodyCollision {
         if(step>0&&(player.onGround()||wanted.y<0&&ordinary.y!=wanted.y)&&(ordinary.x!=wanted.x||ordinary.z!=wanted.z)){
             step=StepPolicy.height(player,parts,wanted);
             if(step==0)return ordinary;
-            var extra=new ArrayList<AABB>();
-            for(var region:regions)extra.add(new AABB(region.minX,region.maxY,region.minZ,region.maxX,region.maxY+step,region.maxZ));
+            var extra=WorldObstacles.above(regions,step);
             var above=WorldObstacles.query(player,extra,true);
             if(!above.complete())return ordinary;
             var combined=new java.util.LinkedHashSet<AABB>(obstacles);combined.addAll(above.boxes());
@@ -134,7 +133,7 @@ public final class BodyCollision {
             Vec3 across=clip(raised,candidates,new Vec3(wanted.x,0,wanted.z));
             Vec3 down=clip(shift(raised,across),candidates,new Vec3(0,wanted.y-up.y,0));
             Vec3 candidate=up.add(across).add(down);
-            if(candidate.horizontalDistanceSqr()>result.horizontalDistanceSqr())result=candidate;
+            if(candidate.horizontalDistanceSqr()>result.horizontalDistanceSqr()&&FootContacts.supportedAt(player,candidate))result=candidate;
         }
         return result;
     }
