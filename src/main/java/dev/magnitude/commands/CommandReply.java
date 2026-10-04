@@ -11,10 +11,18 @@ public final class CommandReply {
     }
     public static int help(CommandContext<CommandSourceStack> context){
         message(context,"help");
-        String[] roots={"/magnitude config show","/magnitude scale","/magnitude action","/magnitude config server"};
-        for(int i=0;i<CommandReference.GROUPS.size();i++){
-            if(i==3&&!dev.magnitude.config.ConfigService.administrator(context.getSource()))continue;
-            var line=CommandReference.suggestion("gui.magnitude.commandGroup."+CommandReference.GROUPS.get(i),roots[i]);
+        for(String domain:CommandReference.DOMAINS){
+            var line=CommandReference.suggestion("gui.magnitude.commandDomain."+domain,CommandReference.entry(domain));
+            context.getSource().sendSuccess(()->line,false);
+        }
+        return 1;
+    }
+    public static int usage(CommandContext<CommandSourceStack> context,String domain){
+        message(context,"usage."+domain);
+        boolean administrator=dev.magnitude.config.ConfigService.administrator(context.getSource());
+        for(var example:CommandReference.examplesForDomain(domain,administrator)){
+            var line=CommandReference.suggestion("gui.magnitude.command."+example[0],example[1]).copy()
+                .append(Component.literal("  "+example[1]).withStyle(net.minecraft.ChatFormatting.GRAY));
             context.getSource().sendSuccess(()->line,false);
         }
         return 1;

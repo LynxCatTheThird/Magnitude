@@ -36,16 +36,26 @@ public final class ClientPreferences {
         MagnitudeClient.smoothing=values.get("smoothing")==1;MagnitudeClient.hiddenNames=values.get("hiddenNames")==1;
         dev.magnitude.client.visual.FootprintRenderer.enabled=values.get("footprints")==1;dev.magnitude.client.visual.FootprintRenderer.distance=values.get("footprintDistance");dev.magnitude.client.visual.FootprintRenderer.cacheLimit=values.get("footprintCache").intValue();
     }
+    public static boolean valid(String id,double value){
+        if(!Double.isFinite(value))return false;
+        return switch(id){
+            case "magnification"->value>=1&&value<=32;
+            case "sensitivity"->value>=.1&&value<=2;
+            case "footprintDistance"->value>=16&&value<=256;
+            case "footprintCache"->value>=128&&value<=4096&&value==Math.rint(value);
+            case "smoothing","hiddenNames","footprints"->value==0||value==1;
+            default->false;
+        };
+    }
     public static boolean save(Map<String,Double> values){
         var next=new ClientPreferences();
         lastError="invalid";
         try {
+            for(String id:values().keySet())if(!values.containsKey(id)||!valid(id,values.get(id)))return false;
             next.magnification=values.get("magnification");next.sensitivity=values.get("sensitivity");
             double smooth=values.get("smoothing"),names=values.get("hiddenNames");
-            if(!Double.isFinite(next.magnification)||next.magnification<1||next.magnification>32||!Double.isFinite(next.sensitivity)||next.sensitivity<.1||next.sensitivity>2||(smooth!=0&&smooth!=1)||(names!=0&&names!=1))return false;
             next.smoothing=smooth==1;next.hiddenNames=names==1;
             double footprints=values.get("footprints"),cache=values.get("footprintCache");next.footprintDistance=values.get("footprintDistance");
-            if((footprints!=0&&footprints!=1)||!Double.isFinite(next.footprintDistance)||next.footprintDistance<16||next.footprintDistance>256||!Double.isFinite(cache)||cache<128||cache>4096||cache!=Math.rint(cache))return false;
             next.footprints=footprints==1;next.footprintCache=(int)cache;
             lastError="saveFailed";
             dev.magnitude.config.ConfigFiles.write(path(),JSON.toJson(next));next.apply();lastError="applied";return true;

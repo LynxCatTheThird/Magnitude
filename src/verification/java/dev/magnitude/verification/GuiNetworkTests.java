@@ -54,16 +54,17 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         check(SettingsConnection.view.terrainReason().equals("serverOff"),"GUI shows disabled server rule after personal opt-in");
                         var screen=(SettingsScreen)client.gui.screen();click(screen,"gui.magnitude.tab.server");
                         if(!admin) {
-                            check(screen.children().stream().filter(x->x instanceof EditBox).allMatch(x->!((EditBox)x).active),"real ordinary connection sees read-only server fields");
+                            check(screen.children().stream().filter(x->x instanceof EditBox b&&!b.getMessage().equals(Component.translatable("gui.magnitude.search"))).allMatch(x->!((EditBox)x).active),"real ordinary connection sees read-only server fields");
                             check(SettingsConnection.request(2,Map.of("terrainDamage",1d)),"forged edit sent for authorization test");
                         }else {
                             var off=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(Component.translatable("options.off").getString())).map(x->(Button)x).findFirst().orElseThrow();
                             off.onPress(null);
-                            click(screen,"gui.magnitude.group.rules");click(screen,"gui.magnitude.group.response");
+                            screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().equals(Component.translatable("gui.magnitude.search"))).map(x->(EditBox)x).findFirst().orElseThrow().setValue("maximum");
                             var maximum=screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().getString().equals(Component.translatable("config.magnitude.field.maximum").getString())).map(x->(EditBox)x).findFirst().orElseThrow();maximum.setValue("48");
-                            click(screen,"gui.magnitude.group.size");
+                            click(screen,"gui.magnitude.group.budget");
                             var presetLabel=Component.translatable("gui.magnitude.workPreset",Component.translatable("gui.magnitude.preset.standard")).getString();
                             var preset=screen.children().stream().filter(x->x instanceof Button b&&b.getMessage().getString().equals(presetLabel)).map(x->(Button)x).findFirst().orElseThrow();preset.onPress(null);
+                            screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().equals(Component.translatable("gui.magnitude.search"))).map(x->(EditBox)x).findFirst().orElseThrow().setValue("terrainDamage");
                             click(screen,"gui.magnitude.apply");
                         }
                     }

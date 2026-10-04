@@ -115,6 +115,16 @@ public final class ConfigTests {
             long helpRevision=ConfigService.INSTANCE.revision();
             check(dispatcher.execute("magnitude",normal)==1&&helpRevision==ConfigService.INSTANCE.revision(),
                 "ordinary root help keeps server settings unchanged",passed);
+            check(dev.magnitude.commands.CommandReference.DOMAINS.size()==8,"root help lists every canonical domain",passed);
+            for(String domain:dev.magnitude.commands.CommandReference.DOMAINS){
+                var entry=dispatcher.parse(dev.magnitude.commands.CommandReference.entry(domain).substring(1),normal);
+                check(!entry.getReader().canRead()&&entry.getExceptions().isEmpty(),"ordinary root help entry parses: "+domain,passed);
+                for(var example:dev.magnitude.commands.CommandReference.examplesForDomain(domain,false)){
+                    var parsed=dispatcher.parse(example[1].substring(1),normal);
+                    check(!parsed.getReader().canRead()&&parsed.getExceptions().isEmpty(),"ordinary domain help excludes privileged syntax: "+example[1],passed);
+                }
+            }
+            for(String domain:new String[]{"scale","action","carry","tool","random"})check(dispatcher.execute("magnitude "+domain,normal)==1&&helpRevision==ConfigService.INSTANCE.revision(),"domain examples are read-only: "+domain,passed);
             var expectedRoots=java.util.Set.of("scale","config","action","carry","tool","random","diagnostics","menu");
             check(dispatcher.getRoot().getChild("magnitude").getChildren().stream().map(com.mojang.brigadier.tree.CommandNode::getName).collect(java.util.stream.Collectors.toSet()).equals(expectedRoots),"only canonical domain roots are registered",passed);
             for(String oldCommand:new String[]{"get","set 2","multiply 2","add 1","height 4","reset","consent carry true","terrain true","pickup","release","throw","blow","stomp","ability","ride","physics status","physics enable","admin set @s 2","scale get reset","tool mode 0","tool value 2","tool duration 20","carry hand","random 1 2 20"}) {

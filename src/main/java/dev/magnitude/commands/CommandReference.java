@@ -12,7 +12,7 @@ public final class CommandReference {
     private static final String[][][] COMMAND_GROUPS={
         {{"status","/magnitude config show"},{"menu","/magnitude menu"},
          {"terrain","/magnitude config player terrain on"},{"pressure","/magnitude config player pressure on"},
-         {"diagnostics","/magnitude diagnostics physics"}},
+         {"diagnostics","/magnitude diagnostics physics"},{"resizePermit","/magnitude config player resize on"},{"carryPermit","/magnitude config player carry on"}},
         {{"sizeGet","/magnitude scale get"},{"sizeSet","/magnitude scale set 5 20"},
          {"sizeHeight","/magnitude scale height 10 20"},{"sizeReset","/magnitude scale reset"},{"sizeMultiply","/magnitude scale multiply 2 20"},{"sizeAdd","/magnitude scale add 1 20"},
          {"randomStart","/magnitude random start 1 5 200"},{"randomStop","/magnitude random stop"}},
@@ -28,6 +28,18 @@ public final class CommandReference {
          {"food","/magnitude config food minecraft:apple 2"}}};
     public static String[][] examples(int group){
         return java.util.Arrays.stream(COMMAND_GROUPS[group]).map(String[]::clone).toArray(String[][]::new);
+    }
+    public static final List<String> DOMAINS=List.of("scale","config","action","carry","tool","random","diagnostics","menu");
+    public static String entry(String domain){
+        return switch(domain){case "config"->"/magnitude config show";case "diagnostics"->"/magnitude diagnostics physics";default->"/magnitude "+domain;};
+    }
+    public static List<String[]> examplesForDomain(String domain,boolean administrator){
+        var result=new java.util.ArrayList<String[]>();
+        for(int group=0;group<COMMAND_GROUPS.length;group++){
+            if(group==3&&!administrator)continue;
+            for(var example:COMMAND_GROUPS[group])if(example[1].equals("/magnitude "+domain)||example[1].startsWith("/magnitude "+domain+" "))result.add(example.clone());
+        }
+        return List.copyOf(result);
     }
     public static Component suggestion(String labelKey,String command){
         return Component.translatable(labelKey).withStyle(style->style

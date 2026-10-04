@@ -10,7 +10,7 @@ import static com.mojang.brigadier.arguments.DoubleArgumentType.*;
 public final class CarryCommand {
     private CarryCommand(){}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root){
-        var carry=literal("carry").executes(c->CommandReply.message(c,"usage.carry"));var position=literal("position");
+        var carry=literal("carry").executes(c->CommandReply.usage(c,"carry"));var position=literal("position");
         String[] modes={"shoulder","hand","custom"};
         for(int i=0;i<modes.length;i++){final int index=i;position.then(literal(modes[i]).executes(c->{
             var player=c.getSource().getPlayerOrException();EntityState.of(player).carryPosition=index;Messages.syncCarry(player);return CommandReply.message(c,"carry_mode");
