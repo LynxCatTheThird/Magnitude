@@ -176,6 +176,10 @@ public final class SettingsScreen extends Screen {
             var apply=button(tr("apply"),left,height-48,footerWidth,b->apply());apply.active=editable()&&!SettingsConnection.busy();
             button(tr("discard"),left+footerWidth+5,height-48,footerWidth,b->{drafts.keySet().removeIf(key->key.startsWith(tab+":"));localResult="ready";rebuildWidgets();});
         }
+        if(tab==0)button(tr("openDiagnostics"),left,height-48,w-95,b->{tab=4;page=0;localResult="ready";invalidField=null;rebuildWidgets();})
+            .setTooltip(Tooltip.create(tr("diagnosticHint")));
+        if(tab==4)button(tr("copyReport"),left,height-48,w-95,b->{minecraft.keyboardHandler.setClipboard(SettingsReport.create());localResult="copied";})
+            .setTooltip(Tooltip.create(tr("copyReportHint")));
         var refresh=button(tr("refresh"),left+w-90,height-76,90,b->{frameSummary=ClientMetrics.FRAMES.summary();visualTickSummary=dev.magnitude.client.visual.FootprintRenderer.TICK_TIMES.summary();visualExtractSummary=dev.magnitude.client.visual.FootprintRenderer.EXTRACTION_TIMES.summary();SettingsConnection.request(0,Map.of());});refresh.active=SettingsConnection.supported()&&!SettingsConnection.busy();
         button(tr("close"),editTab?left+2*(footerWidth+5):left+w-90,height-48,editTab?footerWidth:90,b->onClose());wasBusy=SettingsConnection.busy();seenView=SettingsConnection.view;
     }

@@ -72,6 +72,17 @@ public final class GuiNetworkTests implements ClientModInitializer {
                         if(SettingsConnection.busy())return;
                         if(admin)check(SettingsConnection.result.equals("applied")&&SettingsConnection.view.server().get("terrainDamage")==1&&SettingsConnection.view.server().get("maximum")==48&&SettingsConnection.view.server().get("blocksPerTick")==32&&SettingsConnection.view.server().get("checksPerTick")==256&&SettingsConnection.view.server().get("blocksPerImpact")==16,"GUI administrator edits across groups persisted and acknowledged over network");
                         else check(SettingsConnection.result.equals("permission")&&SettingsConnection.view.server().get("terrainDamage")==0,"server rejects forged GUI edit over network");
+                        var screen=(SettingsScreen)client.gui.screen();
+                        if(admin){
+                            screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().equals(Component.translatable("gui.magnitude.search"))).map(x->(EditBox)x).findFirst().orElseThrow().setValue("maximum");
+                            screen.children().stream().filter(x->x instanceof EditBox b&&b.getMessage().equals(Component.translatable("config.magnitude.field.maximum"))).map(x->(EditBox)x).findFirst().orElseThrow().setValue("64");
+                        }
+                        var confirmed=SettingsConnection.view;click(screen,"gui.magnitude.tab.overview");click(screen,"gui.magnitude.openDiagnostics");click(screen,"gui.magnitude.copyReport");
+                        var report=com.google.gson.JsonParser.parseString(client.keyboardHandler.getClipboard()).getAsJsonObject();
+                        check(report.getAsJsonObject("server").getAsJsonObject("server").get("maximum").getAsDouble()==(admin?48:32)
+                            &&SettingsConnection.view==confirmed&&!SettingsConnection.busy(),"network diagnostic copy reads confirmed rules without applying a draft or sending a request");
+                        check(report.get("serverSnapshotAgeMillis").getAsLong()>=0,"network diagnostic report distinguishes the age of its acknowledged snapshot");
+                        if(admin){click(screen,"gui.magnitude.tab.server");check(screen.children().stream().anyMatch(x->x instanceof EditBox b&&b.getMessage().equals(Component.translatable("config.magnitude.field.maximum"))&&b.getValue().equals("64")),"network report preserves the administrator draft");click(screen,"gui.magnitude.discard");}
                         client.player.connection.sendCommand("magnitude config player pressure off");
                     }
                     case 5 -> {check(SettingsConnection.request(0,Map.of()),"network refresh requested after command edit");}

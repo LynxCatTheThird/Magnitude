@@ -303,5 +303,11 @@
   "message.magnitude.usage.config.preset": "工作配额：/magnitude config preset low|standard；仅修改工作配额，不开启地形作用。",
   "message.magnitude.usage.config": "设置：/magnitude config show；player <许可> on|off；管理员使用 server <字段> <值>、preset、food 或 reload。",
   "message.magnitude.usage.config.server": "服务器规则：/magnitude config server <字段> [值]；省略值只读取，布尔值使用 true|false。",
-  "message.magnitude.usage.config.food": "食物系数：/magnitude config food <物品标识> <系数 0.015625～4>。"
+  "message.magnitude.usage.config.food": "食物系数：/magnitude config food <物品标识> <系数 0.015625～4>。",
+  "gui.magnitude.openDiagnostics": "查看诊断",
+  "gui.magnitude.copyReport": "复制诊断报告",
+  "gui.magnitude.copyReportHint": "复制所有分页的完整报告；使用确认值，不包含草稿，不发送。服务器采样在刷新后更新；本地帧间隔不是 GPU 渲染耗时。",
+  "gui.magnitude.command.report": "复制诊断报告",
+  "message.magnitude.usage.diagnostics": "诊断：/magnitude diagnostics physics 查看详细状态；report 获取可复制的设置与耗时快照。",
+  "message.magnitude.reportReady": "诊断报告已准备，点击复制。"
 }

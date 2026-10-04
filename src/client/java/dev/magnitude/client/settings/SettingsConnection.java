@@ -12,7 +12,7 @@ import java.util.Map;
 /** One outstanding request, connection-scoped state, monotonically increasing IDs across reconnects. */
 public final class SettingsConnection {
     private static final Gson JSON=new Gson();
-    private static long sequence,pending,sentAt;
+    private static long sequence,pending,sentAt,receivedAt;
     public static long epoch;
     public static ConfigView view;
     public static String result="ready";
@@ -22,7 +22,8 @@ public final class SettingsConnection {
         ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->reset());
         ClientPlayNetworking.registerGlobalReceiver(ConfigSnapshot.TYPE,(payload,context)->receive(payload,context.client()));
     }
-    private static void reset(){epoch++;pending=0;view=null;result="ready";}
+    private static void reset(){epoch++;pending=0;receivedAt=0;view=null;result="ready";}
+    public static long snapshotAgeMillis(){return view==null||receivedAt==0?-1:Math.max(0,(System.nanoTime()-receivedAt)/1_000_000);}
     public static boolean supported(){return Minecraft.getInstance().getConnection()!=null&&ClientPlayNetworking.canSend(ConfigRequest.TYPE);}
     public static boolean busy(){
         if(pending!=0&&System.nanoTime()-sentAt>5_000_000_000L){pending=0;result="timeout";}
@@ -41,7 +42,7 @@ public final class SettingsConnection {
         try {
             ConfigView next=JSON.fromJson(payload.json(),ConfigView.class);
             if(next==null||next.server()==null||next.personal()==null)return;
-            view=next;result=next.result();pending=0;
+            view=next;receivedAt=System.nanoTime();result=next.result();pending=0;
             if(client.gui.screen() instanceof SettingsScreen screen)screen.received();
             else if(payload.open())client.gui.setScreen(new SettingsScreen(client.gui.screen()));
         }catch(RuntimeException error){pending=0;result="invalid";}

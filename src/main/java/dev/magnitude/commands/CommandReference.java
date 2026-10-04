@@ -12,7 +12,7 @@ public final class CommandReference {
     private static final String[][][] COMMAND_GROUPS={
         {{"status","/magnitude config show"},{"menu","/magnitude menu"},
          {"terrain","/magnitude config player terrain on"},{"pressure","/magnitude config player pressure on"},
-         {"diagnostics","/magnitude diagnostics physics"},{"resizePermit","/magnitude config player resize on"},{"carryPermit","/magnitude config player carry on"}},
+         {"diagnostics","/magnitude diagnostics physics"},{"report","/magnitude diagnostics report"},{"resizePermit","/magnitude config player resize on"},{"carryPermit","/magnitude config player carry on"}},
         {{"sizeGet","/magnitude scale get"},{"sizeSet","/magnitude scale set 5 20"},
          {"sizeHeight","/magnitude scale height 10 20"},{"sizeReset","/magnitude scale reset"},{"sizeMultiply","/magnitude scale multiply 2 20"},{"sizeAdd","/magnitude scale add 1 20"},
          {"randomStart","/magnitude random start 1 5 200"},{"randomStop","/magnitude random stop"}},
@@ -31,7 +31,7 @@ public final class CommandReference {
     }
     public static final List<String> DOMAINS=List.of("scale","config","action","carry","tool","random","diagnostics","menu");
     public static String entry(String domain){
-        return domain.equals("diagnostics")?"/magnitude diagnostics physics":"/magnitude "+domain;
+        return "/magnitude "+domain;
     }
     public static List<String[]> examplesForDomain(String domain,boolean administrator){
         var result=new java.util.ArrayList<String[]>();

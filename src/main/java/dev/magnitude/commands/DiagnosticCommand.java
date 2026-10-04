@@ -17,7 +17,13 @@ import static net.minecraft.commands.Commands.literal;
 public final class DiagnosticCommand {
     private DiagnosticCommand() {}
     public static void attach(LiteralArgumentBuilder<CommandSourceStack> root) {
-        root.then(literal("diagnostics").then(literal("physics").executes(c -> {
+        root.then(literal("diagnostics").executes(c->CommandReply.usage(c,"diagnostics"))
+            .then(literal("report").executes(c->{
+                var view=dev.magnitude.network.ConfigNetworking.view(c.getSource().getPlayerOrException(),new dev.magnitude.config.ConfigService.Result("ready",""));
+                var message=dev.magnitude.config.DiagnosticReport.copyMessage(dev.magnitude.config.DiagnosticReport.create(view));
+                c.getSource().sendSuccess(()->message,false);return 1;
+            }))
+            .then(literal("physics").executes(c -> {
             var player = c.getSource().getPlayerOrException();
             var state = EntityState.of(player);
             var scale = Dimensions.snapshot(player);

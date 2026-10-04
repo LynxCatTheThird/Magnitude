@@ -303,5 +303,11 @@
   "message.magnitude.usage.config.preset": "Work limits: /magnitude config preset low|standard; changes limits without enabling terrain effects.",
   "message.magnitude.usage.config": "Settings: /magnitude config show; player <permission> on|off; administrators use server <field> <value>, preset, food or reload.",
   "message.magnitude.usage.config.server": "Server rules: /magnitude config server <field> [value]; omit the value to read it. Boolean values use true|false.",
-  "message.magnitude.usage.config.food": "Food factors: /magnitude config food <item ID> <factor 0.015625–4>."
+  "message.magnitude.usage.config.food": "Food factors: /magnitude config food <item ID> <factor 0.015625–4>.",
+  "gui.magnitude.openDiagnostics": "Open diagnostics",
+  "gui.magnitude.copyReport": "Copy diagnostic report",
+  "gui.magnitude.copyReportHint": "Copies the full report across all pages. Uses confirmed settings, excludes drafts, and sends nothing. Server samples update after Refresh; local frame intervals are not GPU render time.",
+  "gui.magnitude.command.report": "Copy diagnostic report",
+  "message.magnitude.usage.diagnostics": "Diagnostics: /magnitude diagnostics physics for detailed state; report for a copyable settings and timing snapshot.",
+  "message.magnitude.reportReady": "Diagnostic report ready — click to copy."
 }

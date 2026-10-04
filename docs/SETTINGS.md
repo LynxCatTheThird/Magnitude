@@ -1,6 +1,6 @@
 # 设置界面与命令
 
-适用版本：0.1.4-alpha30+26.3。客户端与服务器使用同一版本。
+适用版本：0.1.4-alpha31+26.3。客户端与服务器使用同一版本。
 
 ## 打开界面
 
@@ -14,13 +14,16 @@
 | 视觉 | 观察倍率、灵敏度、平滑镜头、实体名称与即时脚印覆盖 | 本地玩家 |
 | 个人 | 地形、压力、改变尺寸和被携带许可 | 本人，服务器确认后生效 |
 | 服务器 | 尺寸范围、地形/压力/身体伤害、死亡规则和材料作用配额 | 游戏管理员；其他玩家只读 |
-| 诊断 | 服务器刻耗时、移动查询耗时、拒绝次数和待处理脚印 | 只读，点击刷新采样 |
+| 诊断 | 服务器刻耗时、移动查询耗时、拒绝次数和待处理脚印；复制完整报告 | 只读，点击刷新采样 |
+| 命令 | 按用途分组、搜索和复制唯一语法 | 只读，复制不执行 |
 
 视觉页按镜头/即时脚印分组；服务器页按世界规则、接触与破坏、尺寸与死亡、高级工作预算分组。直接点击所需分组，不必逐个轮换。搜索框按名称、字段标识或说明查找本页全部分组，多个关键词需同时匹配；切换分组会清空搜索并保留草稿。应用会提交当前页面所有分组的草稿，包括搜索隐藏的修改；非法数值会自动定位回对应字段。服务器控件提示显示合法范围和对应命令。概览根据服务器确认配置显示当前地面后端。
 
 命令页按状态与个人许可、尺寸与随机规则、动作/携带/工具、管理员服务器规则分组，切换分组会回到第一页。每组提供常用操作及复制按钮，复制不会执行；示例参数可在聊天栏修改，管理员命令仍由服务器检查权限。完整命令结构见下表。操作名称下直接显示语法，较长语法可悬停查看。界面参考与聊天帮助共用命令目录；单独输入 `/magnitude` 后可选择八个功能入口，只填入聊天框，补全参数后再发送。尺寸、动作、携带、工具和随机入口会列出同一目录中的完整示例。命令页可按功能名称或语法跨分组搜索，清空搜索恢复当前分类。
 
 修改先保留为草稿，点击“应用”才保存或提交。非法输入会切回对应分组和页码，并选中错误数值，可直接键入修正；服务器拒绝保存时显示返回的字段说明，较长结果可悬停查看。关闭未应用的草稿会询问是否放弃；已提交的服务器请求不会因关页而取消。服务器修改须收到确认；保存失败保留原生效设置。其他操作修改了同一配置版本时，服务器拒绝过期提交并返回最新状态，核对草稿后可重新应用。
+
+概览的“查看诊断”直接打开诊断页，并保留各页草稿。诊断页的“复制诊断报告”复制包含所有分页的 JSON：服务器最后确认的设置与采样、本地已生效视觉值、帧间隔及脚印缓存工作量；不会提交草稿或自动发送。报告标明服务端快照来源与距确认的时间，无服务器时明确标为不可用并保留本地信息。
 
 “刷新状态”更新确认值，不清除草稿；“撤销修改”清除当前页草稿。界面不持续轮询，诊断也不是实时性能曲线。确认超时后先刷新核对实际结果，因为请求可能已在服务器完成。
 
@@ -46,10 +49,11 @@
 | scale targets | `/magnitude scale targets set @e[type=minecraft:pig] 2` | 管理员实体操作 |
 | config food | `/magnitude config food minecraft:apple 2` | 管理员食物尺寸系数 |
 | diagnostics physics | `/magnitude diagnostics physics` | 详细物理诊断 |
+| diagnostics report | `/magnitude diagnostics report` | 当前服务端设置与耗时快照；点击反馈复制报告 |
 
 服务器布尔字段用 true/false；个人许可用 on/off。服务器字段与 GUI 一致：minimum、maximum、allowSelfChange、terrainDamage、shallowDeformation、standingPressure、bodyDamage、keepSizeAfterDeath、walkDamageFactor、landingDamageFactor、pressureHardnessFactor、impactScaleFactor、blocksPerTick、checksPerTick、blocksPerImpact、impactRadius。自动补全提供字段与合法值范围；整数配额拒绝小数。
 
-单独输入`/magnitude scale`、`action`、`carry`、`tool`、`random`或`config`会显示对应语法与可点击示例。`config player`、管理员的`config server`、`config preset`和`config food`也提供各自示例；查询和帮助不改变设置。`config show`保留简短状态查询。聊天示例只填入输入框，确认参数后自行发送。
+单独输入`/magnitude scale`、`action`、`carry`、`tool`、`random`、`diagnostics`或`config`会显示对应语法与可点击示例。`config player`、管理员的`config server`、`config preset`和`config food`也提供各自示例；查询和帮助不改变设置。`config show`保留简短状态查询。聊天示例只填入输入框，确认参数后自行发送。
 
 本版已删除旧别名和旧分组；旧命令会被拒绝，不做隐式跳转。尺寸使用scale、许可/规则使用config、动作使用action，诊断使用diagnostics physics。
 

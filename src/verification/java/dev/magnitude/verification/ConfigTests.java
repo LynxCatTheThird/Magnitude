@@ -124,8 +124,21 @@ public final class ConfigTests {
                     check(!parsed.getReader().canRead()&&parsed.getExceptions().isEmpty(),"ordinary domain help excludes privileged syntax: "+example[1],passed);
                 }
             }
-            for(String domain:new String[]{"scale","action","carry","tool","random"})check(dispatcher.execute("magnitude "+domain,normal)==1&&helpRevision==ConfigService.INSTANCE.revision(),"domain examples are read-only: "+domain,passed);
+            for(String domain:new String[]{"scale","action","carry","tool","random","diagnostics"})check(dispatcher.execute("magnitude "+domain,normal)==1&&helpRevision==ConfigService.INSTANCE.revision(),"domain examples are read-only: "+domain,passed);
             long personalHelpRevision=state.configRevision;
+            check(dispatcher.execute("magnitude diagnostics report",normal)==1&&personalHelpRevision==state.configRevision&&helpRevision==ConfigService.INSTANCE.revision(),
+                "ordinary diagnostic report preserves personal and server revisions",passed);
+            var confirmed=ConfigNetworking.view(player,new ConfigService.Result("ready",""));
+            var report=dev.magnitude.config.DiagnosticReport.create(confirmed);
+            var decoded=com.google.gson.JsonParser.parseString(dev.magnitude.config.DiagnosticReport.json(report)).getAsJsonObject();
+            check(decoded.getAsJsonObject("server").get("size").getAsDouble()==confirmed.size()
+                &&decoded.getAsJsonObject("server").getAsJsonObject("server").get("maximum").getAsDouble()==Magnitude.settings.maximum,
+                "diagnostic JSON carries confirmed size and complete rules",passed);
+            var copy=dev.magnitude.config.DiagnosticReport.copyMessage(report);
+            check(copy.getStyle().getClickEvent() instanceof net.minecraft.network.chat.ClickEvent.CopyToClipboard
+                &&!dev.magnitude.config.DiagnosticReport.json(report).contains(player.getUUID().toString())
+                &&!dev.magnitude.config.DiagnosticReport.json(report).contains(player.getName().getString()),
+                "diagnostic chat report copies data without command execution or player identifiers",passed);
             for(String branch:new String[]{"config","config player","config player terrain","config player pressure","config player resize","config player carry"})
                 check(dispatcher.execute("magnitude "+branch,normal)==1&&personalHelpRevision==state.configRevision&&helpRevision==ConfigService.INSTANCE.revision(),"personal help and field queries are read-only: "+branch,passed);
             for(String branch:new String[]{"config server","config preset","config food"}){

@@ -140,7 +140,28 @@ public final class GuiTests implements ClientModInitializer {
                     }
                     case 17 -> {screenshot(client,"search-settings");click("gui.magnitude.tab.commands");search("tool mode");screen.init(320,240);checkLayout();}
                     case 18 -> {screenshot(client,"search-commands");}
-                    case 19 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
+                    case 19 -> {
+                        click("gui.magnitude.tab.client");search("magnification");
+                        var magnification=screen.children().stream().filter(x->x instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification"))).map(x->(EditBox)x).findFirst().orElseThrow();magnification.setValue("7.5");
+                        var confirmed=SettingsConnection.view;click("gui.magnitude.tab.overview");click("gui.magnitude.openDiagnostics");click("gui.magnitude.copyReport");
+                        var report=com.google.gson.JsonParser.parseString(client.keyboardHandler.getClipboard()).getAsJsonObject();
+                        check(report.getAsJsonObject("client").getAsJsonObject("preferences").get("magnification").getAsDouble()==6.25
+                            &&SettingsConnection.view==confirmed,"diagnostic copy uses saved preferences and preserves the confirmed server snapshot");
+                        check(report.getAsJsonObject("server").get("lastFailure").getAsString().equals("budget exhausted")
+                            &&report.getAsJsonObject("client").has("visualExtraction"),"report includes unshown diagnostic pages and local sample windows");
+                        screen.init(320,240);checkLayout();clickLiteral(">");click("gui.magnitude.copyReport");
+                        check(com.google.gson.JsonParser.parseString(client.keyboardHandler.getClipboard()).getAsJsonObject().getAsJsonObject("server").equals(report.getAsJsonObject("server")),"report is complete regardless of diagnostic pagination");
+                        click("gui.magnitude.tab.client");
+                        check(screen.children().stream().anyMatch(x->x instanceof EditBox box&&box.getMessage().equals(Component.translatable("config.magnitude.field.magnification"))&&box.getValue().equals("7.5")),"diagnostic navigation and copying preserve unapplied drafts");
+                        click("gui.magnitude.discard");click("gui.magnitude.tab.overview");click("gui.magnitude.openDiagnostics");
+                    }
+                    case 20 -> {
+                        screenshot(client,"diagnostic-report");SettingsConnection.view=null;screen.init(320,240);click("gui.magnitude.copyReport");
+                        var offline=com.google.gson.JsonParser.parseString(client.keyboardHandler.getClipboard()).getAsJsonObject();
+                        check(offline.get("server").isJsonNull()&&offline.get("serverSource").getAsString().equals("unavailable")&&offline.get("serverSnapshotAgeMillis").isJsonNull()
+                            &&offline.getAsJsonObject("client").has("frameIntervals"),"offline report keeps local diagnostics and explicitly marks unavailable server state");
+                    }
+                    case 21 -> {Files.writeString(Path.of("gui-results.json"),new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(Map.of("success",true,"passed",passed)));client.stop();}
                     default -> {return;}
                 }
                 stage++;
