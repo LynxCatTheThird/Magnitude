@@ -1,0 +1,29 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    maven {
+        name = 'magnitudeVerification'
+        url = uri('../../.local/maven')
+        content { includeGroup 'dev.magnitude' }
+    }
+}
+
+dependencies {
+    implementation 'dev.magnitude:core:0.0.1-dev.1'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+
+application {
+    mainClass = 'example.magnitude.CoreConsumer'
+}

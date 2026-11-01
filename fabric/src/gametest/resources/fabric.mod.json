@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "magnitude_test",
+  "version": "1.0.0",
+  "name": "Magnitude isolated game tests",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "dev.magnitude.test.NativeScaleGameTests"
+    ],
+    "fabric-client-gametest": [
+      "dev.magnitude.test.NativeScaleClientTest"
+    ]
+  },
+  "depends": {
+    "magnitude": "*",
+    "fabric-gametest-api-v1": "*"
+  }
+}

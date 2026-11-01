@@ -1,0 +1,28 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+base { archivesName = 'magnitude-core' }
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+    withSourcesJar()
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.13.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+test {
+    useJUnitPlatform()
+    maxHeapSize = '384m'
+    testLogging { events 'failed', 'skipped'; exceptionFormat 'full' }
+}
+publishing {
+    publications { core(MavenPublication) { from components.java } }
+    repositories { maven { name = 'verification'; url = rootProject.layout.projectDirectory.dir('.local/maven') } }
+}

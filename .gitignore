@@ -1,0 +1,26 @@
+# Internal design, research, development records, and local agent rules
+/.internal/
+/AGENTS.md
+
+# Local execution and generated artifacts
+/.local/
+**/build/
+/dist/
+/out/
+**/.gradle/
+*.log
+__pycache__/
+*.pyc
+
+# Environment-managed configuration and credentials
+/.agents/
+/.codex/
+/.aws/
+.env
+.env.*
+!.env.example
+
+# JVM crash dumps and local launcher state
+*.hprof
+hs_err_pid*
+replay_pid*

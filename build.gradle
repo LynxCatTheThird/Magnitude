@@ -1,0 +1,10 @@
+plugins {
+    id 'base'
+}
+subprojects {
+    group = rootProject.group
+    version = rootProject.version
+    repositories { mavenCentral() }
+}
+tasks.named('check') { dependsOn ':core:check', ':fabric:check' }
+tasks.named('assemble') { dependsOn ':core:assemble', ':fabric:assemble' }
