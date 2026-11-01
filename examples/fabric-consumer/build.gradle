@@ -1,0 +1,54 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version '1.19.3'
+}
+
+group = 'example.magnitude'
+version = '0.1.0'
+base { archivesName = 'magnitude-fabric-consumer' }
+
+repositories {
+    maven {
+        name = 'magnitudeVerification'
+        url = uri('../../.local/maven')
+        content { includeGroup 'dev.magnitude' }
+    }
+    mavenCentral()
+}
+
+loom {
+    mods {
+        magnitude_example { sourceSet sourceSets.main }
+    }
+    runs {
+        server { runDir 'build/run/server' }
+        client { runDir 'build/run/client' }
+    }
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.3'
+    implementation 'net.fabricmc:fabric-loader:0.20.1'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.165.0+26.3'
+
+    // Consume the published platform artifact, never project/source/composite dependencies.
+    // The mod itself contains its runtime core library as a nested JAR.
+    implementation('dev.magnitude:fabric:0.0.2-dev.1') { transitive = false }
+    // javac needs the public core types. They are not embedded a second time in this example.
+    compileOnly 'dev.magnitude:core:0.0.2-dev.1'
+}
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(25) }
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:all', '-Werror']
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('fabric.mod.json') { expand version: project.version }
+}

@@ -86,7 +86,7 @@ public final class NativeScaleService implements ScaleAccess {
         if (!(target.level() instanceof ServerLevel level) || level.getServer() != server || !supported(target)) {
             return reject(ScaleChange.Code.UNSUPPORTED_ENTITY, "S0 supports players and pigs only");
         }
-        if (!target.isAlive() || target.isPassenger() || target.isVehicle() || target.getPose() == Pose.SLEEPING) {
+        if (dev.magnitude.fabric.internal.carry.CarryRuntime.isInvolved(target) || !target.isAlive() || target.isPassenger() || target.isVehicle() || target.getPose() == Pose.SLEEPING) {
             return reject(ScaleChange.Code.UNSUPPORTED_STATE, "Entity state cannot be resized by this prototype");
         }
         var attribute = target.getAttribute(Attributes.SCALE);

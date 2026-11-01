@@ -1,0 +1,20 @@
+{
+  "magnitude.carry.help": "Carry: look at a target and use /magnitude carry request; accept, decline, drop, escape, recover. Players must consent; carrier must be at least twice as large.",
+  "magnitude.carry.held": "Target held in front of you.",
+  "magnitude.carry.requested": "Carry request sent. The target can accept or decline.",
+  "magnitude.carry.released": "Released safely.",
+  "magnitude.carry.recovery": "You are detached. A safe landing is pending; use /magnitude carry recover to retry.",
+  "magnitude.carry.declined": "Carry request declined.",
+  "magnitude.carry.no_request": "There is no current carry request.",
+  "magnitude.carry.no_relation": "You are not carrying or being carried.",
+  "magnitude.carry.denied": "This action is not permitted or the client is missing Magnitude.",
+  "magnitude.carry.invalid_target": "Look at a nearby player or pig.",
+  "magnitude.carry.out_of_range": "The target is too far away or in another dimension.",
+  "magnitude.carry.size_mismatch": "The carrier must be at least twice the target size (supported scales: 0.25–4).",
+  "magnitude.carry.busy": "A participant is already carrying, carried, recovering, or unavailable.",
+  "magnitude.carry.blocked": "The path or landing space is blocked.",
+  "magnitude.carry.budget": "Too much interaction work is pending. Try again shortly.",
+  "magnitude.carry.io_failure": "Recovery data could not be saved. Contact the server operator; safely placed targets will not be controlled again.",
+  "magnitude.carry.not_ready": "The carry service is unavailable. Contact the server operator.",
+  "magnitude.carry.invitation": "%s wants to carry you. Use /magnitude carry accept or /magnitude carry decline within 10 seconds."
+}

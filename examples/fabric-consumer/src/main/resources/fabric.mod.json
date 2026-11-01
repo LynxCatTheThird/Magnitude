@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "magnitude_example",
+  "version": "${version}",
+  "name": "Magnitude Public API Example",
+  "description": "Independent consumer of the published Magnitude public API.",
+  "authors": ["Magnitude contributors"],
+  "license": "All Rights Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["example.magnitude.fabric.MagnitudeExample"]
+  },
+  "depends": {
+    "minecraft": "26.3",
+    "java": ">=25",
+    "fabricloader": ">=0.20.1",
+    "fabric-api": ">=0.165.0+26.3",
+    "magnitude": "=0.0.2-dev.1"
+  }
+}

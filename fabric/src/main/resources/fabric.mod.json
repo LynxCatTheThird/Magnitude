@@ -3,15 +3,27 @@
   "id": "magnitude",
   "version": "${version}",
   "name": "Magnitude",
-  "description": "Experimental size-interaction library. S0 native-scale prototype.",
-  "authors": ["Magnitude contributors"],
+  "description": "Experimental size and consent-based carrying library.",
+  "authors": [
+    "Magnitude contributors"
+  ],
   "license": "All Rights Reserved",
   "environment": "*",
-  "entrypoints": { "main": ["dev.magnitude.fabric.MagnitudeMod"] },
+  "entrypoints": {
+    "main": [
+      "dev.magnitude.fabric.MagnitudeMod"
+    ],
+    "client": [
+      "dev.magnitude.fabric.client.MagnitudeClient"
+    ]
+  },
   "depends": {
     "fabricloader": ">=0.20.1",
     "minecraft": "26.3",
     "java": ">=25",
     "fabric-api": ">=0.165.0+26.3"
-  }
+  },
+  "mixins": [
+    "magnitude.mixins.json"
+  ]
 }

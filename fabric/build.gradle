@@ -36,6 +36,11 @@ processResources {
     filesMatching('fabric.mod.json') { expand version: project.version }
 }
 
+publishing {
+    publications { fabric(MavenPublication) { from components.java } }
+    repositories { maven { name = 'verification'; url = rootProject.layout.projectDirectory.dir('.local/maven') } }
+}
+
 fabricApi {
     configureTests {
         createSourceSet = true

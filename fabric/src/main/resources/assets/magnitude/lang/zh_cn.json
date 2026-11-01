@@ -1,0 +1,20 @@
+{
+  "magnitude.carry.help": "携带：对准目标执行 /magnitude carry request；可用 accept 接受、decline 拒绝、drop 放下、escape 退出、recover 重试安置。玩家须同意，携带者至少为目标的两倍。",
+  "magnitude.carry.held": "已将目标持于身前。",
+  "magnitude.carry.requested": "已发送携带请求，等待目标接受或拒绝。",
+  "magnitude.carry.released": "已安全放下。",
+  "magnitude.carry.recovery": "已脱离携带，正在等待安全落点。可用 /magnitude carry recover 重试。",
+  "magnitude.carry.declined": "已拒绝携带请求。",
+  "magnitude.carry.no_request": "没有待处理的携带请求。",
+  "magnitude.carry.no_relation": "你目前没有携带或被携带。",
+  "magnitude.carry.denied": "此操作未获许可，或客户端未安装 Magnitude。",
+  "magnitude.carry.invalid_target": "请对准附近的玩家或猪。",
+  "magnitude.carry.out_of_range": "目标距离过远或不在同一维度。",
+  "magnitude.carry.size_mismatch": "携带者至少需为目标的两倍体型；本阶段支持 0.25～4 倍。",
+  "magnitude.carry.busy": "参与者正在携带、被携带、恢复中，或当前状态不可用。",
+  "magnitude.carry.blocked": "移动路径或落点被障碍阻挡。",
+  "magnitude.carry.budget": "当前交互工作较多，请稍后重试。",
+  "magnitude.carry.io_failure": "恢复数据读写失败。请联系服务器管理员；已安全安置的目标不会重新被控制。",
+  "magnitude.carry.not_ready": "携带服务暂不可用，请联系服务器管理员。",
+  "magnitude.carry.invitation": "%s 请求携带你。请在10秒内使用 /magnitude carry accept 接受，或用 /magnitude carry decline 拒绝。"
+}

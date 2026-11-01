@@ -6,7 +6,9 @@
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
-      "dev.magnitude.test.NativeScaleGameTests"
+      "dev.magnitude.test.NativeScaleGameTests",
+      "dev.magnitude.test.CarryRecoveryGameTests",
+      "dev.magnitude.test.CarryPayloadGameTests"
     ],
     "fabric-client-gametest": [
       "dev.magnitude.test.NativeScaleClientTest"

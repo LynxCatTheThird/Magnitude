@@ -18,12 +18,11 @@ public final class ScaleCommands {
     public static void register() {
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) -> dispatcher.register(
                 Commands.literal("magnitude")
-                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                         .then(Commands.literal("status").executes(context -> {
-                            context.getSource().sendSuccess(() -> Component.literal("Magnitude S0: native uniform scale [0.25,4]; players/pigs. Body contacts and carrying are not enabled."), false);
+                            context.getSource().sendSuccess(() -> Component.literal("Magnitude: scale [0.25,4]; consent-based hand carrying for players and pigs. Use /magnitude carry for help."), false);
                             return 1;
                         }))
-                        .then(Commands.literal("scale").then(Commands.argument("value", DoubleArgumentType.doubleArg())
+                        .then(Commands.literal("scale").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(Commands.argument("value", DoubleArgumentType.doubleArg())
                                 .executes(context -> apply(context, context.getSource().getEntityOrException()))
                                 .then(Commands.argument("target", EntityArgument.entity())
                                         .executes(context -> apply(context, EntityArgument.getEntity(context, "target"))))))));
