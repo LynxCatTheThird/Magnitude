@@ -1,6 +1,6 @@
 # Magnitude
 
-Minecraft 体型交互与玩法能力库。当前试玩构建 `0.0.2-dev.1` 提供受控尺寸调整、玩家确认式手持、猪的手持跟随，以及放下和异常恢复。
+Minecraft 体型交互与玩法能力库。当前试玩构建 `0.0.2-dev.2` 提供受控尺寸调整、玩家确认式手持、猪的手持跟随，以及放下和异常恢复。
 
 ## 运行环境
 
@@ -9,7 +9,7 @@ Minecraft 体型交互与玩法能力库。当前试玩构建 `0.0.2-dev.1` 提�
 - Fabric API **0.165.0+26.3**
 - Java **25**
 
-将 `magnitude-fabric-<版本>.jar` 和对应的 Fabric API 放入客户端与服务器的 `mods` 目录。核心库已内嵌，不要额外安装 `magnitude-core`，也不要同时放入多个 Magnitude 版本。
+安装文件为 **`dist/0.0.2-dev.2/magnitude-fabric-0.0.2-dev.2.jar`**。将这个文件和对应的 Fabric API 放入客户端与服务器的 `mods` 目录。核心库已内嵌，不要额外安装 `magnitude-core`，也不要同时放入多个 Magnitude 版本。
 
 单人游戏直接使用同一个模组文件。建议先在专门的测试世界体验。尺寸调整需要管理员权限；携带请求、接受、拒绝和自行退出不需要管理员权限。
 
@@ -24,7 +24,7 @@ Minecraft 体型交互与玩法能力库。当前试玩构建 `0.0.2-dev.1` 提�
 
 | 命令 | 用途 |
 | --- | --- |
-| `/magnitude status` | 查看当前功能入口 |
+| `/magnitude status` | 查看实际加载的版本及当前功能入口 |
 | `/magnitude scale <倍率> [目标]` | 管理员调整自己或目标尺寸 |
 | `/magnitude carry request [目标]` | 请求携带；省略目标时使用视线选择 |
 | `/magnitude carry accept` | 接受玩家携带请求 |
@@ -52,9 +52,11 @@ Minecraft 体型交互与玩法能力库。当前试玩构建 `0.0.2-dev.1` 提�
 ## 开发构建
 
 ```bash
-./gradlew :core:test :fabric:runGameTest :fabric:runClientGameTest :fabric:jar
+./gradlew :core:test :fabric:runGameTest :fabric:runClientGameTest :fabric:stageRelease
 ```
 
-`JAVA_HOME` 需指向 Java 25。产物在 `fabric/build/libs/`；带 `gametest` 或 `sources` 后缀的文件不是玩家安装包。真实客户端测试需要图形环境。
+`JAVA_HOME` 需指向 Java 25。`stageRelease` 检查实际 JAR 的版本、入口类、Mixin 类和内嵌核心后，将玩家安装包及 SHA-256 放到 `dist/<版本>/`。源码与测试包放在 `fabric/build/development/`，不能安装到 `mods`。真实客户端测试需要图形环境。
+
+若出现版本 `${version}` 和 Mixin 类找不到，请检查是否误装了旧版 `-sources.jar`：它包含源码而非运行所需的 class。移出源码包、测试包和旧 Magnitude 后，只保留上述安装文件。
 
 `core` 不依赖 Minecraft，`fabric` 提供平台接线。[API 契约](docs/API.md)说明线程、权限、返回值和恢复语义；独立示例分别演示[核心规则](examples/core-consumer/README.md)与 [Fabric 服务](examples/fabric-consumer/README.md)。公开 API 尚为实验性，升级前请检查对应版本。

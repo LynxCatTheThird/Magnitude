@@ -13,7 +13,7 @@
 ./gradlew -p examples/fabric-consumer build --refresh-dependencies
 ```
 
-依赖坐标为 `dev.magnitude:fabric:0.0.2-dev.1` 与 `dev.magnitude:core:0.0.2-dev.1`。本地 Maven 仓库位于工作区 `.local/maven/`；没有发布产物时应构建失败，不回退到源码或 composite build。
+依赖坐标为 `dev.magnitude:fabric:0.0.2-dev.2` 与 `dev.magnitude:core:0.0.2-dev.2`。本地 Maven 仓库位于工作区 `.local/maven/`；没有发布产物时应构建失败，不回退到源码或 composite build。
 
 平台依赖关闭传递解析，core 仅用于编译期公开类型；运行时使用 Magnitude 模组内嵌的 core。示例自身不重复打包 Magnitude、core 或 Fabric API。
 

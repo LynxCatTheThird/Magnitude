@@ -1,6 +1,6 @@
 # 实验性 API
 
-本文对应 `0.0.2-dev.1`。公开 Java 接口仍为实验性，消费方应固定版本；当前没有跨版本二进制兼容承诺。纯 Java 核心使用 `dev.magnitude.api.*`，Minecraft／Fabric 适配使用 `dev.magnitude.fabric.api.*`。不要依赖 `core`、`internal` 或 `mixin` 实现包。
+本文对应 `0.0.2-dev.2`。公开 Java 接口仍为实验性，消费方应固定版本；当前没有跨版本二进制兼容承诺。纯 Java 核心使用 `dev.magnitude.api.*`，Minecraft／Fabric 适配使用 `dev.magnitude.fabric.api.*`。不要依赖 `core`、`internal` 或 `mixin` 实现包。
 
 ## 服务与线程
 

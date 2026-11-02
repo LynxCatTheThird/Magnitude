@@ -1,3 +1,7 @@
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import java.util.jar.JarFile
+
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
     id 'maven-publish'
@@ -36,6 +40,74 @@ processResources {
     filesMatching('fabric.mod.json') { expand version: project.version }
 }
 
+tasks.named('jar', Jar) {
+    manifest.attributes('Implementation-Title': 'Magnitude', 'Implementation-Version': project.version)
+}
+tasks.named('sourcesJar', Jar) {
+    destinationDirectory = layout.buildDirectory.dir('development')
+    // IDE sources must not be discovered as an executable Fabric mod.
+    exclude 'fabric.mod.json', 'magnitude.mixins.json'
+    manifest.attributes('Implementation-Title': 'Magnitude sources', 'Implementation-Version': project.version)
+}
+
+def installableJar = tasks.named('jar', Jar).flatMap { it.archiveFile }
+tasks.register('verifyInstallableJar') {
+    group = 'verification'
+    description = 'Checks the actual installable JAR version, entrypoints, Mixins and nested core.'
+    dependsOn tasks.named('jar')
+    inputs.file(installableJar)
+    inputs.property('expectedVersion', project.version.toString())
+    doLast {
+        new JarFile(installableJar.get().asFile).withCloseable { archive ->
+            def requireEntry = { String name ->
+                def entry = archive.getJarEntry(name)
+                if (entry == null) throw new GradleException("Installable JAR is missing ${name}")
+                entry
+            }
+            def readJson = { String name ->
+                archive.getInputStream(requireEntry(name)).withCloseable { stream -> new JsonSlurper().parse(stream) }
+            }
+            def metadata = readJson('fabric.mod.json')
+            if (metadata.id != 'magnitude' || metadata.version != project.version.toString()
+                    || archive.manifest.mainAttributes.getValue('Implementation-Version') != metadata.version) {
+                throw new GradleException('Installable JAR must contain the exact project version in its metadata and manifest')
+            }
+            metadata.entrypoints.values().flatten().each { entrypoint ->
+                String name = entrypoint instanceof Map ? entrypoint.value : entrypoint
+                requireEntry(name.replace('.', '/') + '.class')
+            }
+            metadata.mixins.each { declaration ->
+                def config = readJson(declaration instanceof Map ? declaration.config : declaration)
+                ['mixins', 'client', 'server'].each { side ->
+                    (config[side] ?: []).each { name ->
+                        requireEntry((config['package'] + '.' + name).replace('.', '/') + '.class')
+                    }
+                }
+            }
+            if (!metadata.jars) throw new GradleException('Installable JAR is missing its nested core')
+            metadata.jars.each { nested -> requireEntry(nested.file) }
+            archive.entries().each { entry ->
+                if (entry.name.startsWith('dev/magnitude/test/') || entry.name.endsWith('.java')) {
+                    throw new GradleException("Non-runtime content in installable JAR: ${entry.name}")
+                }
+            }
+        }
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyInstallableJar') }
+tasks.register('stageRelease', Copy) {
+    group = 'distribution'
+    description = 'Stages only the verified player-installable JAR and its SHA-256.'
+    dependsOn tasks.named('verifyInstallableJar')
+    from installableJar
+    into rootProject.layout.projectDirectory.dir("dist/${project.version}")
+    doLast {
+        def source = installableJar.get().asFile
+        def checksum = MessageDigest.getInstance('SHA-256').digest(source.bytes).encodeHex().toString()
+        new File(destinationDir, source.name + '.sha256').text = "${checksum}  ${source.name}\n"
+    }
+}
+
 publishing {
     publications { fabric(MavenPublication) { from components.java } }
     repositories { maven { name = 'verification'; url = rootProject.layout.projectDirectory.dir('.local/maven') } }
@@ -67,6 +139,7 @@ loom {
 tasks.register('gameTestJar', Jar) {
     dependsOn tasks.named('gametestClasses')
     archiveClassifier = 'gametest'
+    destinationDirectory = layout.buildDirectory.dir('development')
     from sourceSets.gametest.output
 }
 tasks.register('writeVerificationClasspath') {

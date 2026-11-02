@@ -1,6 +1,7 @@
 package dev.magnitude.fabric;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import dev.magnitude.fabric.internal.NativeScaleService;
 import dev.magnitude.fabric.internal.ScaleCommands;
@@ -38,6 +39,7 @@ public final class MagnitudeMod implements ModInitializer {
         ScaleCommands.register();
         CarryCommands.register();
         CarryInteractionGuards.register();
-        LOGGER.info("Magnitude initialized: native sizing and consent-based hand carrying.");
+        LOGGER.info("Magnitude {} initialized: native sizing and consent-based hand carrying.",
+                FabricLoader.getInstance().getModContainer(ID).orElseThrow().getMetadata().getVersion().getFriendlyString());
     }
 }

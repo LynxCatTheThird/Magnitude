@@ -4,7 +4,9 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import dev.magnitude.fabric.api.MagnitudeScales;
+import dev.magnitude.fabric.MagnitudeMod;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -19,7 +21,9 @@ public final class ScaleCommands {
         CommandRegistrationCallback.EVENT.register((dispatcher, access, environment) -> dispatcher.register(
                 Commands.literal("magnitude")
                         .then(Commands.literal("status").executes(context -> {
-                            context.getSource().sendSuccess(() -> Component.literal("Magnitude: scale [0.25,4]; consent-based hand carrying for players and pigs. Use /magnitude carry for help."), false);
+                            String version = FabricLoader.getInstance().getModContainer(MagnitudeMod.ID).orElseThrow()
+                                    .getMetadata().getVersion().getFriendlyString();
+                            context.getSource().sendSuccess(() -> Component.literal("Magnitude " + version + ": scale [0.25,4]; consent-based hand carrying for players and pigs. Use /magnitude carry for help."), false);
                             return 1;
                         }))
                         .then(Commands.literal("scale").requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)).then(Commands.argument("value", DoubleArgumentType.doubleArg())

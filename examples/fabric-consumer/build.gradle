@@ -32,9 +32,9 @@ dependencies {
 
     // Consume the published platform artifact, never project/source/composite dependencies.
     // The mod itself contains its runtime core library as a nested JAR.
-    implementation('dev.magnitude:fabric:0.0.2-dev.1') { transitive = false }
+    implementation('dev.magnitude:fabric:0.0.2-dev.2') { transitive = false }
     // javac needs the public core types. They are not embedded a second time in this example.
-    compileOnly 'dev.magnitude:core:0.0.2-dev.1'
+    compileOnly 'dev.magnitude:core:0.0.2-dev.2'
 }
 
 java {
