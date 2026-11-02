@@ -67,6 +67,7 @@ tasks.register('verifyInstallableJar') {
             def readJson = { String name ->
                 archive.getInputStream(requireEntry(name)).withCloseable { stream -> new JsonSlurper().parse(stream) }
             }
+            requireEntry('META-INF/licenses/Pehkui-Rebuilt-MIT.txt')
             def metadata = readJson('fabric.mod.json')
             if (metadata.id != 'magnitude' || metadata.version != project.version.toString()
                     || archive.manifest.mainAttributes.getValue('Implementation-Version') != metadata.version) {

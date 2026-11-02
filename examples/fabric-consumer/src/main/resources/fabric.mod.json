@@ -15,6 +15,6 @@
     "java": ">=25",
     "fabricloader": ">=0.20.1",
     "fabric-api": ">=0.165.0+26.3",
-    "magnitude": "=0.0.2-dev.2"
+    "magnitude": "=0.0.3-dev.1"
   }
 }

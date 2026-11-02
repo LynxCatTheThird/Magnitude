@@ -4,9 +4,16 @@
   "compatibilityLevel": "JAVA_25",
   "mixins": [
     "CarryPassengerMixin",
-    "CarryTransportMixin"
+    "CarryTransportMixin",
+    "ShapeAttachmentMixin",
+    "ShapeDimensionsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "client": [
+    "client.ShapeRenderStateMixin",
+    "client.ShapeRenderExtractMixin",
+    "client.ShapeRenderSubmitMixin"
+  ]
 }

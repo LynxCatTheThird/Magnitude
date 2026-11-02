@@ -16,5 +16,6 @@
   "magnitude.carry.budget": "Too much interaction work is pending. Try again shortly.",
   "magnitude.carry.io_failure": "Recovery data could not be saved. Contact the server operator; safely placed targets will not be controlled again.",
   "magnitude.carry.not_ready": "The carry service is unavailable. Contact the server operator.",
-  "magnitude.carry.invitation": "%s wants to carry you. Use /magnitude carry accept or /magnitude carry decline within 10 seconds."
+  "magnitude.carry.invitation": "%s wants to carry you. Use /magnitude carry accept or /magnitude carry decline within 10 seconds.",
+  "magnitude.shape.applied": "Shape applied: width %s, height %s."
 }

@@ -1,6 +1,8 @@
 package dev.magnitude.fabric.internal.carry;
 
 import dev.magnitude.api.relation.*;
+import dev.magnitude.api.scale.ShapeFactors;
+import dev.magnitude.fabric.internal.scale.ShapeState;
 import dev.magnitude.fabric.api.carry.*;
 import dev.magnitude.fabric.internal.carry.persistence.CarryRecoveryStore;
 import dev.magnitude.fabric.internal.carry.persistence.RecoveryToken;
@@ -44,10 +46,11 @@ public final class CarryRuntime implements CarryAccess {
     private record Pending(UUID host,int requestedAt) {}
     private static final class Active {
         final ServerPlayer host; final LivingEntity target; final RecoveryToken token;
-        final float hostScale,targetScale; Vec3 anchor; AABB verifiedBody; boolean installingPassenger;
+        final float hostScale,targetScale; final ShapeFactors hostShape,targetShape; Vec3 anchor; AABB verifiedBody; boolean installingPassenger;
         Active(ServerPlayer host,LivingEntity target,RecoveryToken token,Vec3 anchor) {
             this.host=host;this.target=target;this.token=token;this.anchor=anchor;
-            hostScale=host.getScale();targetScale=target.getScale();verifiedBody=CarrySpace.boxAt(target,anchor);
+            hostScale=host.getScale();targetScale=target.getScale();
+            hostShape=ShapeState.confirmed(host);targetShape=ShapeState.confirmed(target);verifiedBody=CarrySpace.boxAt(target,anchor);
         }
     }
     private static final class Recovering {
@@ -151,7 +154,7 @@ public final class CarryRuntime implements CarryAccess {
     /** Desired root only: callers must validate the sweep before publishing this position. */
     public static Vec3 handAnchor(LivingEntity host,LivingEntity target) {
         double radians=Math.toRadians(host.getYRot());
-        double distance=host.getBbWidth()*.5+target.getBbWidth()*.5+.25*host.getScale();
+        double distance=host.getBbWidth()*.5+target.getBbWidth()*.5+.25*host.getScale()*ShapeState.confirmed(host).width();
         return new Vec3(host.getX()-Math.sin(radians)*distance,
                 host.getY()+host.getBbHeight()*.60-target.getBbHeight()*.5,
                 host.getZ()+Math.cos(radians)*distance);
@@ -183,7 +186,9 @@ public final class CarryRuntime implements CarryAccess {
         if(isInvolved(host)||isInvolved(target)||host.isPassenger()||host.isVehicle()||target.isPassenger()||target.isVehicle())
             return result(CarryResult.Code.BUSY,"One carrier and one target only; nesting is not enabled",false);
         float hs=host.getScale(),ts=target.getScale();
-        if(!Float.isFinite(hs)||!Float.isFinite(ts)||hs<.25||hs>4||ts<.25||ts>4||hs/ts<2)
+        var hshape=ShapeState.confirmed(host);var tshape=ShapeState.confirmed(target);
+        if(!Float.isFinite(hs)||!Float.isFinite(ts)||hs<.25||hs>4||ts<.25||ts>4||hs/ts<2
+                ||hs*hshape.width()/(ts*tshape.width())<2||hs*hshape.height()/(ts*tshape.height())<2)
             return result(CarryResult.Code.SIZE_MISMATCH,"Carrier must be at least twice target scale; range 0.25 to 4",false);
         double range=Math.min(6,2*hs);
         if(host.position().distanceToSqr(target.position())>range*range)
@@ -402,6 +407,7 @@ public final class CarryRuntime implements CarryAccess {
             LivingEntity target=entry.target;ServerPlayer host=entry.host;
             if(!target.isAlive()||!host.isAlive()||target.isRemoved()||host.isRemoved()||host.level()!=target.level()
                     ||host.getScale()!=entry.hostScale||target.getScale()!=entry.targetScale
+                    ||!ShapeState.confirmed(host).equals(entry.hostShape)||!ShapeState.confirmed(target).equals(entry.targetShape)
                     ||(target instanceof ServerPlayer && target.getVehicle()!=host)) {
                 end(entry,"Carry state changed");continue;
             }

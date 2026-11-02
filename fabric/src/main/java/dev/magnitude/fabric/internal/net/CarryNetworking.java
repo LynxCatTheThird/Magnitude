@@ -29,6 +29,11 @@ public final class CarryNetworking {
     public static void start(MinecraftServer server) { SESSIONS.put(server, new Session()); }
     public static void stop(MinecraftServer server) { SESSIONS.remove(server); }
     public static void joined(ServerPlayer player) {
+        if (!supports(player)) {
+            player.connection.disconnect(net.minecraft.network.chat.Component.literal(
+                    "This server requires Magnitude 0.0.3 or a client supporting carry_state_v2 and shape_v1."));
+            return;
+        }
         Session session = SESSIONS.get(player.level().getServer());
         if (session != null) session.sent.remove(player.getUUID());
     }

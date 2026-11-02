@@ -28,6 +28,7 @@ import java.util.function.BiFunction;
 public final class MagnitudeExample implements ModInitializer {
     @Override
     public void onInitialize() {
+        registerShape();
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 dispatcher.register(Commands.literal("magnitude-example")
                         .executes(context -> help(context.getSource()))
@@ -55,6 +56,24 @@ public final class MagnitudeExample implements ModInitializer {
                                         .then(Commands.argument("target", EntityArgument.entity())
                                                 .executes(context -> scale(context.getSource(), EntityArgument.getEntity(context, "target"),
                                                         DoubleArgumentType.getDouble(context, "value"))))))));
+    }
+
+    private static void registerShape() {
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
+                Commands.literal("magnitude-example").then(Commands.literal("shape")
+                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                        .then(Commands.argument("width", DoubleArgumentType.doubleArg())
+                                .then(Commands.argument("height", DoubleArgumentType.doubleArg())
+                                        .executes(context -> {
+                                            var source = context.getSource();
+                                            var target = source.getPlayerOrException();
+                                            var service = MagnitudeScales.forServer(source.getServer());
+                                            var result = service.setShape(source, target, DoubleArgumentType.getDouble(context, "width"),
+                                                    DoubleArgumentType.getDouble(context, "height"), service.observe(target).revision());
+                                            if (!result.succeeded()) return fail(source, result.code() + ": " + result.detail());
+                                            source.sendSuccess(() -> Component.literal(service.shape(target).toString()), false);
+                                            return 1;
+                                        }))))));
     }
 
     private static int help(CommandSourceStack source) {

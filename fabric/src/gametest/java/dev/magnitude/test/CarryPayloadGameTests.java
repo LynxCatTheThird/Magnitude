@@ -52,8 +52,14 @@ public final class CarryPayloadGameTests {
     }
     @GameTest
     public void unmanagedPlayerCarrierRemainsRejected(GameTestHelper helper) {
-        var host = helper.makeMockServerPlayerInLevel();
-        var target = helper.makeMockServerPlayerInLevel();
+        // A transport unit must not be a logged-in mock rejected by the client capability gate.
+        var host = new net.minecraft.server.level.ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "transport-host"),
+                net.minecraft.server.level.ClientInformation.createDefault());
+        var target = new net.minecraft.server.level.ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "transport-target"),
+                net.minecraft.server.level.ClientInformation.createDefault());
+        helper.assertTrue(host.isAlive() && target.isAlive() && !host.isRemoved() && !target.isRemoved(), "invalid transport fixtures");
         helper.assertTrue(!host.getType().canSerialize(), "player type became serializable");
         helper.assertTrue(!target.startRiding(host, true, true), "unmanaged player mount bypassed validation");
         helper.assertTrue(!target.isPassenger() && !host.isVehicle(), "rejected mount mutated transport");

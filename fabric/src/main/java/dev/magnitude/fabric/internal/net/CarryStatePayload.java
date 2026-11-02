@@ -16,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
 /** Version-one full snapshot. Only server -> client; no client-supplied world decisions. */
 public record CarryStatePayload(UUID epoch, long sequence, List<CarryView> views) implements CustomPacketPayload {
     public static final int MAX_VIEWS = 80;
-    public static final Type<CarryStatePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath("magnitude", "carry_state_v1"));
+    public static final Type<CarryStatePayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath("magnitude", "carry_state_v2"));
     public static final StreamCodec<RegistryFriendlyByteBuf, CarryStatePayload> CODEC = new StreamCodec<>() {
         @Override public CarryStatePayload decode(RegistryFriendlyByteBuf buffer) {
             UUID epoch = buffer.readUUID();

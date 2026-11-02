@@ -25,5 +25,10 @@
   },
   "mixins": [
     "magnitude.mixins.json"
-  ]
+  ],
+  "breaks": {
+    "pehkui": "*",
+    "pehkui-rebuilt": "*",
+    "scopic": "*"
+  }
 }

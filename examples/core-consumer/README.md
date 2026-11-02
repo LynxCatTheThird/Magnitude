@@ -1,6 +1,6 @@
 # 独立核心 API 消费示例
 
-此目录是独立 Gradle 工程，通过本地 Maven 仓库中的 `dev.magnitude:core:0.0.2-dev.2` 消费核心公开 API。没有 project、composite build 或产品源码目录依赖，也不导入 `dev.magnitude.core.*`。
+此目录是独立 Gradle 工程，通过本地 Maven 仓库中的 `dev.magnitude:core:0.0.3-dev.1` 消费核心公开 API。没有 project、composite build 或产品源码目录依赖，也不导入 `dev.magnitude.core.*`。
 
 先使用 Java 25 与根目录的 Gradle 9.8.2 wrapper 发布待验证产物，再从独立工程运行：
 

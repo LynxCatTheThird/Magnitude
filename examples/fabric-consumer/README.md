@@ -13,7 +13,7 @@
 ./gradlew -p examples/fabric-consumer build --refresh-dependencies
 ```
 
-依赖坐标为 `dev.magnitude:fabric:0.0.2-dev.2` 与 `dev.magnitude:core:0.0.2-dev.2`。本地 Maven 仓库位于工作区 `.local/maven/`；没有发布产物时应构建失败，不回退到源码或 composite build。
+依赖坐标为 `dev.magnitude:fabric:0.0.3-dev.1` 与 `dev.magnitude:core:0.0.3-dev.1`。本地 Maven 仓库位于工作区 `.local/maven/`；没有发布产物时应构建失败，不回退到源码或 composite build。
 
 平台依赖关闭传递解析，core 仅用于编译期公开类型；运行时使用 Magnitude 模组内嵌的 core。示例自身不重复打包 Magnitude、core 或 Fabric API。
 
@@ -30,6 +30,7 @@
 | `/magnitude-example recover` | 重试本人的恢复或当前服务支持的关联恢复 |
 | `/magnitude-example status` | 只显示与自己有关的关系状态 |
 | `/magnitude-example observe [target]` | 读取公共尺寸快照；控制台需指定目标 |
+| `/magnitude-example shape <width> <height>` | 管理员通过公开API设置自己的相对宽高；保留统一revision和空间检查 |
 | `/magnitude-example scale <value> [target]` | 管理员通过公共尺寸服务修改，保留库的权限／状态检查 |
 
 例如，测试服管理员先将宿主设为 2 倍，再向附近 1 倍猪请求携带：

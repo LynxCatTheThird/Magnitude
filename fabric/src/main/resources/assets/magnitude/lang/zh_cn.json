@@ -16,5 +16,6 @@
   "magnitude.carry.budget": "当前交互工作较多，请稍后重试。",
   "magnitude.carry.io_failure": "恢复数据读写失败。请联系服务器管理员；已安全安置的目标不会重新被控制。",
   "magnitude.carry.not_ready": "携带服务暂不可用，请联系服务器管理员。",
-  "magnitude.carry.invitation": "%s 请求携带你。请在10秒内使用 /magnitude carry accept 接受，或用 /magnitude carry decline 拒绝。"
+  "magnitude.carry.invitation": "%s 请求携带你。请在10秒内使用 /magnitude carry accept 接受，或用 /magnitude carry decline 拒绝。",
+  "magnitude.shape.applied": "已设置形状：宽倍率 %s，高倍率 %s。"
 }

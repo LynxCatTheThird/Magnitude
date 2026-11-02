@@ -8,7 +8,8 @@
     "fabric-gametest": [
       "dev.magnitude.test.NativeScaleGameTests",
       "dev.magnitude.test.CarryRecoveryGameTests",
-      "dev.magnitude.test.CarryPayloadGameTests"
+      "dev.magnitude.test.CarryPayloadGameTests",
+      "dev.magnitude.test.ShapeGameTests"
     ],
     "fabric-client-gametest": [
       "dev.magnitude.test.NativeScaleClientTest"

@@ -3,7 +3,7 @@ package dev.magnitude.fabric;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import dev.magnitude.fabric.internal.NativeScaleService;
+import dev.magnitude.fabric.internal.scale.ScaleService;
 import dev.magnitude.fabric.internal.ScaleCommands;
 import dev.magnitude.fabric.internal.CarryCommands;
 import dev.magnitude.fabric.internal.CarryInteractionGuards;
@@ -24,8 +24,9 @@ public final class MagnitudeMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(NativeScaleService::start);
-        ServerLifecycleEvents.SERVER_STOPPED.register(NativeScaleService::stop);
+        ServerLifecycleEvents.SERVER_STARTED.register(ScaleService::start);
+        ServerLifecycleEvents.SERVER_STOPPED.register(ScaleService::stop);
+        dev.magnitude.fabric.internal.scale.ShapeState.initialize();
         CarryRecoveryStore.initAttachments();
         CarryNetworking.register();
         ServerLifecycleEvents.SERVER_STARTING.register(server -> { CarryRuntime.start(server); CarryNetworking.start(server); });
@@ -39,7 +40,7 @@ public final class MagnitudeMod implements ModInitializer {
         ScaleCommands.register();
         CarryCommands.register();
         CarryInteractionGuards.register();
-        LOGGER.info("Magnitude {} initialized: native sizing and consent-based hand carrying.",
+        LOGGER.info("Magnitude {} initialized: base and shape sizing and consent-based hand carrying.",
                 FabricLoader.getInstance().getModContainer(ID).orElseThrow().getMetadata().getVersion().getFriendlyString());
     }
 }
